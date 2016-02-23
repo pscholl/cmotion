@@ -43,24 +43,25 @@ public class UDPTransport extends Thread {
      */
     private Runnable mUDPSender = new Runnable() {
 
+        public DatagramPacket packet;
+        public DatagramSocket socket;
+
         @Override
         public void run() {
             try {
-                DatagramSocket socket = new DatagramSocket();
-                DatagramPacket packet = new DatagramPacket(new byte[]{}, 0, mAdress, mPort);
-
                 while (mIsSending) {
                     byte[] buf = q.takeLast();
                     packet.setData(buf);
                     packet.setLength(buf.length);
                     socket.send(packet);
                 }
-            } catch (SocketException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                try {
+                    socket = new DatagramSocket();
+                    packet = new DatagramPacket(new byte[]{}, 0, mAdress, mPort);
+                } catch (SocketException e1) {
+                    e1.printStackTrace();
+                }
             }
         }
     };
