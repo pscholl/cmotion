@@ -8,6 +8,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Environment;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.provider.ContactsContract;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
@@ -182,8 +183,9 @@ public class Recorder extends Service {
             mRecording = r;
             mRecording.add(this);
 
+            /* TODO set maxreport to 5minutes, this can get problematic later for ffmpeg */
             Sensor s = getMatchingSensor(sensor);
-            msm.registerListener(this, s, (int) (1 / rate * 1000 * 1000));
+            msm.registerListener(this, s, (int) (1 / rate * 1000 * 1000), 5 * 60 * 1000 * 1000);
         }
 
         public Sensor getMatchingSensor(String sensor) throws Exception {
@@ -192,7 +194,7 @@ public class Recorder extends Service {
             int numMatching = 0;
 
             for (Sensor s : msm.getSensorList(Sensor.TYPE_ALL)) {
-                String type   = s.getStringType();;
+                String type = s.getStringType();
 
                 if (type.contains(sensor)) {
                     matching.append(type);
@@ -272,10 +274,16 @@ public class Recorder extends Service {
     private class Recording {
         private final String mOutputPath;
         private final ArrayList<SensorProcess> mInputList;
+        private final PowerManager mpm;
+        private final PowerManager.WakeLock mwl;
 
         public Recording(String output) {
             mOutputPath = output;
             mInputList = new ArrayList<SensorProcess>();
+
+            mpm = (PowerManager) getSystemService(POWER_SERVICE);
+            mwl = mpm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
+            mwl.acquire();
         }
 
         public void add(SensorProcess s) {
@@ -289,6 +297,7 @@ public class Recorder extends Service {
                 Intent i = new Intent(FINISH_ACTION);
                 i.putExtra(FINISH_PATH, mOutputPath);
                 sendBroadcast(i);
+                mwl.release();
             }
         }
     }

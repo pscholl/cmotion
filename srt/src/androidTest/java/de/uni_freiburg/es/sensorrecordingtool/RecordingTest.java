@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.Sensor;
 import android.os.Environment;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
@@ -52,13 +53,13 @@ public class RecordingTest {
         } catch (FileNotFoundException e) {}
     }
 
-     public void recordingNoInputSupplied() throws InterruptedException {
+    @Test public void recordingNoInputSupplied() throws InterruptedException {
         String result = callForError(i);
         Assert.assertTrue("no answer from Service", result != null);
         Assert.assertEquals("error msg", result, "no input supplied");
     }
 
-     public void noRateSupplied() throws InterruptedException {
+    @Test public void noRateSupplied() throws InterruptedException {
         i.putExtra("-i", "acc");
         String result = callForError(i);
         Assert.assertEquals(null, result);
@@ -71,9 +72,51 @@ public class RecordingTest {
         String result = callForResult(i);
         Assert.assertNotNull(result);
 
-        File path = new File(new File(result), "accelerometer");
+        assertRecording(result, "accelerometer", 100 * 3 * 4 * 5);
+    }
+
+    public void assertRecording(String f, String p, int size) {
+        File path = new File(new File(f), p);
         Assert.assertTrue("no output file " + path.toString(), path.exists());
-        Assert.assertEquals("wrong size", 100*3*4*5, path.length());
+        Assert.assertEquals("wrong size", size, path.length());
+    }
+
+    @Test public void doMultipleSensors() throws InterruptedException {
+        i.putExtra(Recorder.RECORDER_INPUT, new String[]{
+                Sensor.STRING_TYPE_ACCELEROMETER,
+                Sensor.STRING_TYPE_GYROSCOPE,
+                Sensor.STRING_TYPE_MAGNETIC_FIELD,
+                Sensor.STRING_TYPE_ROTATION_VECTOR
+        });
+        i.putExtra("-d", 5.0);
+        i.putExtra("-r", 50.0);
+
+        String result = callForResult(i);
+        Assert.assertNotNull(result);
+
+        assertRecording(result, Sensor.STRING_TYPE_ACCELEROMETER, 50*3*4*5);
+        assertRecording(result, Sensor.STRING_TYPE_GYROSCOPE, 50*3*4*5);
+        assertRecording(result, Sensor.STRING_TYPE_MAGNETIC_FIELD, 50 * 3 * 4 * 5);
+        assertRecording(result, Sensor.STRING_TYPE_ROTATION_VECTOR, 50 * 4 * 4 * 5);
+    }
+
+    @Test public void doMultipleSensorsAndRates() throws InterruptedException {
+        i.putExtra(Recorder.RECORDER_INPUT, new String[]{
+                Sensor.STRING_TYPE_ACCELEROMETER,
+                Sensor.STRING_TYPE_GYROSCOPE,
+                Sensor.STRING_TYPE_MAGNETIC_FIELD,
+                Sensor.STRING_TYPE_ROTATION_VECTOR
+        });
+        i.putExtra("-d", 5.0);
+        i.putExtra("-r", new double[]{25.0, 50.0, 75.0, 100.0});
+
+        String result = callForResult(i);
+        Assert.assertNotNull(result);
+
+        assertRecording(result, Sensor.STRING_TYPE_ACCELEROMETER, 25*3*4*5);
+        assertRecording(result, Sensor.STRING_TYPE_GYROSCOPE, 50*3*4*5);
+        assertRecording(result, Sensor.STRING_TYPE_MAGNETIC_FIELD, 75*3*4*5);
+        assertRecording(result, Sensor.STRING_TYPE_ROTATION_VECTOR, 100*4*4*5);
     }
 
     private String callForError(Intent i) throws InterruptedException {
