@@ -53,35 +53,30 @@ public class RecordingTest {
         } catch (FileNotFoundException e) {}
     }
 
-    @Test public void recordingNoInputSupplied() throws InterruptedException {
+     @Test public void recordingNoInputSupplied() throws InterruptedException {
         String result = callForError(i);
         Assert.assertTrue("no answer from Service", result != null);
-        Assert.assertEquals("error msg", result, "no input supplied");
+        Assert.assertEquals("error msg","no input supplied",result);
     }
 
     @Test public void noRateSupplied() throws InterruptedException {
-        i.putExtra("-i", "acc");
+        i.putExtra("-i", "accelerometer");
         String result = callForError(i);
         Assert.assertEquals(null, result);
     }
 
-    @Test public void doARecordingWithRates() throws InterruptedException {
+     @Test public void doARecordingWithRates() throws InterruptedException {
         i.putExtra("-i", "accelerometer");
         i.putExtra("-r", 100.);
         i.putExtra("-d", 5.0);
         String result = callForResult(i);
-        Assert.assertNotNull(result);
+        Assert.assertNotNull("timeout before completion", result);
 
         assertRecording(result, "accelerometer", 100 * 3 * 4 * 5);
     }
 
-    public void assertRecording(String f, String p, int size) {
-        File path = new File(new File(f), p);
-        Assert.assertTrue("no output file " + path.toString(), path.exists());
-        Assert.assertEquals("wrong size", size, path.length());
-    }
 
-    @Test public void doMultipleSensors() throws InterruptedException {
+     @Test public void doMultipleSensors() throws InterruptedException {
         i.putExtra(Recorder.RECORDER_INPUT, new String[]{
                 Sensor.STRING_TYPE_ACCELEROMETER,
                 Sensor.STRING_TYPE_GYROSCOPE,
@@ -92,15 +87,15 @@ public class RecordingTest {
         i.putExtra("-r", 50.0);
 
         String result = callForResult(i);
-        Assert.assertNotNull(result);
+        Assert.assertNotNull("timeout", result);
 
-        assertRecording(result, Sensor.STRING_TYPE_ACCELEROMETER, 50*3*4*5);
-        assertRecording(result, Sensor.STRING_TYPE_GYROSCOPE, 50*3*4*5);
+        assertRecording(result, Sensor.STRING_TYPE_ACCELEROMETER, 50 * 3 * 4 * 5);
+        assertRecording(result, Sensor.STRING_TYPE_GYROSCOPE, 50 * 3 * 4 * 5);
         assertRecording(result, Sensor.STRING_TYPE_MAGNETIC_FIELD, 50 * 3 * 4 * 5);
-        assertRecording(result, Sensor.STRING_TYPE_ROTATION_VECTOR, 50 * 4 * 4 * 5);
+        assertRecording(result, Sensor.STRING_TYPE_ROTATION_VECTOR, 50 * 5 * 4 * 5);
     }
 
-    @Test public void doMultipleSensorsAndRates() throws InterruptedException {
+     @Test public void doMultipleSensorsAndRates() throws InterruptedException {
         i.putExtra(Recorder.RECORDER_INPUT, new String[]{
                 Sensor.STRING_TYPE_ACCELEROMETER,
                 Sensor.STRING_TYPE_GYROSCOPE,
@@ -111,12 +106,18 @@ public class RecordingTest {
         i.putExtra("-r", new double[]{25.0, 50.0, 75.0, 100.0});
 
         String result = callForResult(i);
-        Assert.assertNotNull(result);
+        Assert.assertNotNull("timeout", result);
 
         assertRecording(result, Sensor.STRING_TYPE_ACCELEROMETER, 25*3*4*5);
         assertRecording(result, Sensor.STRING_TYPE_GYROSCOPE, 50*3*4*5);
         assertRecording(result, Sensor.STRING_TYPE_MAGNETIC_FIELD, 75*3*4*5);
-        assertRecording(result, Sensor.STRING_TYPE_ROTATION_VECTOR, 100*4*4*5);
+        assertRecording(result, Sensor.STRING_TYPE_ROTATION_VECTOR, 100*5*4*5);
+    }
+
+    public void assertRecording(String f, String p, int size) {
+        File path = new File(new File(f), p);
+        Assert.assertTrue("no output file " + path.toString(), path.exists());
+        Assert.assertEquals("wrong size", size, path.length());
     }
 
     private String callForError(Intent i) throws InterruptedException {
@@ -127,7 +128,8 @@ public class RecordingTest {
         return callForResult(i, 10000, Recorder.FINISH_ACTION, Recorder.FINISH_PATH);
     }
 
-    private String callForResult(Intent i, int ms, String action, final String extra) throws InterruptedException {
+    private String callForResult(Intent i, int ms, String action, final String extra)
+            throws InterruptedException {
         final CountDownLatch lock = new CountDownLatch(1);
         final String[] result = new String[] {null};
         c.registerReceiver(new BroadcastReceiver() {

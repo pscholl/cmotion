@@ -25,7 +25,11 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.TimeZone;
 
 /**
@@ -80,9 +84,10 @@ public class Recorder extends Service {
         /*
          * check if we have sensor input
          */
-        if (sensors == null && i.getStringExtra(RECORDER_INPUT) != null)
+        if (sensors == null && i.getStringExtra(RECORDER_INPUT)!=null)
             sensors = new String[] {i.getStringExtra(RECORDER_INPUT)};
-        else
+
+        if (sensors == null)
             return error("no input supplied");
 
         /*
@@ -91,8 +96,6 @@ public class Recorder extends Service {
          */
         if (rates == null)
             rates = new double[] {i.getDoubleExtra(RECORDER_RATE, 50)};
-        else
-            return error("no recording rates given");
 
         if (rates.length == 1) {
             rates = Arrays.copyOf(rates, sensors.length);
@@ -122,8 +125,7 @@ public class Recorder extends Service {
                         new FileOutputStream(new File(output, sensors[j])));
                 SensorProcess sp = new SensorProcess(sensors[j], rates[j], duration, bf, r);
             } catch (Exception e) {
-                System.err.println("failed to write " + sensors[j]);
-                return error("failed to write " + sensors[j]);
+                return error(sensors[j] + ": " + e.getLocalizedMessage());
             }
         }
 
@@ -165,6 +167,7 @@ public class Recorder extends Service {
      *
      */
     protected class SensorProcess implements SensorEventListener {
+        public static final int LATENCY_US = 5 * 60 * 1000 * 1000;
         private final SensorManager msm;
         private final double mRate;
         private final BufferedOutputStream mOut;
@@ -183,40 +186,56 @@ public class Recorder extends Service {
             mRecording = r;
             mRecording.add(this);
 
-            /* TODO set maxreport to 5minutes, this can get problematic later for ffmpeg */
+            /* TODO settting maxreport to 5minutes can get problematic later for ffmpeg */
             Sensor s = getMatchingSensor(sensor);
-            msm.registerListener(this, s, (int) (1 / rate * 1000 * 1000), 5 * 60 * 1000 * 1000);
+            if (!msm.registerListener(this, s, (int) (1 / rate * 1000 * 1000),
+                         Math.min((int) mDur * 1000 * 1000 / 2, LATENCY_US)))
+                throw new Exception("unable to register sensor " + sensor);
         }
 
+        /** given a String tries to find a matching sensor given this ruleset:
+         *
+         *   1. find all sensors which string description (getStringType()) contains the *sensor*
+         *   2. choose the shortest one of that list
+         *
+         *  e.g., when "gyro" is given, choose android.sensor.type.gyroscope rather than
+         *  android.sensor.type.gyroscope_uncalibrated. Matching is case-insensitive.
+         *
+         * @param sensor sensor name to match for
+         * @return the sensor for which the description is shortest and contains the *sensor*
+         * @throws Exception when no or multiple matches are found
+         */
         public Sensor getMatchingSensor(String sensor) throws Exception {
-            StringBuilder matching = new StringBuilder();
-            Sensor lastMatching = null;
-            int numMatching = 0;
+            LinkedList<Sensor> candidates = new LinkedList<>();
 
-            for (Sensor s : msm.getSensorList(Sensor.TYPE_ALL)) {
-                String type = s.getStringType();
+            for (Sensor s : msm.getSensorList(Sensor.TYPE_ALL))
+                if (s.getStringType().toLowerCase().contains(sensor.toLowerCase()))
+                    candidates.add(s);
 
-                if (type.contains(sensor)) {
-                    matching.append(type);
-                    matching.append(", ");
-                    lastMatching = s;
-                    numMatching++;
+            if (candidates.size() == 0)
+                throw new Exception("no matches for " + sensor + " found");
+
+            int minimum = Integer.MAX_VALUE;
+
+            for (Sensor s : candidates)
+                minimum = Math.min(minimum, s.getStringType().length());
+
+            Iterator<Sensor> it = candidates.iterator();
+            while(it.hasNext())
+                if (it.next().getStringType().length() != minimum)
+                    it.remove();
+
+            if (candidates.size() != 1) {
+                StringBuilder b = new StringBuilder();
+                for (Sensor s : candidates) {
+                    b.append(s.getStringType());
+                    b.append(", ");
                 }
+                throw new Exception("too many sensor candidates for " + sensor + " options are " +
+                        b.toString());
             }
 
-            if (numMatching == 1)
-                return lastMatching;
-
-            if (numMatching > 1)
-                throw new Exception("sensor type " + sensor + " is not distinct: " + matching.toString());
-
-            StringBuilder sb = new StringBuilder("possible options: \n");
-            for (Sensor s : msm.getSensorList(Sensor.TYPE_ALL)) {
-                sb.append(s.getStringType());
-                sb.append("\n");
-            }
-
-            throw new Exception("can't find match for sensor: " + sensor + "\n" + sb.toString());
+            return candidates.getFirst();
         }
 
         @Override
@@ -252,7 +271,7 @@ public class Recorder extends Service {
                     mDiff -= 1 / mRate;
                     mElapsed += 1 / mRate;
 
-                    if (mElapsed >= mDur) {
+                    if (mElapsed > mDur+.5/mRate) {
                         msm.unregisterListener(this);
                         mOut.close();
                         mRecording.remove(this);
@@ -283,10 +302,11 @@ public class Recorder extends Service {
 
             mpm = (PowerManager) getSystemService(POWER_SERVICE);
             mwl = mpm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
-            mwl.acquire();
         }
 
         public void add(SensorProcess s) {
+            if (mInputList.size()==0)
+                mwl.acquire();
             mInputList.add(s);
         }
 
