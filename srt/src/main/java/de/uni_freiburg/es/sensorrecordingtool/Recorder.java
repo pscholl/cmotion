@@ -64,6 +64,9 @@ public class Recorder extends Service {
     /* the duration of the recording, given in seconds, default is 10 seconds. */
     static final String RECORDER_DURATION = "-d";
 
+    /* the optional output path */
+    static final String RECORDER_OUTPUT = "-o";
+
     /* action for reporting error from the recorder service */
     static final String ERROR_ACTION  = "recorder_error";
     static final String ERROR_REASON  = "error_reaseon";
@@ -78,8 +81,14 @@ public class Recorder extends Service {
     public int onStartCommand(Intent i, int flags, int startId) {
         String[] sensors = i.getStringArrayExtra(RECORDER_INPUT);
         double[] rates   = i.getDoubleArrayExtra(RECORDER_RATE);
-        String output    = getDefaultOutputPath();
+        String output    = i.getStringExtra(RECORDER_OUTPUT);
         double duration  = i.getDoubleExtra(RECORDER_DURATION, 5);
+
+        /*
+         * check the output file
+         */
+        if (output == null)
+            output = getDefaultOutputPath();
 
         /*
          * check if we have sensor input
@@ -152,7 +161,7 @@ public class Recorder extends Service {
         TimeZone tz = TimeZone.getTimeZone("UTC");
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmZ");
         df.setTimeZone(tz);
-        File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
+        File path = new File("/sdcard/DCIM/");
         return new File(path, df.format(new Date())).toString();
     }
 
@@ -301,17 +310,18 @@ public class Recorder extends Service {
             mInputList = new ArrayList<SensorProcess>();
 
             mpm = (PowerManager) getSystemService(POWER_SERVICE);
-            mwl = mpm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
+            mwl = mpm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, Integer.toString(this.hashCode()));
         }
 
         public void add(SensorProcess s) {
-            if (mInputList.size()==0)
+            if (mInputList.size() == 0)
                 mwl.acquire();
             mInputList.add(s);
         }
 
         public void remove(SensorProcess s) {
-            mInputList.remove(s);
+            if(!mInputList.remove(s))
+                return;
             
             if (mInputList.size() == 0) {
                 Intent i = new Intent(FINISH_ACTION);

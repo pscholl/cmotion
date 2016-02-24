@@ -11,6 +11,7 @@
         android:supportsRtl="true">
 
         <service android:name=".Recorder"/>
+        <service android:name=".WearForwarder"/>
     </application>
 
 </manifest>

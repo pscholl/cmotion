@@ -32,10 +32,14 @@ import java.util.concurrent.TimeUnit;
 public class RecordingTest {
     private Context c;
     private Intent i;
+    private String o;
+    private static int count = 0;
 
     @Before public void setup() {
         c = InstrumentationRegistry.getTargetContext();
         i = new Intent(c, Recorder.class);
+        o = Recorder.getDefaultOutputPath() + Integer.toString(count++);
+        i.putExtra("-o", o);
     }
 
     public void delete(File f) throws FileNotFoundException {
@@ -49,7 +53,7 @@ public class RecordingTest {
 
     @After public void teardown() {
         // not every test generates a directory.
-        try { delete(new File(Recorder.getDefaultOutputPath()));
+        try { delete(new File(o));
         } catch (FileNotFoundException e) {}
     }
 
@@ -57,12 +61,6 @@ public class RecordingTest {
         String result = callForError(i);
         Assert.assertTrue("no answer from Service", result != null);
         Assert.assertEquals("error msg","no input supplied",result);
-    }
-
-    @Test public void noRateSupplied() throws InterruptedException {
-        i.putExtra("-i", "accelerometer");
-        String result = callForError(i);
-        Assert.assertEquals(null, result);
     }
 
      @Test public void doARecordingWithRates() throws InterruptedException {
@@ -108,7 +106,7 @@ public class RecordingTest {
         String result = callForResult(i);
         Assert.assertNotNull("timeout", result);
 
-        assertRecording(result, Sensor.STRING_TYPE_ACCELEROMETER, 25*3*4*5);
+        assertRecording(result, Sensor.STRING_TYPE_ACCELEROMETER, 25 * 3 * 4 * 5);
         assertRecording(result, Sensor.STRING_TYPE_GYROSCOPE, 50*3*4*5);
         assertRecording(result, Sensor.STRING_TYPE_MAGNETIC_FIELD, 75*3*4*5);
         assertRecording(result, Sensor.STRING_TYPE_ROTATION_VECTOR, 100*5*4*5);
