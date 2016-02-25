@@ -1,16 +1,22 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
+import android.Manifest;
 import android.app.Service;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Environment;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.ContactsContract;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -67,9 +73,12 @@ public class Recorder extends Service {
     /* the optional output path */
     static final String RECORDER_OUTPUT = "-o";
 
+    /* the main action for recording */
+    static final String RECORD_ACTION = "senserec";
+
     /* action for reporting error from the recorder service */
     static final String ERROR_ACTION  = "recorder_error";
-    static final String ERROR_REASON  = "error_reaseon";
+    static final String ERROR_REASON  = "error_reason";
     static final String FINISH_ACTION = "recorder_done";
     static final String FINISH_PATH   = "recording_path";
 
@@ -83,6 +92,35 @@ public class Recorder extends Service {
         double[] rates   = i.getDoubleArrayExtra(RECORDER_RATE);
         String output    = i.getStringExtra(RECORDER_OUTPUT);
         double duration  = i.getDoubleExtra(RECORDER_DURATION, 5);
+
+        if (i == null)
+            return START_NOT_STICKY;
+
+        /*
+         * make sure that we have permission to write the external folder, if we do not have
+         * permission currently the user will be bugged about it. And this service will be
+         * restarted with a null action intent.
+         */
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            != PackageManager.PERMISSION_GRANTED) {
+            Intent diag = new Intent(this, PermissionDialog.class);
+            if (i.getExtras() != null) diag.putExtras(i.getExtras());
+            diag.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(diag);
+            return START_NOT_STICKY;
+        }
+
+        /*
+         * make sure to forward this recording intent to all other in the Wear network, but only
+         * do this if not started by a forward from the WearForwarder
+         */
+        if (i.getAction() == null ||
+                !i.getAction().equalsIgnoreCase(WearForwarder.RECORD_ACTION_FORWARDED)) {
+            Intent fw = new Intent(this, WearForwarder.class);
+            if (i.getExtras() != null) fw.putExtras(i.getExtras());
+            startService(fw);
+        }
+
 
         /*
          * check the output file
@@ -114,6 +152,10 @@ public class Recorder extends Service {
         if (rates.length != sensors.length)
             return error("either rates and sensors must be the same length or a single rate must be given");
 
+        for (double r : rates)
+            if (r <= 0)
+                return error("rate must be larger than zero, but was " + r);
+
         /* now try and create the output folder */
         File path = new File(output);
         if ( !path.exists() && !path.mkdirs() )
@@ -126,9 +168,10 @@ public class Recorder extends Service {
          * accompanying output file and start the whole process. Give each bundle a maximum
          * duration. And create the output folder beforehand.
          */
-        Recording r = new Recording(output);
+        assert(rates.length==sensors.length);
 
-        for (int j=0; j<rates.length && j<sensors.length; j++) {
+        Recording r = new Recording(output);
+        for (int j=0; j<rates.length; j++) {
             try {
                 BufferedOutputStream bf =  new BufferedOutputStream(
                         new FileOutputStream(new File(output, sensors[j])));
@@ -168,6 +211,10 @@ public class Recorder extends Service {
     /** Copies *sensor* data for *dur* seconds at *rate* to a bufferedwriter *bf*. Automatically
      * closes the output buffer when done.
      *
+     * This is all done in binary float format, all the channels are recorded and the current
+     * accuracy of the process. For example the accelerometer reports all three axes, so one sample
+     * is 3 (channels) * 4 (bytes per float) + 4 (bytes for accuracy as float).
+     *
      * Arguments:
      *  sensor - a string representation for the sensor, must match Android Sensor types
      *  dur    - a double seconds of recording duration
@@ -177,32 +224,42 @@ public class Recorder extends Service {
      */
     protected class SensorProcess implements SensorEventListener {
         public static final int LATENCY_US = 5 * 60 * 1000 * 1000;
+        private float mAccuracy = SensorManager.SENSOR_STATUS_ACCURACY_LOW;
         private final SensorManager msm;
         private final double mRate;
         private final BufferedOutputStream mOut;
         private final double mDur;
         private final Recording mRecording;
+        private final Handler mTimeout;
         private ByteBuffer mBuf;
         private long mLastTimestamp = -1;
         private double mDiff = 0;
         private double mElapsed = 0;
 
-        public SensorProcess(String sensor, double rate, double dur, BufferedOutputStream bf, Recording r) throws Exception  {
+        public SensorProcess(String sensor, double rate, double dur,
+                             BufferedOutputStream bf, Recording r) throws Exception  {
             msm = (SensorManager) getSystemService(SENSOR_SERVICE);
             mRate = rate;
             mDur = dur;
             mOut = bf;
             mRecording = r;
             mRecording.add(this);
+            int maxreportdelay_us = Math.min((int) mDur * 1000 * 1000 / 2, LATENCY_US);
 
-            /* TODO settting maxreport to 5minutes can get problematic later for ffmpeg */
+            /* TODO setting maxreport to 5minutes can get problematic later for ffmpeg */
             Sensor s = getMatchingSensor(sensor);
             if (!msm.registerListener(this, s, (int) (1 / rate * 1000 * 1000),
-                         Math.min((int) mDur * 1000 * 1000 / 2, LATENCY_US)))
+                    maxreportdelay_us))
                 throw new Exception("unable to register sensor " + sensor);
+
+            /* have a timeout after the duration to flush the sensor and terminate the process
+             * afterwards. This is to avoid sensor that do not report data continuously. For example
+             * in the case of a failure condition */
+            mTimeout = new Handler();
+            mTimeout.postDelayed(mCallFlush, (long) (mDur*1000 + 30*1000));
         }
 
-        /** given a String tries to find a matching sensor given this ruleset:
+        /** given a String tries to find a matching sensor given these rules:
          *
          *   1. find all sensors which string description (getStringType()) contains the *sensor*
          *   2. choose the shortest one of that list
@@ -250,7 +307,7 @@ public class Recorder extends Service {
         @Override
         public void onSensorChanged(SensorEvent sensorEvent) {
             if (mBuf == null)
-                mBuf = ByteBuffer.allocate(sensorEvent.values.length * 4);
+                mBuf = ByteBuffer.allocate(sensorEvent.values.length * 4 + 1 * 4 );
 
             if (mLastTimestamp == -1) {
                 mLastTimestamp = sensorEvent.timestamp;
@@ -267,11 +324,12 @@ public class Recorder extends Service {
                 mDiff += (sensorEvent.timestamp - mLastTimestamp) * 1e-9;
 
                 /*
-                 * transfer a sensor sample
+                 * transfer a sensor sample and the current accuracy measure
                  */
                 mBuf.clear();
                 for (float v : sensorEvent.values)
                     mBuf.putFloat(v);
+                mBuf.putFloat(mAccuracy);
 
                 /*
                  * store it or multiple copies of the same, close when done.
@@ -280,11 +338,9 @@ public class Recorder extends Service {
                     mDiff -= 1 / mRate;
                     mElapsed += 1 / mRate;
 
-                    if (mElapsed > mDur+.5/mRate) {
-                        msm.unregisterListener(this);
-                        mOut.close();
-                        mRecording.remove(this);
-                    } else
+                    if (mElapsed > mDur+.5/mRate)
+                        terminate();
+                    else
                         mOut.write(mBuf.array());
                 }
 
@@ -294,8 +350,36 @@ public class Recorder extends Service {
             }
         }
 
+
         @Override
         public void onAccuracyChanged(Sensor sensor, int i) {
+            mAccuracy = (float) i;
+        }
+
+        private Runnable mCallFlush = new Runnable() {
+            @Override
+            public void run() {
+                msm.flush(SensorProcess.this);
+                // TODO 1sec for flushing? there is no way to know when flushing finished?!
+                mTimeout.postDelayed(mCallTerminate, 1000);
+            }
+        };
+
+        private final Runnable mCallTerminate = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SensorProcess.this.terminate();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        private void terminate() throws IOException {
+            msm.unregisterListener(this);
+            mOut.close();
+            mRecording.remove(this);
         }
     }
 
@@ -319,10 +403,19 @@ public class Recorder extends Service {
             mInputList.add(s);
         }
 
-        public void remove(SensorProcess s) {
+        public void remove(SensorProcess s) throws IOException {
             if(!mInputList.remove(s))
                 return;
-            
+
+            /* this is a special hack for completely failing sensors: terminate them as
+             * soon as another process terminates. */
+            for (Iterator<SensorProcess> it = mInputList.iterator(); it.hasNext();) {
+                SensorProcess p = it.next();
+
+                if (p.mElapsed == 0)
+                    it.remove();
+            }
+
             if (mInputList.size() == 0) {
                 Intent i = new Intent(FINISH_ACTION);
                 i.putExtra(FINISH_PATH, mOutputPath);
