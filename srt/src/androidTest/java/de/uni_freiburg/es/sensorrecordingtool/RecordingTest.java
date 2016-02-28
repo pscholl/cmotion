@@ -59,6 +59,7 @@ public class RecordingTest {
         } catch (FileNotFoundException e) {}
     }
 
+
     @Test public void recordingNoInputSupplied() throws InterruptedException {
         String result = callForError(i);
         Assert.assertTrue("no answer from Service", result != null);
@@ -85,7 +86,7 @@ public class RecordingTest {
         i.putExtra("-d", 5.0);
         i.putExtra("-r", 50.0);
 
-         String x = Build.MODEL;
+        String x = Build.MODEL;
 
         String result = callForResult(i);
         Assert.assertNotNull("timeout", result);
