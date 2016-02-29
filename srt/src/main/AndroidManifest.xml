@@ -14,14 +14,15 @@
         android:label="@string/app_name"
         android:supportsRtl="true">
 
-        <activity android:name=".PermissionDialog">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+        <activity android:name=".PermissionDialog"> </activity>
 
-        <service android:name=".Recorder">
+        <receiver android:name=".BroadcastReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.SENSOR_RECORD"/>
+            </intent-filter>
+        </receiver>
+
+        <service android:name=".Recorder" android:exported="true">
             <intent-filter>
                 <action android:name="senserec"/>
                 <action android:name="RECORD_ACTION_FORWARDED"/>
