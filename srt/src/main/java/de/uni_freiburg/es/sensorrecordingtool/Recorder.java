@@ -1,6 +1,8 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
 import android.Manifest;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -8,31 +10,24 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.Looper;
 import android.os.PowerManager;
-import android.provider.ContactsContract;
 import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import java.io.BufferedOutputStream;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -55,6 +50,8 @@ import java.util.TimeZone;
  * Created by phil on 2/22/16.
  */
 public class Recorder extends Service {
+    static final String TAG = Recorder.class.getName();
+
     /* designate the sensor you want to record, can either be a single String or a list thereof,
      * possible values are the String identifier of Android sensors, visible here:
       * https://developer.android.com/reference/android/hardware/Sensor.html
@@ -81,6 +78,13 @@ public class Recorder extends Service {
     static final String ERROR_REASON  = "error_reason";
     static final String FINISH_ACTION = "recorder_done";
     static final String FINISH_PATH   = "recording_path";
+
+    /* for handing over the cancel action from a notification */
+    static final String CANCEL_ACTION = "cancel";
+    static final String RECORDING_ID = "-r";
+
+    /* keep track of all running recordings */
+    private LinkedList<Recording> mRecordings = new LinkedList<>();
 
     /** called with the startService routine, will parse all RECORDER_INPUTs for known values
      *  and start the recording. If no RECORDER_OUTPUT directory is given it will default to
@@ -115,12 +119,36 @@ public class Recorder extends Service {
          * do this if not started by a forward from the WearForwarder
          */
         if (i.getAction() == null ||
-                !i.getAction().equalsIgnoreCase(WearForwarder.RECORD_ACTION_FORWARDED)) {
+            !i.getAction().equalsIgnoreCase(WearForwarder.RECORD_ACTION_FORWARDED)) {
             Intent fw = new Intent(this, WearForwarder.class);
             if (i.getExtras() != null) fw.putExtras(i.getExtras());
             startService(fw);
         }
 
+        /*
+         * terminate the recording right now, if the user wishes so.
+         */
+        if (i.getAction() != null &&
+            i.getAction().equalsIgnoreCase(CANCEL_ACTION)) {
+            int id = i.getIntExtra(RECORDING_ID, -1);
+
+            try {
+                Notification.cancelRecording(this, id);
+
+                Recording r = mRecordings.get(id);
+                for( Iterator<SensorProcess> it = r.mInputList.iterator(); it.hasNext(); ) {
+                    SensorProcess p = it.next();
+                    p.terminate();
+                }
+                Log.d(TAG, "terminated recording " + id);
+            } catch(IndexOutOfBoundsException e) {
+                Log.d(TAG, "unable to find recording with id " + id);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return START_NOT_STICKY;
+        }
 
         /*
          * check the output file
@@ -180,6 +208,12 @@ public class Recorder extends Service {
                 return error(sensors[j] + ": " + e.getLocalizedMessage());
             }
         }
+        mRecordings.add(r);
+
+        /*
+         * create the notification.
+         */
+        Notification.newRecording(this, mRecordings.indexOf(r), r);
 
         return START_NOT_STICKY;
     }
@@ -224,17 +258,17 @@ public class Recorder extends Service {
      */
     protected class SensorProcess implements SensorEventListener {
         public static final int LATENCY_US = 5 * 60 * 1000 * 1000;
-        private float mAccuracy = SensorManager.SENSOR_STATUS_ACCURACY_LOW;
-        private final SensorManager msm;
-        private final double mRate;
-        private final BufferedOutputStream mOut;
-        private final double mDur;
-        private final Recording mRecording;
-        private final Handler mTimeout;
-        private ByteBuffer mBuf;
-        private long mLastTimestamp = -1;
-        private double mDiff = 0;
-        private double mElapsed = 0;
+         float mAccuracy = SensorManager.SENSOR_STATUS_ACCURACY_LOW;
+         final SensorManager msm;
+         final double mRate;
+         final BufferedOutputStream mOut;
+         final double mDur;
+         final Recording mRecording;
+         final Handler mTimeout;
+         ByteBuffer mBuf;
+         long mLastTimestamp = -1;
+         double mDiff = 0;
+         double mElapsed = 0;
 
         public SensorProcess(String sensor, double rate, double dur,
                              BufferedOutputStream bf, Recording r) throws Exception  {
@@ -383,11 +417,11 @@ public class Recorder extends Service {
         }
     }
 
-    private class Recording {
-        private final String mOutputPath;
-        private final ArrayList<SensorProcess> mInputList;
-        private final PowerManager mpm;
-        private final PowerManager.WakeLock mwl;
+    public class Recording {
+        final String mOutputPath;
+        final ArrayList<SensorProcess> mInputList;
+        final PowerManager mpm;
+        final PowerManager.WakeLock mwl;
 
         public Recording(String output) {
             mOutputPath = output;

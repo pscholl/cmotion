@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">Sensor Recording Tool</string>
+    <string name="cancel_text">cancel recording</string>
+    <string name="notification_title">currently recording</string>
+    <string name="done_title">recording finished</string>
+    <string name="choose">open folder with</string>
+    <plurals name="notification_text">
+        <item quantity="one">%1$d sensor for %2$s</item>
+        <item quantity="few">%1$d sensors for %2$s</item>
+        <item quantity="other">%1$d sensors for %2$s</item>
+    </plurals>
 </resources>
