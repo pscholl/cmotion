@@ -26,7 +26,9 @@ public class PermissionDialog extends Activity{
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                            Manifest.permission.READ_EXTERNAL_STORAGE},
+                                 Manifest.permission.READ_EXTERNAL_STORAGE,
+                                 Manifest.permission.ACCESS_FINE_LOCATION,
+                                 Manifest.permission.ACCESS_COARSE_LOCATION},
                     PERMISSION_REQUEST);
         }
     }

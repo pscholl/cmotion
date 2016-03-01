@@ -6,7 +6,6 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
@@ -33,6 +32,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
+
+import de.uni_freiburg.es.sensorrecordingtool.sensors.Sensor;
 
 /**
  * A tool for recording arbitrary combinations of sensor attached and reachable via Android. The
@@ -259,21 +260,20 @@ public class Recorder extends Service {
      */
     protected class SensorProcess implements SensorEventListener {
         public static final int LATENCY_US = 5 * 60 * 1000 * 1000;
-         float mAccuracy = SensorManager.SENSOR_STATUS_ACCURACY_LOW;
-         final SensorManager msm;
-         final double mRate;
-         final BufferedOutputStream mOut;
-         final double mDur;
-         final Recording mRecording;
-         final Handler mTimeout;
-         ByteBuffer mBuf;
-         long mLastTimestamp = -1;
-         double mDiff = 0;
-         double mElapsed = 0;
+        final Sensor mSensor;
+        float mAccuracy = SensorManager.SENSOR_STATUS_ACCURACY_LOW;
+        final double mRate;
+        final BufferedOutputStream mOut;
+        final double mDur;
+        final Recording mRecording;
+        final Handler mTimeout;
+        ByteBuffer mBuf;
+        long mLastTimestamp = -1;
+        double mDiff = 0;
+        double mElapsed = 0;
 
         public SensorProcess(String sensor, double rate, double dur,
                              BufferedOutputStream bf, Recording r) throws Exception  {
-            msm = (SensorManager) getSystemService(SENSOR_SERVICE);
             mRate = rate;
             mDur = dur;
             mOut = bf;
@@ -282,16 +282,14 @@ public class Recorder extends Service {
             int maxreportdelay_us = Math.min((int) mDur * 1000 * 1000 / 2, LATENCY_US);
 
             /* TODO setting maxreport to 5minutes can get problematic later for ffmpeg */
-            Sensor s = getMatchingSensor(sensor);
-            if (!msm.registerListener(this, s, (int) (1 / rate * 1000 * 1000),
-                    maxreportdelay_us))
-                throw new Exception("unable to register sensor " + sensor);
+            mSensor = getMatchingSensor(sensor);
+            mSensor.registerListener(this, (int) (1 / rate * 1000 * 1000), maxreportdelay_us);
 
             /* have a timeout after the duration to flush the sensor and terminate the process
              * afterwards. This is to avoid sensor that do not report data continuously. For example
              * in the case of a failure condition */
             mTimeout = new Handler();
-            mTimeout.postDelayed(mCallFlush, (long) (mDur*1000 + 30*1000));
+            mTimeout.postDelayed(mCallFlush, (long) (mDur*1000) + 2000);
         }
 
         /** given a String tries to find a matching sensor given these rules:
@@ -309,7 +307,7 @@ public class Recorder extends Service {
         public Sensor getMatchingSensor(String sensor) throws Exception {
             LinkedList<Sensor> candidates = new LinkedList<>();
 
-            for (Sensor s : msm.getSensorList(Sensor.TYPE_ALL))
+            for (Sensor s : Sensor.getAvailableSensors(getApplicationContext()))
                 if (s.getStringType().toLowerCase().contains(sensor.toLowerCase()))
                     candidates.add(s);
 
@@ -373,9 +371,10 @@ public class Recorder extends Service {
                     mDiff -= 1 / mRate;
                     mElapsed += 1 / mRate;
 
-                    if (mElapsed > mDur+.5/mRate)
+                    if (mElapsed > mDur+.5/mRate) {
                         terminate();
-                    else
+                        return;
+                    } else
                         mOut.write(mBuf.array());
                 }
 
@@ -387,14 +386,14 @@ public class Recorder extends Service {
 
 
         @Override
-        public void onAccuracyChanged(Sensor sensor, int i) {
+        public void onAccuracyChanged(android.hardware.Sensor sensor, int i) {
             mAccuracy = (float) i;
         }
 
         private Runnable mCallFlush = new Runnable() {
             @Override
             public void run() {
-                msm.flush(SensorProcess.this);
+                mSensor.flush(SensorProcess.this);
                 // TODO 1sec for flushing? there is no way to know when flushing finished?!
                 mTimeout.postDelayed(mCallTerminate, 1000);
             }
@@ -412,7 +411,7 @@ public class Recorder extends Service {
         };
 
         private void terminate() throws IOException {
-            msm.unregisterListener(this);
+            mSensor.unregisterListener(this);
             mOut.close();
             mRecording.remove(this);
         }
