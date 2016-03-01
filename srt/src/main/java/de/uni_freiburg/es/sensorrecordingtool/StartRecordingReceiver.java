@@ -8,7 +8,7 @@ import android.content.Intent;
  *
  * Created by phil on 2/29/16.
  */
-public class BroadcastReceiver extends android.content.BroadcastReceiver {
+public class StartRecordingReceiver extends android.content.BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent == null)

@@ -16,12 +16,6 @@
 
         <activity android:name=".PermissionDialog"> </activity>
 
-        <receiver android:name=".BroadcastReceiver">
-            <intent-filter>
-                <action android:name="android.intent.action.SENSOR_RECORD"/>
-            </intent-filter>
-        </receiver>
-
         <service android:name=".Recorder" android:exported="true">
             <intent-filter>
                 <action android:name="senserec"/>
