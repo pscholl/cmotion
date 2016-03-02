@@ -72,13 +72,14 @@ public class WearForwarder extends WearableListenerService
 
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
-        Log.d(TAG, "message received" );
-
         if (!messageEvent.getPath().equalsIgnoreCase(WEAR_FORWARD_PATH))
             return;
 
         try {
-            Bundle bundle = fromJson(new JSONObject(new String(messageEvent.getData())));
+            JSONObject o = new JSONObject(new String(messageEvent.getData()));
+            Bundle bundle = fromJson(o);
+            Log.d(TAG, "rx'ed msg " + o.toString());
+
             Intent omgwtf = new Intent(this, Recorder.class);
             omgwtf.setAction(RECORD_ACTION_FORWARDED);
             omgwtf.putExtras(bundle);

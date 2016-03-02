@@ -2,6 +2,7 @@ package de.uni_freiburg.es.sensorrecordingtool;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -22,8 +23,7 @@ public class PermissionDialog extends Activity{
         super.onResume();
         Intent start = getIntent();
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
+        if (!externalStorage(this) || !location(this))  {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
                                  Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -31,6 +31,16 @@ public class PermissionDialog extends Activity{
                                  Manifest.permission.ACCESS_COARSE_LOCATION},
                     PERMISSION_REQUEST);
         }
+    }
+
+    public static boolean externalStorage(Context c) {
+        return ContextCompat.checkSelfPermission(c, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    public static boolean location(Context c) {
+        return ContextCompat.checkSelfPermission(c, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
     }
 
     @Override

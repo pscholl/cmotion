@@ -13,6 +13,10 @@ import android.support.v4.app.NotificationCompat;
 import android.text.format.DateUtils;
 import android.util.Log;
 
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Set;
+
 /**
  * This is just a placeholder for showing, hiding and updating the notification shown for
  * each recording process. Mainly to unclutter the code in the Recorder class.
@@ -21,6 +25,7 @@ import android.util.Log;
  */
 public class Notification {
     private static final long DELAY = 250;
+    static Set<Integer> isCanceled = new HashSet<>();
 
     static public void newRecording(final Context c, final int id, final Recorder.Recording r) {
         Intent cancel_intent = new Intent(c, Recorder.class);
@@ -56,7 +61,8 @@ public class Notification {
         mgr.notify(id, notification.build());
 
         /*
-         * also create a handler for updating the progress on the Recording
+         * also create a handler for updating the progress on the Recording, and make sure to
+         * stop updating was this recording has been canceled.
          */
         final Handler h = new Handler();
         h.postDelayed(new Runnable() {
@@ -74,17 +80,23 @@ public class Notification {
                 }
 
                 notification.setProgress((int) total, (int) done, false);
-                mgr.notify(id, notification.build());
+                if (!isCanceled.contains(id)) {
+                    mgr.notify(id, notification.build());
 
-                if (r.mInputList.size() != 0)
-                    h.postDelayed(this, DELAY);
+                    if (r.mInputList.size() != 0)
+                        h.postDelayed(this, DELAY);
+                }
 
             }
         }, DELAY);
+
+        if (isCanceled.contains(id))
+            isCanceled.remove(id);
     }
 
     public static void cancelRecording(Context c, int id) {
         NotificationManager mgr = (NotificationManager) c.getSystemService(c.NOTIFICATION_SERVICE);
+        isCanceled.add(id);
         mgr.cancel(id);
     }
 }

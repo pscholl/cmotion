@@ -6,9 +6,8 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
-    <!--
+    <!--    -->
     <uses-feature android:name="android.hardware.type.watch" android:required="true"/>
-    -->
 
     <application
         android:allowBackup="true"
@@ -26,6 +25,7 @@
         <service android:name=".Recorder" android:exported="true">
             <intent-filter>
                 <action android:name="senserec"/>
+                <action android:name="cancel"/>
                 <action android:name="RECORD_ACTION_FORWARDED"/>
             </intent-filter>
         </service>

@@ -147,11 +147,11 @@ public class RecordingTest {
     }
 
     private String callForError(Intent i) throws InterruptedException {
-        return callForResult(i, 2000, Recorder.ERROR_ACTION, Recorder.ERROR_REASON);
+        return callForResult(i, 15000, Recorder.ERROR_ACTION, Recorder.ERROR_REASON);
     }
 
     private String callForResult(Intent i) throws InterruptedException {
-        return callForResult(i, 10000, Recorder.FINISH_ACTION, Recorder.FINISH_PATH);
+        return callForResult(i, 15000, Recorder.FINISH_ACTION, Recorder.FINISH_PATH);
     }
 
     private String callForResult(Intent i, int ms, String action, final String extra)

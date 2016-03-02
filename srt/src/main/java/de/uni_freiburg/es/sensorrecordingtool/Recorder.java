@@ -107,8 +107,7 @@ public class Recorder extends Service {
          * permission currently the user will be bugged about it. And this service will be
          * restarted with a null action intent.
          */
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            != PackageManager.PERMISSION_GRANTED) {
+        if (!PermissionDialog.externalStorage(this) || !PermissionDialog.location(this)) {
             Intent diag = new Intent(this, PermissionDialog.class);
             if (i.getExtras() != null) diag.putExtras(i.getExtras());
             diag.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -120,8 +119,8 @@ public class Recorder extends Service {
          * make sure to forward this recording intent to all other in the Wear network, but only
          * do this if not started by a forward from the WearForwarder
          */
-        if (i.getAction() == null ||
-            !i.getAction().equalsIgnoreCase(WearForwarder.RECORD_ACTION_FORWARDED)) {
+        if (!WearForwarder.RECORD_ACTION_FORWARDED.equals(i.getAction()) ||
+             i.getAction() == null) {
             Intent fw = new Intent(this, WearForwarder.class);
             if (i.getExtras() != null) fw.putExtras(i.getExtras());
             startService(fw);
@@ -130,8 +129,7 @@ public class Recorder extends Service {
         /*
          * terminate the recording right now, if the user wishes so.
          */
-        if (i.getAction() != null &&
-            i.getAction().equalsIgnoreCase(CANCEL_ACTION)) {
+        if (CANCEL_ACTION.equals(i.getAction())) {
             int id = i.getIntExtra(RECORDING_ID, -1);
 
             try {
@@ -169,7 +167,7 @@ public class Recorder extends Service {
 
         /*
          * convert a single rate to an array, convert a single element array to a length
-         * matching the sensor input array, check whether length are macthing.
+         * matching the sensor input array, check whether lengths are matching.
          */
         if (rates == null)
             rates = new double[] {i.getDoubleExtra(RECORDER_RATE, 50)};
@@ -180,7 +178,7 @@ public class Recorder extends Service {
         }
 
         if (rates.length != sensors.length)
-            return error("either rates and sensors must be the same length or a single rate must be given");
+            return error("either rates and sensors must of same length or a single rate must be given");
 
         for (double r : rates)
             if (r <= 0)
@@ -200,14 +198,16 @@ public class Recorder extends Service {
          */
         assert(rates.length==sensors.length);
 
-        Recording r = new Recording(output);
+        Recording r = new Recording(output, duration);
         for (int j=0; j<rates.length; j++) {
             try {
                 BufferedOutputStream bf =  new BufferedOutputStream(
                         new FileOutputStream(new File(output, sensors[j])));
-                SensorProcess sp = new SensorProcess(sensors[j], rates[j], duration, bf, r);
+                SensorProcess sp = new SensorProcess(sensors[j], rates[j], duration, bf);
+                r.add(sp);
             } catch (Exception e) {
-                return error(sensors[j] + ": " + e.getLocalizedMessage());
+                error(sensors[j] + ": " + e.getLocalizedMessage());
+                /* we do best effort recordings */
             }
         }
         mRecordings.add(r);
@@ -230,8 +230,7 @@ public class Recorder extends Service {
         Intent err = new Intent(ERROR_ACTION);
         err.putExtra(ERROR_REASON, s);
         sendBroadcast(err);
-
-        System.err.println(s);
+        Log.e(TAG, s);
         return START_NOT_STICKY;
     }
 
@@ -265,31 +264,22 @@ public class Recorder extends Service {
         final double mRate;
         final BufferedOutputStream mOut;
         final double mDur;
-        final Recording mRecording;
-        final Handler mTimeout;
         ByteBuffer mBuf;
         long mLastTimestamp = -1;
         double mDiff = 0;
         double mElapsed = 0;
 
         public SensorProcess(String sensor, double rate, double dur,
-                             BufferedOutputStream bf, Recording r) throws Exception  {
+                             BufferedOutputStream bf) throws Exception  {
             mRate = rate;
             mDur = dur;
             mOut = bf;
-            mRecording = r;
-            mRecording.add(this);
+
             int maxreportdelay_us = Math.min((int) mDur * 1000 * 1000 / 2, LATENCY_US);
 
             /* TODO setting maxreport to 5minutes can get problematic later for ffmpeg */
             mSensor = getMatchingSensor(sensor);
             mSensor.registerListener(this, (int) (1 / rate * 1000 * 1000), maxreportdelay_us);
-
-            /* have a timeout after the duration to flush the sensor and terminate the process
-             * afterwards. This is to avoid sensor that do not report data continuously. For example
-             * in the case of a failure condition */
-            mTimeout = new Handler();
-            mTimeout.postDelayed(mCallFlush, (long) (mDur*1000) + 2000);
         }
 
         /** given a String tries to find a matching sensor given these rules:
@@ -311,8 +301,15 @@ public class Recorder extends Service {
                 if (s.getStringType().toLowerCase().contains(sensor.toLowerCase()))
                     candidates.add(s);
 
-            if (candidates.size() == 0)
-                throw new Exception("no matches for " + sensor + " found");
+            if (candidates.size() == 0) {
+                StringBuilder b = new StringBuilder();
+                for (Sensor s : Sensor.getAvailableSensors(getApplicationContext())) {
+                    b.append(s.getStringType());
+                    b.append("\n");
+                }
+                throw new Exception("no matches for " + sensor + " found."+
+                                    "Options are: \n"+b.toString());
+            }
 
             int minimum = Integer.MAX_VALUE;
 
@@ -330,8 +327,8 @@ public class Recorder extends Service {
                     b.append(s.getStringType());
                     b.append(", ");
                 }
-                throw new Exception("too many sensor candidates for " + sensor + " options are " +
-                        b.toString());
+                throw new Exception("too many sensor candidates for " + sensor +
+                        " options are " + b.toString());
             }
 
             return candidates.getFirst();
@@ -390,10 +387,61 @@ public class Recorder extends Service {
             mAccuracy = (float) i;
         }
 
+        private void terminate() throws IOException {
+            mSensor.unregisterListener(this);
+            mOut.close();
+        }
+    }
+
+    public class Recording {
+        final String mOutputPath;
+        final ArrayList<SensorProcess> mInputList;
+        final PowerManager mpm;
+        final PowerManager.WakeLock mwl;
+        final Handler mTimeout;
+
+        public Recording(String output, double duration) {
+            mOutputPath = output;
+            mInputList = new ArrayList<SensorProcess>();
+
+            mpm = (PowerManager) getSystemService(POWER_SERVICE);
+            mwl = mpm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, Integer.toString(this.hashCode()));
+
+            /* have a timeout after the duration to flush the sensor and terminate the process
+             * afterwards. This is to avoid sensor that do not report data continuously. For example
+             * in the case of a failure condition */
+            mTimeout = new Handler();
+            mTimeout.postDelayed(mCallFlush, (long) (duration*1000) + 2000);
+        }
+
+        public void add(SensorProcess s) {
+            if (mInputList.size() == 0)
+                mwl.acquire();
+            mInputList.add(s);
+        }
+
+        public void terminate() throws IOException {
+            /* this is a special hack for completely failing sensors: terminate them as
+             * soon as another process terminates. */
+            for (Iterator<SensorProcess> it = mInputList.iterator(); it.hasNext();) {
+                SensorProcess p = it.next();
+                p.terminate();
+                it.remove();
+            }
+
+            Intent i = new Intent(FINISH_ACTION);
+            i.putExtra(FINISH_PATH, mOutputPath);
+            sendBroadcast(i);
+            mwl.release();
+        }
+
+
         private Runnable mCallFlush = new Runnable() {
             @Override
             public void run() {
-                mSensor.flush(SensorProcess.this);
+                for (SensorProcess p : mInputList)
+                    p.mSensor.flush(p);
+
                 // TODO 1sec for flushing? there is no way to know when flushing finished?!
                 mTimeout.postDelayed(mCallTerminate, 1000);
             }
@@ -403,59 +451,11 @@ public class Recorder extends Service {
             @Override
             public void run() {
                 try {
-                    SensorProcess.this.terminate();
+                    terminate();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         };
-
-        private void terminate() throws IOException {
-            mSensor.unregisterListener(this);
-            mOut.close();
-            mRecording.remove(this);
-        }
-    }
-
-    public class Recording {
-        final String mOutputPath;
-        final ArrayList<SensorProcess> mInputList;
-        final PowerManager mpm;
-        final PowerManager.WakeLock mwl;
-
-        public Recording(String output) {
-            mOutputPath = output;
-            mInputList = new ArrayList<SensorProcess>();
-
-            mpm = (PowerManager) getSystemService(POWER_SERVICE);
-            mwl = mpm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, Integer.toString(this.hashCode()));
-        }
-
-        public void add(SensorProcess s) {
-            if (mInputList.size() == 0)
-                mwl.acquire();
-            mInputList.add(s);
-        }
-
-        public void remove(SensorProcess s) throws IOException {
-            if(!mInputList.remove(s))
-                return;
-
-            /* this is a special hack for completely failing sensors: terminate them as
-             * soon as another process terminates. */
-            for (Iterator<SensorProcess> it = mInputList.iterator(); it.hasNext();) {
-                SensorProcess p = it.next();
-
-                if (p.mElapsed == 0)
-                    it.remove();
-            }
-
-            if (mInputList.size() == 0) {
-                Intent i = new Intent(FINISH_ACTION);
-                i.putExtra(FINISH_PATH, mOutputPath);
-                sendBroadcast(i);
-                mwl.release();
-            }
-        }
     }
 }
