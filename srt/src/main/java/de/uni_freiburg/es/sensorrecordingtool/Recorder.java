@@ -97,7 +97,7 @@ public class Recorder extends Service {
         String[] sensors = i.getStringArrayExtra(RECORDER_INPUT);
         double[] rates   = i.getDoubleArrayExtra(RECORDER_RATE);
         String output    = i.getStringExtra(RECORDER_OUTPUT);
-        double duration  = i.getDoubleExtra(RECORDER_DURATION, 5);
+        float duration   = i.getFloatExtra(RECORDER_DURATION, 5);
 
         if (i == null)
             return START_NOT_STICKY;
