@@ -8,15 +8,20 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+
+import de.uni_freiburg.es.sensorrecordingtool.commands.startRecording;
 
 /** Just ask for the permission and restart the Recorder, now with hopefully
  * enabled permissions.
  *
  * Created by phil on 2/28/16.
  */
-public class PermissionDialog extends Activity{
+public class PermissionDialog extends AppCompatActivity
+    implements  ActivityCompat.OnRequestPermissionsResultCallback {
 
-    private static final int PERMISSION_REQUEST = 1234;
+    private static final int PERMISSION_REQUEST = 11;
 
     @Override
     protected void onResume() {
@@ -24,13 +29,13 @@ public class PermissionDialog extends Activity{
         Intent start = getIntent();
 
         if (!externalStorage(this) || !location(this))  {
-            ActivityCompat.requestPermissions(this,
+             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                                 Manifest.permission.READ_EXTERNAL_STORAGE,
-                                 Manifest.permission.ACCESS_FINE_LOCATION,
-                                 Manifest.permission.ACCESS_COARSE_LOCATION},
+                            Manifest.permission.READ_EXTERNAL_STORAGE,
+                            Manifest.permission.ACCESS_FINE_LOCATION,},
                     PERMISSION_REQUEST);
         }
+
     }
 
     public static boolean externalStorage(Context c) {
@@ -45,16 +50,28 @@ public class PermissionDialog extends Activity{
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] perms, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, perms, grantResults);
+        Log.d(Recorder.TAG, "onRequestPermissionsResult()");
 
-        for (int res : grantResults)
-            if (res != PackageManager.PERMISSION_GRANTED)
-                return;
+        if (requestCode != PERMISSION_REQUEST)
+            return;
 
-        Intent i = new Intent(this, Recorder.class);
-        if (getIntent().getExtras() != null)
-            i.putExtras(getIntent().getExtras());
-        startService(i);
         finish();
+
+        /*
+         * Location is optional, only check if we can write.
+         */
+        for (int i=0; i<perms.length; i++) {
+            String p = perms[i];
+            int resu = grantResults[i];
+
+            if (p.equals(Manifest.permission.WRITE_EXTERNAL_STORAGE) &&
+                resu == PackageManager.PERMISSION_GRANTED) {
+
+                Intent ii = new Intent(startRecording.ACTION);
+                if (getIntent().getExtras() != null)
+                    ii.putExtras(getIntent().getExtras());
+                sendBroadcast(ii);
+            }
+        }
     }
 }

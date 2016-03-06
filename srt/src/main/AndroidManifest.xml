@@ -6,17 +6,21 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
-    <!--    -->
+    <!--
     <uses-feature android:name="android.hardware.type.watch" android:required="true"/>
+ -->
 
     <application
         android:allowBackup="true"
         android:label="@string/app_name"
         android:supportsRtl="true">
 
-        <activity android:name=".PermissionDialog"> </activity>
+        <activity
+            android:name=".PermissionDialog"
+            android:theme="@style/Theme.AppCompat.Light"
+        />
 
-        <receiver android:name=".StartRecordingReceiver">
+        <receiver android:name=".commands.startRecording">
             <intent-filter>
                 <action android:name="android.intent.action.SENSOR_RECORD"/>
             </intent-filter>

@@ -73,7 +73,7 @@ public class Recorder extends Service {
     static final String RECORDER_OUTPUT = "-o";
 
     /* the main action for recording */
-    static final String RECORD_ACTION = "senserec";
+    public static final String RECORD_ACTION = "senserec";
 
     /* action for reporting error from the recorder service */
     static final String ERROR_ACTION  = "recorder_error";
@@ -107,23 +107,13 @@ public class Recorder extends Service {
          * permission currently the user will be bugged about it. And this service will be
          * restarted with a null action intent.
          */
-        if (!PermissionDialog.externalStorage(this) || !PermissionDialog.location(this)) {
+        if (!PermissionDialog.externalStorage(this)) {
             Intent diag = new Intent(this, PermissionDialog.class);
-            if (i.getExtras() != null) diag.putExtras(i.getExtras());
+            if (i.getExtras() != null)
+                diag.putExtras(i.getExtras());
             diag.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(diag);
             return START_NOT_STICKY;
-        }
-
-        /*
-         * make sure to forward this recording intent to all other in the Wear network, but only
-         * do this if not started by a forward from the WearForwarder
-         */
-        if (!WearForwarder.RECORD_ACTION_FORWARDED.equals(i.getAction()) ||
-             i.getAction() == null) {
-            Intent fw = new Intent(this, WearForwarder.class);
-            if (i.getExtras() != null) fw.putExtras(i.getExtras());
-            startService(fw);
         }
 
         /*
