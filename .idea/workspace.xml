@@ -52,15 +52,29 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="Recorder.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="Recorder.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/Recorder.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="1.8900862">
+            <state vertical-scroll-proportion="-28.290323">
               <caret line="109" column="51" selection-start-line="109" selection-start-column="51" selection-end-line="109" selection-end-column="51" />
               <folding>
                 <element signature="imports" expanded="true" />
                 <element signature="e#16743#16993#0" expanded="true" />
                 <element signature="e#16992#16993#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Notification.java" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/Notification.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.65656567">
+              <caret line="96" column="0" selection-start-line="96" selection-start-column="0" selection-end-line="96" selection-end-column="0" />
+              <folding>
+                <element signature="imports" expanded="true" />
+                <element signature="e#1963#2003#0" expanded="true" />
+                <element signature="e#2051#2156#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -3754,7 +3768,6 @@
         <option value="$PROJECT_DIR$/mobile/build.gradle" />
         <option value="$PROJECT_DIR$/srt/src/androidTest/java/de/uni_freiburg/es/sensorrecordingtool/ForwarderTest.java" />
         <option value="$PROJECT_DIR$/srt/src/androidTest/java/de/uni_freiburg/es/sensorrecordingtool/suite/Complete.java" />
-        <option value="$PROJECT_DIR$/srt/src/main/res/values/strings.xml" />
         <option value="$PROJECT_DIR$/mobile/src/main/AndroidManifest.xml" />
         <option value="$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/LocationSensor.java" />
         <option value="$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/BroadcastReceiver.java" />
@@ -3765,7 +3778,6 @@
         <option value="$PROJECT_DIR$/srt/build.gradle" />
         <option value="$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/sensors/Sensor.java" />
         <option value="$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/sensors/LocationSensor.java" />
-        <option value="$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/Notification.java" />
         <option value="$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/WearForwarder.java" />
         <option value="$PROJECT_DIR$/srt/src/androidTest/java/de/uni_freiburg/es/sensorrecordingtool/RecordingTest.java" />
         <option value="$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/StartRecordingReceiver.java" />
@@ -3774,6 +3786,8 @@
         <option value="$PROJECT_DIR$/srt/src/main/AndroidManifest.xml" />
         <option value="$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/PermissionDialog.java" />
         <option value="$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/Recorder.java" />
+        <option value="$PROJECT_DIR$/srt/src/main/res/values/strings.xml" />
+        <option value="$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/Notification.java" />
       </list>
     </option>
   </component>
@@ -3851,23 +3865,9 @@
               <option name="myItemId" value="res" />
               <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidResFolderNode" />
             </PATH_ELEMENT>
-          </PATH>
-          <PATH>
             <PATH_ELEMENT>
-              <option name="myItemId" value="cmotion" />
-              <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="srt" />
-              <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidModuleNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="java" />
-              <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidSourceTypeNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="sensorrecordingtool" />
-              <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidPsiDirectoryNode" />
+              <option name="myItemId" value="values" />
+              <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidResFolderTypeNode" />
             </PATH_ELEMENT>
           </PATH>
           <PATH>
@@ -3880,12 +3880,8 @@
               <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidModuleNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="java" />
-              <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidSourceTypeNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="sensorrecordingtool" />
-              <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidPsiDirectoryNode" />
+              <option name="myItemId" value="res" />
+              <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidResFolderNode" />
             </PATH_ELEMENT>
           </PATH>
           <PATH>
@@ -3900,14 +3896,6 @@
             <PATH_ELEMENT>
               <option name="myItemId" value="java" />
               <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidSourceTypeNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="sensorrecordingtool" />
-              <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="sensors" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
           <PATH>
@@ -3926,10 +3914,6 @@
             <PATH_ELEMENT>
               <option name="myItemId" value="sensorrecordingtool" />
               <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="commands" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
           <PATH>
@@ -4284,11 +4268,11 @@
       <window_info id="Android Model" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32994652" sideWeight="0.5" order="8" side_tool="true" content_ui="tabs" />
       <window_info id="Capture Analysis" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32897604" sideWeight="0.48449197" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Android Monitor" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.42810458" sideWeight="0.75721925" order="8" side_tool="false" content_ui="tabs" />
+      <window_info id="Android Monitor" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.42810458" sideWeight="0.75080216" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Captures" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.39760348" sideWeight="0.59358287" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.39760348" sideWeight="0.59090906" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="4" side_tool="true" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.42810458" sideWeight="0.24278075" order="9" side_tool="true" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.42810458" sideWeight="0.24919786" order="9" side_tool="true" content_ui="tabs" />
       <window_info id="Capture Tool" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Gradle Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32942098" sideWeight="0.50159365" order="11" side_tool="true" content_ui="tabs" />
@@ -4300,7 +4284,7 @@
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Application Servers" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="13" side_tool="false" content_ui="tabs" />
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.1973262" sideWeight="0.49591002" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.36601308" sideWeight="0.5743315" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.36601308" sideWeight="0.5716578" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -4327,7 +4311,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/Notification.java</url>
-          <line>97</line>
+          <line>95</line>
           <properties />
           <option name="timeStamp" value="130" />
         </line-breakpoint>
@@ -4590,14 +4574,6 @@
         <state />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/srt/src/main/res/values/strings.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-2.9310346">
-          <caret line="5" column="42" selection-start-line="5" selection-start-column="42" selection-end-line="5" selection-end-column="42" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/mobile/src/main/AndroidManifest.xml">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.24667473">
@@ -4677,12 +4653,14 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/Notification.java">
+    <entry file="file://$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/Recorder.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.35151514">
-          <caret line="30" column="0" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
+        <state vertical-scroll-proportion="-28.290323">
+          <caret line="109" column="51" selection-start-line="109" selection-start-column="51" selection-end-line="109" selection-end-column="51" />
           <folding>
             <element signature="imports" expanded="true" />
+            <element signature="e#16743#16993#0" expanded="true" />
+            <element signature="e#16992#16993#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -4703,14 +4681,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/sensors/LocationSensor.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="76" column="24" selection-start-line="76" selection-start-column="24" selection-end-line="76" selection-end-column="24" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/PermissionDialog.java">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
@@ -4719,14 +4689,30 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/Recorder.java">
+    <entry file="file://$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/sensors/LocationSensor.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="1.8900862">
-          <caret line="109" column="51" selection-start-line="109" selection-start-column="51" selection-end-line="109" selection-end-column="51" />
+        <state vertical-scroll-proportion="0.0">
+          <caret line="76" column="24" selection-start-line="76" selection-start-column="24" selection-end-line="76" selection-end-column="24" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/srt/src/main/res/values/strings.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.21888413">
+          <caret line="6" column="41" selection-start-line="6" selection-start-column="41" selection-end-line="6" selection-end-column="41" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/srt/src/main/java/de/uni_freiburg/es/sensorrecordingtool/Notification.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.65656567">
+          <caret line="96" column="0" selection-start-line="96" selection-start-column="0" selection-end-line="96" selection-end-column="0" />
           <folding>
             <element signature="imports" expanded="true" />
-            <element signature="e#16743#16993#0" expanded="true" />
-            <element signature="e#16992#16993#0" expanded="true" />
+            <element signature="e#1963#2003#0" expanded="true" />
+            <element signature="e#2051#2156#0" expanded="true" />
           </folding>
         </state>
       </provider>

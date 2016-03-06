@@ -1,20 +1,16 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
-import android.annotation.TargetApi;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Handler;
-import android.service.notification.StatusBarNotification;
 import android.support.v4.app.NotificationCompat;
 import android.text.format.DateUtils;
 import android.util.Log;
 
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Set;
 
 /**
@@ -25,6 +21,7 @@ import java.util.Set;
  */
 public class Notification {
     private static final long DELAY = 250;
+    private static final String RECORDING_GROUP_KEY = "recording_group_key";
     static Set<Integer> isCanceled = new HashSet<>();
 
     static public void newRecording(final Context c, final int id, final Recorder.Recording r) {
@@ -55,6 +52,7 @@ public class Notification {
                 .setContentIntent(openfolderp)
                 .setDeleteIntent(pending)
                 .setProgress(100, 0, false)
+                .setGroup(RECORDING_GROUP_KEY)
                 .addAction(cancel.build());
 
         final NotificationManager mgr = (NotificationManager) c.getSystemService(c.NOTIFICATION_SERVICE);
