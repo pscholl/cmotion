@@ -83,18 +83,18 @@ public class RecordingTest {
                 Sensor.STRING_TYPE_MAGNETIC_FIELD,
                 Sensor.STRING_TYPE_ROTATION_VECTOR
         });
-        i.putExtra("-d", 5.0);
-        i.putExtra("-r", 50.0);
+        i.putExtra("-d", 6.0f);
+        i.putExtra("-r", 40);
 
         String x = Build.MODEL;
 
         String result = callForResult(i);
         Assert.assertNotNull("timeout", result);
 
-        assertRecording(result, Sensor.STRING_TYPE_ACCELEROMETER, 50 * (3 + 1) * 4 * 5);
-        assertRecording(result, Sensor.STRING_TYPE_GYROSCOPE, 50 * (3 + 1) * 4 * 5);
-        assertRecording(result, Sensor.STRING_TYPE_MAGNETIC_FIELD, zeroWhenOnGradle(50 * (3 + 1) * 4 * 5));
-        assertRecording(result, Sensor.STRING_TYPE_ROTATION_VECTOR, 50 * (5+1) * 4 * 5);
+        assertRecording(result, Sensor.STRING_TYPE_ACCELEROMETER, 40 * (3 + 1) * 4 * 6);
+        assertRecording(result, Sensor.STRING_TYPE_GYROSCOPE, 40 * (3 + 1) * 4 * 6);
+        assertRecording(result, Sensor.STRING_TYPE_MAGNETIC_FIELD, zeroWhenOnGradle(40 * (3 + 1) * 4 * 6));
+        assertRecording(result, Sensor.STRING_TYPE_ROTATION_VECTOR, 40 * (5+1) * 4 * 6);
     }
 
     @Test public void doMultipleSensorsAndRates() throws InterruptedException {

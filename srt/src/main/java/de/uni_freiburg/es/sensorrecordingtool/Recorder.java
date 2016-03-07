@@ -95,9 +95,9 @@ public class Recorder extends Service {
     @Override
     public int onStartCommand(Intent i, int flags, int startId) {
         String[] sensors = i.getStringArrayExtra(RECORDER_INPUT);
-        double[] rates   = i.getDoubleArrayExtra(RECORDER_RATE);
         String output    = i.getStringExtra(RECORDER_OUTPUT);
-        float duration   = i.getFloatExtra(RECORDER_DURATION, 5);
+        double[] rates   = getIntFloatOrDoubleArray(i, RECORDER_RATE, 50.);
+        double duration  = getIntFloatOrDouble(i, RECORDER_DURATION, 5.);
 
         if (i == null)
             return START_NOT_STICKY;
@@ -159,9 +159,6 @@ public class Recorder extends Service {
          * convert a single rate to an array, convert a single element array to a length
          * matching the sensor input array, check whether lengths are matching.
          */
-        if (rates == null)
-            rates = new double[] {i.getDoubleExtra(RECORDER_RATE, 50)};
-
         if (rates.length == 1) {
             rates = Arrays.copyOf(rates, sensors.length);
             Arrays.fill(rates, rates[0]);
@@ -208,6 +205,48 @@ public class Recorder extends Service {
         Notification.newRecording(this, mRecordings.indexOf(r), r);
 
         return START_NOT_STICKY;
+    }
+
+    public static double[] getIntFloatOrDoubleArray(Intent i, String extra, double def) {
+        int iarr[] = i.getIntArrayExtra(extra);
+        float farr[] = i.getFloatArrayExtra(extra);
+        double darr[] = i.getDoubleArrayExtra(extra);
+
+        if (darr != null)
+            return darr;
+
+        if (farr != null) {
+            double out[] = new double[farr.length];
+            for (int j=0; j<out.length; j++)
+                out[j] = farr[j];
+            return out;
+        }
+
+        if (iarr != null) {
+            double out[] = new double[farr.length];
+            for (int j=0; j<out.length; j++)
+                out[j] = iarr[j];
+            return out;
+        }
+
+        return new double[]{getIntFloatOrDouble(i,extra,def)};
+    }
+
+    public static double getIntFloatOrDouble(Intent i, String extra, double def) {
+        int ivalue = i.getIntExtra(extra, -1);
+        float fvalue = i.getFloatExtra(extra, -1);
+        double dvalue = i.getDoubleExtra(extra, -1);
+
+        if (dvalue != -1)
+            return dvalue;
+
+        if (fvalue != -1)
+            return fvalue;
+
+        if (ivalue != -1)
+            return ivalue;
+
+        return def;
     }
 
     @Nullable

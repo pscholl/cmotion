@@ -15,6 +15,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import de.uni_freiburg.es.sensorrecordingtool.PermissionDialog;
+
 /**
  * The Location API wrapped for the Sensor API.
  *
@@ -24,6 +26,7 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
 
     protected final GoogleApiClient mGoogleApiClient;
     protected final LinkedList<ParameterizedListener> mListeners;
+    protected final Context mContext;
     protected Location mLastLocation = new Location("empty");
     private boolean mConnected = false;
 
@@ -32,6 +35,8 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
                 .addConnectionCallbacks(this)
                 .addApi(LocationServices.API)
                 .build();
+
+        mContext = c;
 
         mListeners = new LinkedList<ParameterizedListener>();
         mLastLocation.setLatitude(-1);
@@ -46,6 +51,9 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     @Override
     public void registerListener(SensorEventListener l, int rate, int delay) {
         mListeners.add(new ParameterizedListener(l, rate/1000, delay/1000));
+
+        if (!PermissionDialog.location(mContext))
+            return;
 
         if (mListeners.size() > 0)
             mGoogleApiClient.connect();
