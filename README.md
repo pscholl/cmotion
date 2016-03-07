@@ -69,3 +69,7 @@
 ## Notifcations
 
  Notifications on both the Wearable and the Smartphone will be displayed throughout a recordings session. Dismissing the notification, as well as pressing cancel, will cancel the current recording and only what has been recorded so far will be left over.
+
+## Gotchas
+
+ The broadcast receiver does not receive the above mentioned when the package has been just installed. In order for it to work the application must have been started at least once!
