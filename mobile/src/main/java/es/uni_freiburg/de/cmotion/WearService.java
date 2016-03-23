@@ -28,7 +28,6 @@ public class WearService extends Service implements GoogleApiClient.ConnectionCa
     private GoogleApiClient mApiClient;
     private static final String MESSAGE_API_PATH = "ROTATION_VECTOR_MESSAGE";
     private ArrayList<String> mWearableIdentifcations = new ArrayList<String>();
-    private long mStarttime;
 
     @Nullable
     @Override
@@ -48,8 +47,6 @@ public class WearService extends Service implements GoogleApiClient.ConnectionCa
                 .addApi(Wearable.API)
                 .build();
         mApiClient.connect();
-
-        mStarttime = System.currentTimeMillis();
 
         return super.onStartCommand(intent, flags, startId);
     }
@@ -81,7 +78,6 @@ public class WearService extends Service implements GoogleApiClient.ConnectionCa
                 UDPTransport.getInstance().send(
                         ByteBuffer.allocate(6 * 4).order(ByteOrder.LITTLE_ENDIAN)
                                 .putInt(mWearableIdentifcations.indexOf(id) + 1)
-                                .putInt((int) (System.currentTimeMillis() - mStarttime))
                                 .put(messageEvent.getData())
                                 .array());
             }

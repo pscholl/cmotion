@@ -23,7 +23,6 @@ public class LocalSensorService extends Service  implements SensorEventListener 
     private int mID = 0;
     private long mStarttime;
 
-
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         mStarttime = System.currentTimeMillis();

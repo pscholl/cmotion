@@ -35,6 +35,7 @@ public class CMotionWearActivity extends Activity implements GoogleApiClient.Con
     private Handler mHandler;
     private TextView mMediumText;
     private long mCounter = 0;
+    private long mStarttime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +44,7 @@ public class CMotionWearActivity extends Activity implements GoogleApiClient.Con
         mProgressBar = (ProgressBar) findViewById(R.id.progress);
         mLargeText = (TextView) findViewById(R.id.largetext);
         mMediumText = (TextView) findViewById(R.id.medtext);
+        mStarttime = System.currentTimeMillis();
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
@@ -133,7 +135,8 @@ public class CMotionWearActivity extends Activity implements GoogleApiClient.Con
         float[] rot = new float[4];
         SensorManager.getQuaternionFromVector(rot, sensorEvent.values);
         Wearable.MessageApi.sendMessage(mApiClient, mTargetNode, MESSAGE_API_PATH,
-                ByteBuffer.allocate(4 * 4).order(ByteOrder.LITTLE_ENDIAN)
+                ByteBuffer.allocate(4 * 5).order(ByteOrder.LITTLE_ENDIAN)
+                        .putInt((int) (System.currentTimeMillis() - mStarttime))
                         .putFloat(rot[0]) // q
                         .putFloat(rot[1]) // x
                         .putFloat(rot[2]) // y
