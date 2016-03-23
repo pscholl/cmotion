@@ -48,19 +48,20 @@ public class UDPTransport extends Thread {
 
         @Override
         public void run() {
-            try {
-                while (mIsSending) {
+            while (mIsSending) {
+                try {
                     byte[] buf = q.takeLast();
                     packet.setData(buf);
                     packet.setLength(buf.length);
                     socket.send(packet);
-                }
-            } catch (Exception e) {
-                try {
-                    socket = new DatagramSocket();
-                    packet = new DatagramPacket(new byte[]{}, 0, mAdress, mPort);
-                } catch (SocketException e1) {
-                    e1.printStackTrace();
+                } catch (Exception e) {
+                    try {
+                        socket = new DatagramSocket();
+                        packet = new DatagramPacket(new byte[]{}, 0, mAdress, mPort);
+                        e.printStackTrace();
+                    } catch (SocketException e1) {
+                        e1.printStackTrace();
+                    }
                 }
             }
         }
