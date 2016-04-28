@@ -57,6 +57,7 @@ public abstract class Sensor {
 
         result.add(new LocationSensor(c));
         result.add(new VideoSensor(c));
+        //result.add(new AudioSensor(c));
         return result;
     }
 

@@ -185,7 +185,7 @@ public class Recorder extends Service {
 
                 SensorProcess sp;
 
-                if (sensors[j].contains("video"))
+                if (sensors[j].contains("video") || sensors[j].contains("audio"))
                     sp = new BlockSensorProcess(sensors[j], rates[j], duration, bf);
                 else
                     sp = new SensorProcess(sensors[j], rates[j], duration, bf);
@@ -473,7 +473,8 @@ public class Recorder extends Service {
             Intent i = new Intent(FINISH_ACTION);
             i.putExtra(FINISH_PATH, mOutputPath);
             sendBroadcast(i);
-            mwl.release();
+            if (mwl.isHeld())
+                mwl.release();
         }
 
 
