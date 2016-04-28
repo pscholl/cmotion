@@ -66,45 +66,61 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
         mSurface.getHolder().addCallback(this);
     }
 
+    public void stopRecording() {
+        if (mCamera != null) {
+            mCamera.setPreviewCallback(null);
+            mCamera.stopPreview();
+            mCamera.release();
+            mCamera = null;
+        }
+    }
+
 
     protected Camera.PreviewCallback preview = new Camera.PreviewCallback() {
         @Override
         public void onPreviewFrame(byte[] bytes, Camera camera) {
             BlockSensorEvent e = (BlockSensorEvent) mEvent;
-            e.rawdata = bytes;
             e.timestamp = System.currentTimeMillis() * 1000 * 1000;
+            e.rawdata = bytes;
             notifyListeners();
         }
+
+        // Default format is YCbCr'NV21
     };
 
     @Override
     public void unregisterListener(SensorEventListener l) {
         super.unregisterListener(l);
 
-        if (mListeners.size() == 0)
-            ;
+        if (mListeners.size() == 0) {
+            try {
+                WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
+                wm.removeView(mSurface);
+            } catch(Exception e) {}
+        }
     }
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
         Camera.Parameters p = null;
-
         try {
             mCamera = Camera.open();
             p = mCamera.getParameters();
             p.setPreviewFpsRange(mRateInMilliHz, mRateInMilliHz);
+            //p.setPreviewSize(640,480);
             mCamera.setParameters(p);
+
+            Log.d(TAG, "starting recording with pixel format " + p.getPictureFormat());
+            Log.d(TAG, "resolution " + p.getPreviewSize().width + "x" + p.getPreviewSize().height);
 
             mCamera.setPreviewDisplay(mSurface.getHolder());
             mCamera.setPreviewCallback(preview);
             mCamera.startPreview();
 
         } catch(Exception e) {
-            if (mCamera == null) {
-                Log.d(TAG, "unable to get camera object");
-                mCamera.stopPreview();
-                mCamera.release();
-            } else {
+            stopRecording();
+
+            if (mCamera != null) {
                 Log.d(TAG, e.toString());
                 Log.d(TAG, "available rates are:");
 
@@ -117,12 +133,11 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
     }
 
     @Override
-    public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
-
-    }
+    public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) { }
 
     @Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
-
+        mSurface.getHolder().removeCallback(this);
+        stopRecording();
     }
 }

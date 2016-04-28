@@ -58,20 +58,24 @@ public class VideoTest {
     }
 
 
-    @Test public void recordingNoInputSupplied() throws InterruptedException {
-        String result = callForError(i);
-        Assert.assertTrue("no answer from Service", result != null);
-        Assert.assertEquals("error msg", "no input supplied", result);
-    }
-
     @Test public void doRecordingOnDefaultCamera() throws InterruptedException {
         i.putExtra("-i", "video");
         i.putExtra("-r", 15.);
         i.putExtra("-d", 5.0);
         String result = callForResult(i);
         Assert.assertNotNull("timeout before completion", result);
-        assertRecording(result, "video", 100 * (3 + 1) * 4 * 5);
+        assertRecording(result, "video", (int) (15*5 * (1920*1080*1.5)));
     }
+
+    @Test public void doVideoAndOtherSensor() throws InterruptedException {
+        i.putExtra("-i", "video accelerometer".split(" "));
+        i.putExtra("-r", new double[] {15., 50.});
+        i.putExtra("-d", 5.0);
+        String result = callForResult(i);
+        Assert.assertNotNull("timeout before completion", result);
+        assertRecording(result, "video", (int) (15*5 * (1920*1080*1.5)));
+    }
+
 
     /* we assume that some models are residing on their magnetized charging gradle while plugged
      * in. The magnetometer will not return any data in this case, which is why we have this corner-
