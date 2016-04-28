@@ -1,6 +1,8 @@
 package es.uni_freiburg.de.cmotion;
 
 import android.app.Activity;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -15,7 +17,9 @@ import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
@@ -36,6 +40,7 @@ public class CMotionWearActivity extends Activity implements GoogleApiClient.Con
     private TextView mMediumText;
     private long mCounter = 0;
     private long mStarttime;
+    private int mOutstandig = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,7 +71,7 @@ public class CMotionWearActivity extends Activity implements GoogleApiClient.Con
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         mSensorManager.registerListener(this,
                 mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),
-                SensorManager.SENSOR_DELAY_GAME, 0);
+                20*1000, 0);
 
         mHandler = new Handler();
         super.onResume();
@@ -134,14 +139,25 @@ public class CMotionWearActivity extends Activity implements GoogleApiClient.Con
 
         float[] rot = new float[4];
         SensorManager.getQuaternionFromVector(rot, sensorEvent.values);
-        Wearable.MessageApi.sendMessage(mApiClient, mTargetNode, MESSAGE_API_PATH,
-                ByteBuffer.allocate(4 * 5).order(ByteOrder.LITTLE_ENDIAN)
-                        .putInt((int) (System.currentTimeMillis() - mStarttime))
-                        .putFloat(rot[0]) // q
-                        .putFloat(rot[1]) // x
-                        .putFloat(rot[2]) // y
-                        .putFloat(rot[3]) // z
-                        .array());
+        if (mOutstandig < 3) {
+            PendingResult<MessageApi.SendMessageResult> result;
+            result = Wearable.MessageApi.sendMessage(mApiClient, mTargetNode, MESSAGE_API_PATH,
+                    ByteBuffer.allocate(4 * 5).order(ByteOrder.LITTLE_ENDIAN)
+                            .putInt((int) (System.currentTimeMillis() - mStarttime))
+                            .putFloat(rot[0]) // q
+                            .putFloat(rot[1]) // x
+                            .putFloat(rot[2]) // y
+                            .putFloat(rot[3]) // z
+                            .array());
+
+            result.setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+                @Override
+                public void onResult(MessageApi.SendMessageResult result) {
+                    mOutstandig--;
+                }
+            });
+            mOutstandig++;
+        }
 
         mCounter++;
     }

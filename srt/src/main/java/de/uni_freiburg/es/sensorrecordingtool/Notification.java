@@ -22,7 +22,7 @@ import java.util.Set;
 public class Notification {
     private static final long DELAY = 250;
     private static final String RECORDING_GROUP_KEY = "recording_group_key";
-    static Set<Integer> isCanceled = new HashSet<>();
+    static Set<Integer> isCanceled = new HashSet<Integer>();
 
     static public void newRecording(final Context c, final int id, final Recorder.Recording r) {
         Intent cancel_intent = new Intent(c, Recorder.class);

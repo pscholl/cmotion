@@ -1,21 +1,13 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
-import android.Manifest;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
-import android.support.annotation.Nullable;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationManagerCompat;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 import java.io.BufferedOutputStream;
@@ -30,7 +22,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.TimeZone;
 
 import de.uni_freiburg.es.sensorrecordingtool.sensors.Sensor;
@@ -86,7 +77,7 @@ public class Recorder extends Service {
     static final String RECORDING_ID = "-r";
 
     /* keep track of all running recordings */
-    private LinkedList<Recording> mRecordings = new LinkedList<>();
+    private LinkedList<Recording> mRecordings = new LinkedList<Recording>();
 
     /** called with the startService routine, will parse all RECORDER_INPUTs for known values
      *  and start the recording. If no RECORDER_OUTPUT directory is given it will default to
@@ -190,19 +181,19 @@ public class Recorder extends Service {
             try {
                 BufferedOutputStream bf =  new BufferedOutputStream(
                         new FileOutputStream(new File(output, sensors[j])));
+
                 SensorProcess sp = new SensorProcess(sensors[j], rates[j], duration, bf);
+
                 r.add(sp);
+                mRecordings.add(r);
+
+                /** create the notification. */
+                Notification.newRecording(this, mRecordings.indexOf(r), r);
             } catch (Exception e) {
                 error(sensors[j] + ": " + e.getLocalizedMessage());
                 /* we do best effort recordings */
             }
         }
-        mRecordings.add(r);
-
-        /*
-         * create the notification.
-         */
-        Notification.newRecording(this, mRecordings.indexOf(r), r);
 
         return START_NOT_STICKY;
     }
@@ -249,7 +240,6 @@ public class Recorder extends Service {
         return def;
     }
 
-    @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         return null;
@@ -324,7 +314,7 @@ public class Recorder extends Service {
          * @throws Exception when no or multiple matches are found
          */
         public Sensor getMatchingSensor(String sensor) throws Exception {
-            LinkedList<Sensor> candidates = new LinkedList<>();
+            LinkedList<Sensor> candidates = new LinkedList<Sensor>();
 
             for (Sensor s : Sensor.getAvailableSensors(getApplicationContext()))
                 if (s.getStringType().toLowerCase().contains(sensor.toLowerCase()))

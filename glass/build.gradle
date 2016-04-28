@@ -8,7 +8,7 @@ repositories {
 }
 
 android {
-    compileSdkVersion "Google Inc.:Glass Development Kit Preview:19"
+    compileSdkVersion 'Google Inc.:Glass Development Kit Preview:19'
     buildToolsVersion "23.0.1"
 
     defaultConfig {
@@ -33,4 +33,5 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile project(':srt')
 }

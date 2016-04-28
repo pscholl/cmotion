@@ -1,18 +1,13 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
-import android.app.Service;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.IBinder;
-import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.Result;
 import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.NodeApi;
@@ -22,7 +17,6 @@ import com.google.android.gms.wearable.WearableListenerService;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.w3c.dom.Node;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -38,7 +32,7 @@ public class WearForwarder extends WearableListenerService
     private static final String WEAR_FORWARD_PATH = "/senserec_wear";
     private static final String TAG = WearForwarder.class.getName();
     private GoogleApiClient mGoogleApiClient;
-    private LinkedList<Intent> mQ = new LinkedList<>();
+    private LinkedList<Intent> mQ = new LinkedList<Intent>();
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -196,7 +190,7 @@ public class WearForwarder extends WearableListenerService
     }
 
     @Override
-    public void onConnected(@Nullable Bundle bundle) { forwardNextIntent(); }
+    public void onConnected(Bundle bundle) { forwardNextIntent(); }
 
     @Override
     public void onConnectionSuspended(int i) { }

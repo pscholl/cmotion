@@ -1,7 +1,8 @@
 package de.uni_freiburg.es.sensorrecordingtool.sensors;
 
 import android.content.Context;
-import android.hardware.*;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
 import android.location.Location;
 import android.os.Bundle;
 
@@ -25,20 +26,15 @@ import de.uni_freiburg.es.sensorrecordingtool.PermissionDialog;
 public class LocationSensor extends Sensor implements GoogleApiClient.ConnectionCallbacks, LocationListener {
 
     protected final GoogleApiClient mGoogleApiClient;
-    protected final LinkedList<ParameterizedListener> mListeners;
-    protected final Context mContext;
     protected Location mLastLocation = new Location("empty");
     private boolean mConnected = false;
 
     public LocationSensor(Context c) {
+        super(c, 4);
         mGoogleApiClient = new GoogleApiClient.Builder(c)
                 .addConnectionCallbacks(this)
                 .addApi(LocationServices.API)
                 .build();
-
-        mContext = c;
-
-        mListeners = new LinkedList<ParameterizedListener>();
         mLastLocation.setLatitude(-1);
         mLastLocation.setLongitude(-1);
     }
@@ -49,8 +45,19 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     }
 
     @Override
+    public void unregisterListener(SensorEventListener l) {
+        super.unregisterListener(l);
+
+        if (mListeners.size() == 0 && mConnected) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+            mGoogleApiClient.disconnect();
+            mConnected = false;
+        }
+    }
+
+    @Override
     public void registerListener(SensorEventListener l, int rate, int delay) {
-        mListeners.add(new ParameterizedListener(l, rate/1000, delay/1000));
+        super.registerListener(l,rate,delay);
 
         if (!PermissionDialog.location(mContext))
             return;
@@ -62,34 +69,7 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     }
 
     @Override
-    public void unregisterListener(SensorEventListener l) {
-        for( Iterator<ParameterizedListener> it = mListeners.iterator(); it.hasNext(); ) {
-            ParameterizedListener pl = it.next();
-            if (pl.l.equals(l)) it.remove();
-        }
-
-        if (mListeners.size() == 0 && mConnected) {
-            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
-            mGoogleApiClient.disconnect();
-            mConnected = false;
-        }
-    }
-
-    @Override
-    public void flush(SensorEventListener l) {
-        notifyListeners();
-    }
-
-    @Override
-    public void onConnected(Bundle bundle) {
-        Location l =  LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-        if (l!=null) mLastLocation = l;
-        mConnected = true;
-        notifyListeners();
-        onNewListener();
-    }
-
-    private void onNewListener() {
+    protected void onNewListener() {
         if (!mConnected)
             return;
 
@@ -108,52 +88,30 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,req,this);
     }
 
-    private void notifyListeners() {
-        try {         // XXX yay for nice permissions
-            Class<?> c = Class.forName(SensorEvent.class.getCanonicalName());
-            Constructor<?> co = c.getDeclaredConstructors()[0];
-            co.setAccessible(true);
-            SensorEvent ev = (SensorEvent) co.newInstance(4);
-
-            ev.timestamp = System.currentTimeMillis() * 1000 * 1000;
-            ev.values[0] = (float) mLastLocation.getLatitude();
-            ev.values[1] = (float) mLastLocation.getLongitude();
-            ev.values[2] = (float) mLastLocation.getAltitude();
-            ev.values[3] = (float) mLastLocation.getAccuracy();
-
-            for (ParameterizedListener pl : mListeners)
-                pl.l.onSensorChanged(ev);
-
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        }
+    @Override
+    public void onConnected(Bundle bundle) {
+        Location l =  LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        if (l!=null) mLastLocation = l;
+        mConnected = true;
+        notifyListeners();
+        onNewListener();
     }
 
     @Override
     public void onConnectionSuspended(int i) {
-
     }
 
     @Override
     public void onLocationChanged(Location location) {
         if (location != null)
             mLastLocation = location;
-    }
 
-    private class ParameterizedListener {
-        public ParameterizedListener(SensorEventListener li, int r, int d) {
-            l = li;
-            rate = r;
-            delay = d;
-        }
+        mEvent.timestamp = System.currentTimeMillis() * 1000 * 1000;
+        mEvent.values[0] = (float) mLastLocation.getLatitude();
+        mEvent.values[1] = (float) mLastLocation.getLongitude();
+        mEvent.values[2] = (float) mLastLocation.getAltitude();
+        mEvent.values[3] = (float) mLastLocation.getAccuracy();
 
-        SensorEventListener l;
-        int rate, delay;
+        notifyListeners();
     }
 }

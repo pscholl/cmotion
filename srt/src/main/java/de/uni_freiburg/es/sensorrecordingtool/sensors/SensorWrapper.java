@@ -1,7 +1,8 @@
 package de.uni_freiburg.es.sensorrecordingtool.sensors;
 
 import android.content.Context;
-import android.hardware.*;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 
 /**
  * A wrapper for the Android Sensor class.
@@ -13,9 +14,11 @@ public class SensorWrapper extends Sensor {
     protected final SensorManager mSensorMgr;
 
     public SensorWrapper(Context c, android.hardware.Sensor s) {
+        super(c,0);
         mSensorMgr = (SensorManager) c.getSystemService(Context.SENSOR_SERVICE);
         mSensor = s;
     }
+
 
     @Override
     public String getStringType() {
