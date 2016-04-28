@@ -69,7 +69,7 @@ public class RecordingTest {
         String result = callForResult(i);
         Assert.assertNotNull("timeout before completion", result);
 
-        assertRecording(result, "accelerometer", 100 * (3 + 1) * 4 * 5);
+        assertRecording(result, "accelerometer", 100 * (3) * 4 * 5);
     }
 
      @Test public void doMultipleSensors() throws InterruptedException {
@@ -87,10 +87,10 @@ public class RecordingTest {
         String result = callForResult(i);
         Assert.assertNotNull("timeout", result);
 
-        assertRecording(result, Sensor.STRING_TYPE_ACCELEROMETER, 40 * (3 + 1) * 4 * 6);
-        assertRecording(result, Sensor.STRING_TYPE_GYROSCOPE, 40 * (3 + 1) * 4 * 6);
-        assertRecording(result, Sensor.STRING_TYPE_MAGNETIC_FIELD, zeroWhenOnGradle(40 * (3 + 1) * 4 * 6));
-        assertRecording(result, Sensor.STRING_TYPE_ROTATION_VECTOR, 40 * (5+1) * 4 * 6);
+        assertRecording(result, Sensor.STRING_TYPE_ACCELEROMETER, 40 * (3) * 4 * 6);
+        assertRecording(result, Sensor.STRING_TYPE_GYROSCOPE, 40 * (3) * 4 * 6);
+        assertRecording(result, Sensor.STRING_TYPE_MAGNETIC_FIELD, zeroWhenOnGradle(40 * (3) * 4 * 6));
+        assertRecording(result, Sensor.STRING_TYPE_ROTATION_VECTOR, 40 * (5) * 4 * 6);
     }
 
     @Test public void doMultipleSensorsAndRates() throws InterruptedException {
@@ -106,10 +106,10 @@ public class RecordingTest {
         String result = callForResult(i);
         Assert.assertNotNull("timeout", result);
 
-        assertRecording(result, Sensor.STRING_TYPE_ACCELEROMETER, 25 * (3+1) * 4 * 5);
-        assertRecording(result, Sensor.STRING_TYPE_GYROSCOPE, 50*(3+1)*4*5);
-        assertRecording(result, Sensor.STRING_TYPE_MAGNETIC_FIELD, zeroWhenOnGradle(75*(3+1)*4*5));
-        assertRecording(result, Sensor.STRING_TYPE_ROTATION_VECTOR, 100*(5+1)*4*5);
+        assertRecording(result, Sensor.STRING_TYPE_ACCELEROMETER, 25 * (3) * 4 * 5);
+        assertRecording(result, Sensor.STRING_TYPE_GYROSCOPE, 50*(3)*4*5);
+        assertRecording(result, Sensor.STRING_TYPE_MAGNETIC_FIELD, zeroWhenOnGradle(75*(3)*4*5));
+        assertRecording(result, Sensor.STRING_TYPE_ROTATION_VECTOR, 100*(5)*4*5);
     }
 
     @Test public void doLocationTest() throws InterruptedException {
@@ -118,7 +118,7 @@ public class RecordingTest {
         String result = callForResult(i);
         Assert.assertNotNull("timeout", result);
 
-        assertRecording(result, "location", 50*(4+1)*4*5);
+        assertRecording(result, "location", 50*(4)*4*5);
     }
 
     /* we assume that some models are residing on their magnetized charging gradle while plugged

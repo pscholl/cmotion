@@ -136,44 +136,4 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
 
     }
-
-    private class DummyTexture extends TextureView implements TextureView.SurfaceTextureListener {
-
-        public DummyTexture() {
-            super(mContext);
-        }
-
-        @Override
-        public void onSurfaceTextureAvailable(SurfaceTexture surface, int i, int i1) {
-            Camera.Size previewSize = mCamera.getParameters().getPreviewSize();
-            setLayoutParams(new FrameLayout.LayoutParams(
-                previewSize.width, previewSize.height, Gravity.CENTER));
-
-            try{
-              mCamera.setPreviewTexture(surface);
-                mCamera.setPreviewCallback(preview);
-
-            } catch (IOException t) {
-                Log.d(TAG, t.toString());
-            }
-
-            mCamera.startPreview();
-            this.setVisibility(INVISIBLE); // Make the surface invisible as soon as it is created
-        }
-
-        @Override
-        public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
-
-        }
-
-        @Override
-        public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
-            return true;
-        }
-
-        @Override
-        public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-
-        }
-    }
 }

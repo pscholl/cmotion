@@ -279,7 +279,6 @@ public class Recorder extends Service {
     protected class SensorProcess implements SensorEventListener {
         public static final int LATENCY_US = 5 * 60 * 1000 * 1000;
         final Sensor mSensor;
-        float mAccuracy = SensorManager.SENSOR_STATUS_ACCURACY_LOW;
         final double mRate;
         final BufferedOutputStream mOut;
         final double mDur;
@@ -356,7 +355,7 @@ public class Recorder extends Service {
         @Override
         public void onSensorChanged(SensorEvent sensorEvent) {
             if (mBuf == null)
-                mBuf = ByteBuffer.allocate(sensorEvent.values.length * 4 + 1 * 4 );
+                mBuf = ByteBuffer.allocate(sensorEvent.values.length * 4);
 
             if (mLastTimestamp == -1) {
                 mLastTimestamp = sensorEvent.timestamp;
@@ -378,7 +377,6 @@ public class Recorder extends Service {
                 mBuf.clear();
                 for (float v : sensorEvent.values)
                     mBuf.putFloat(v);
-                mBuf.putFloat(mAccuracy);
 
                 /*
                  * store it or multiple copies of the same, close when done.
@@ -403,7 +401,6 @@ public class Recorder extends Service {
 
         @Override
         public void onAccuracyChanged(android.hardware.Sensor sensor, int i) {
-            mAccuracy = (float) i;
         }
 
         private void terminate() throws IOException {
