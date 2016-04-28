@@ -2,6 +2,7 @@ package de.uni_freiburg.es.sensorrecordingtool;
 
 import android.app.Service;
 import android.content.Intent;
+import android.hardware.BlockSensorEvent;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
@@ -182,7 +183,12 @@ public class Recorder extends Service {
                 BufferedOutputStream bf =  new BufferedOutputStream(
                         new FileOutputStream(new File(output, sensors[j])));
 
-                SensorProcess sp = new SensorProcess(sensors[j], rates[j], duration, bf);
+                SensorProcess sp;
+
+                if (sensors[j].contains("video"))
+                    sp = new BlockSensorProcess(sensors[j], rates[j], duration, bf);
+                else
+                    sp = new SensorProcess(sensors[j], rates[j], duration, bf);
 
                 r.add(sp);
                 mRecordings.add(r);
@@ -354,9 +360,6 @@ public class Recorder extends Service {
 
         @Override
         public void onSensorChanged(SensorEvent sensorEvent) {
-            if (mBuf == null)
-                mBuf = ByteBuffer.allocate(sensorEvent.values.length * 4);
-
             if (mLastTimestamp == -1) {
                 mLastTimestamp = sensorEvent.timestamp;
                 return;
@@ -374,9 +377,7 @@ public class Recorder extends Service {
                 /*
                  * transfer a sensor sample and the current accuracy measure
                  */
-                mBuf.clear();
-                for (float v : sensorEvent.values)
-                    mBuf.putFloat(v);
+                byte[] arr = transfer(sensorEvent);
 
                 /*
                  * store it or multiple copies of the same, close when done.
@@ -389,13 +390,25 @@ public class Recorder extends Service {
                         terminate();
                         return;
                     } else
-                        mOut.write(mBuf.array());
+                        mOut.write(arr);
                 }
 
                 mLastTimestamp = sensorEvent.timestamp;
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+
+        public byte[] transfer(SensorEvent sensorEvent) {
+            if (mBuf == null)
+                mBuf = ByteBuffer.allocate(sensorEvent.values.length * 4);
+            else
+                mBuf.clear();
+
+            for (float v : sensorEvent.values)
+                mBuf.putFloat(v);
+
+            return mBuf.array();
         }
 
 
@@ -406,6 +419,18 @@ public class Recorder extends Service {
         private void terminate() throws IOException {
             mSensor.unregisterListener(this);
             mOut.close();
+        }
+    }
+
+    protected class BlockSensorProcess extends SensorProcess {
+        public BlockSensorProcess(String sensor, double rate, double dur, BufferedOutputStream bf) throws Exception {
+            super(sensor, rate, dur, bf);
+        }
+
+        @Override
+        public byte[] transfer(SensorEvent sensorEvent) {
+            BlockSensorEvent b = (BlockSensorEvent) sensorEvent;
+            return ((BlockSensorEvent) sensorEvent).rawdata;
         }
     }
 

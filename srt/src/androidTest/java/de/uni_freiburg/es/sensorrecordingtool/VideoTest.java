@@ -67,7 +67,7 @@ public class VideoTest {
     @Test public void doRecordingOnDefaultCamera() throws InterruptedException {
         i.putExtra("-i", "video");
         i.putExtra("-r", 15.);
-        i.putExtra("-d", 50.0);
+        i.putExtra("-d", 5.0);
         String result = callForResult(i);
         Assert.assertNotNull("timeout before completion", result);
         assertRecording(result, "video", 100 * (3 + 1) * 4 * 5);
