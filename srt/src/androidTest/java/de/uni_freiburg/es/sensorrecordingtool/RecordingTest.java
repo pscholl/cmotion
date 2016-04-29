@@ -74,10 +74,10 @@ public class RecordingTest {
 
      @Test public void doMultipleSensors() throws InterruptedException {
         i.putExtra(Recorder.RECORDER_INPUT, new String[]{
-                Sensor.STRING_TYPE_ACCELEROMETER,
-                Sensor.STRING_TYPE_GYROSCOPE,
-                Sensor.STRING_TYPE_MAGNETIC_FIELD,
-                Sensor.STRING_TYPE_ROTATION_VECTOR
+                "acc",
+                "gyr",
+                "mag",
+                "rot"
         });
         i.putExtra("-d", 6.0f);
         i.putExtra("-r", 40);
@@ -87,18 +87,18 @@ public class RecordingTest {
         String result = callForResult(i);
         Assert.assertNotNull("timeout", result);
 
-        assertRecording(result, Sensor.STRING_TYPE_ACCELEROMETER, 40 * (3) * 4 * 6);
-        assertRecording(result, Sensor.STRING_TYPE_GYROSCOPE, 40 * (3) * 4 * 6);
-        assertRecording(result, Sensor.STRING_TYPE_MAGNETIC_FIELD, zeroWhenOnGradle(40 * (3) * 4 * 6));
-        assertRecording(result, Sensor.STRING_TYPE_ROTATION_VECTOR, 40 * (5) * 4 * 6);
+        assertRecording(result, "acc", 40 * (3) * 4 * 6);
+        assertRecording(result, "gyr", 40 * (3) * 4 * 6);
+        assertRecording(result, "mag", zeroWhenOnGradle(40 * (3) * 4 * 6));
+        assertRecording(result, "rot", 40 * (5) * 4 * 6);
     }
 
     @Test public void doMultipleSensorsAndRates() throws InterruptedException {
         i.putExtra(Recorder.RECORDER_INPUT, new String[]{
-                Sensor.STRING_TYPE_ACCELEROMETER,
-                Sensor.STRING_TYPE_GYROSCOPE,
-                Sensor.STRING_TYPE_MAGNETIC_FIELD,
-                Sensor.STRING_TYPE_ROTATION_VECTOR
+                "acc",
+                "gyr",
+                "mag",
+                "rot"
         });
         i.putExtra("-d", 5.0);
         i.putExtra("-r", new double[]{25.0, 50.0, 75.0, 100.0});
@@ -106,10 +106,10 @@ public class RecordingTest {
         String result = callForResult(i);
         Assert.assertNotNull("timeout", result);
 
-        assertRecording(result, Sensor.STRING_TYPE_ACCELEROMETER, 25 * (3) * 4 * 5);
-        assertRecording(result, Sensor.STRING_TYPE_GYROSCOPE, 50*(3)*4*5);
-        assertRecording(result, Sensor.STRING_TYPE_MAGNETIC_FIELD, zeroWhenOnGradle(75*(3)*4*5));
-        assertRecording(result, Sensor.STRING_TYPE_ROTATION_VECTOR, 100*(5)*4*5);
+        assertRecording(result, "acc", 25 * (3) * 4 * 5);
+        assertRecording(result, "gyr", 50*(3)*4*5);
+        assertRecording(result, "mag", zeroWhenOnGradle(75*(3)*4*5));
+        assertRecording(result, "rot", 100*(5)*4*5);
     }
 
     @Test public void doLocationTest() throws InterruptedException {

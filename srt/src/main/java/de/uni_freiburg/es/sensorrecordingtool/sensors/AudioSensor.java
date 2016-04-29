@@ -1,29 +1,13 @@
 package de.uni_freiburg.es.sensorrecordingtool.sensors;
 
 import android.content.Context;
-import android.graphics.PixelFormat;
-import android.hardware.BlockSensorEvent;
-import android.hardware.Camera;
-import android.hardware.SensorEventListener;
 import android.media.MediaRecorder;
-import android.os.Looper;
 import android.os.ParcelFileDescriptor;
-import android.provider.MediaStore;
-import android.util.Log;
-import android.view.Gravity;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
-import android.view.WindowManager;
 
-import java.io.BufferedInputStream;
-import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.channels.Selector;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import de.uni_freiburg.es.sensorrecordingtool.PermissionDialog;
 
 /** Not wokring at all.
  *
@@ -41,7 +25,6 @@ public class AudioSensor extends Sensor {
     public AudioSensor(Context c) {
         super(c, 1);
         context = c;
-        mEvent = new BlockSensorEvent();
         mRecord = new MediaRecorder();
         mTimer = new Timer();
     }
@@ -53,8 +36,8 @@ public class AudioSensor extends Sensor {
 
     @Override
     public void registerListener(SensorEventListener l, int rate_in_mus, int delay) {
-        if (!PermissionDialog.camera(context))
-            return;
+        //if (!PermissionDialog.camera(context))
+        //    return;
 
         if (mListeners.size() == 0) {
             mRateinMus = rate_in_mus;
@@ -78,7 +61,7 @@ public class AudioSensor extends Sensor {
             mTimer.cancel();
             mTimer = new Timer();
             mTimer.scheduleAtFixedRate(readInputStream, 500, mRateinMus/1000);
-            ((BlockSensorEvent) mEvent).rawdata = new byte[sampling_rate];
+            mEvent.rawdata = new byte[sampling_rate];
             mRecord.prepare();
             mRecord.start();
         } catch (IOException e) {
@@ -90,9 +73,8 @@ public class AudioSensor extends Sensor {
         @Override
         public void run() {
             try {
-                BlockSensorEvent e = (BlockSensorEvent) mEvent;
-                e.timestamp = System.currentTimeMillis() * 1000 * 1000;
-                mInputStream.read(e.rawdata, 0, e.rawdata.length);
+                mEvent.timestamp = System.currentTimeMillis() * 1000 * 1000;
+                mInputStream.read(mEvent.rawdata, 0, mEvent.rawdata.length);
                 notifyListeners();
             } catch (IOException e1) {
                 e1.printStackTrace();

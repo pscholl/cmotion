@@ -21,8 +21,21 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".PermissionDialog"
+        />
+
         <service android:name=".LocalSensorService"></service>
         <service android:name=".WearService"></service>
+
+        <!-- this one will be started from the Recorder service -->
+        <service android:name=".WearForwarder">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <action android:name="com.google.android.gms.wearable.BIND_LISTENER"/>
+                <action android:name="android.intent.action.SENSOR_RECORD_WEAR"/>
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

@@ -1,4 +1,4 @@
-package de.uni_freiburg.es.sensorrecordingtool;
+package es.uni_freiburg.de.cmotion;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -20,6 +20,8 @@ import org.json.JSONObject;
 
 import java.util.Iterator;
 import java.util.LinkedList;
+
+import de.uni_freiburg.es.sensorrecordingtool.Recorder;
 
 /** A Service which is responsible for forwarding recording Intents to the Services running on
  * the Wear Device.

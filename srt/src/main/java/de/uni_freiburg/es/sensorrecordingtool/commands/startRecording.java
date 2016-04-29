@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 
 import de.uni_freiburg.es.sensorrecordingtool.Recorder;
-import de.uni_freiburg.es.sensorrecordingtool.WearForwarder;
 
 /**
  * A Broadcast receiver that calls the correct services.
@@ -13,6 +12,7 @@ import de.uni_freiburg.es.sensorrecordingtool.WearForwarder;
  */
 public class startRecording extends android.content.BroadcastReceiver {
     public static final String ACTION = "android.intent.action.SENSOR_RECORD";
+    public static final String WEAR_ACTION = "android.intent.action.SENSOR_RECORD_WEAR";
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -23,21 +23,22 @@ public class startRecording extends android.content.BroadcastReceiver {
          * create a service intent
          */
         Intent service = new Intent();
-        intent.setAction(startRecording.ACTION);
+        service.setAction(startRecording.ACTION);
 
         if (intent.getExtras() != null)
             service.putExtras(intent.getExtras());
-
-        /*
-         * forward to Wear network
-         */
-        service.setClass(context, WearForwarder.class);
-        context.startService(service);
 
         /*
          * start local service
          */
         service.setClass(context, Recorder.class);
         context.startService(service);
+
+        /*
+         * forward to Wear network, to not bind to the WearForward Service, which needs to be in a
+         * different module, so we can target API 19 here, we just sent a broadcast intent.
+         */
+        service.setAction(startRecording.WEAR_ACTION);
+        context.sendBroadcast(service);
     }
 }

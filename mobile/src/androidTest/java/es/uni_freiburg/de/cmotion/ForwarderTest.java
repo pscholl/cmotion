@@ -1,4 +1,4 @@
-package de.uni_freiburg.es.sensorrecordingtool;
+package es.uni_freiburg.de.cmotion;
 
 import android.os.Bundle;
 

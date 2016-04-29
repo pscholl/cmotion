@@ -3,7 +3,6 @@ package de.uni_freiburg.es.sensorrecordingtool.suite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
-import de.uni_freiburg.es.sensorrecordingtool.ForwarderTest;
 import de.uni_freiburg.es.sensorrecordingtool.RecordingTest;
 import de.uni_freiburg.es.sensorrecordingtool.VideoTest;
 
@@ -13,7 +12,6 @@ import de.uni_freiburg.es.sensorrecordingtool.VideoTest;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         RecordingTest.class,
-        ForwarderTest.class,
         VideoTest.class
 })
 public class Complete {

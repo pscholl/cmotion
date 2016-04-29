@@ -1,8 +1,6 @@
 package de.uni_freiburg.es.sensorrecordingtool.sensors;
 
 import android.content.Context;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
 import android.location.Location;
 import android.os.Bundle;
 
@@ -10,13 +8,6 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Iterator;
-import java.util.LinkedList;
-
-import de.uni_freiburg.es.sensorrecordingtool.PermissionDialog;
 
 /**
  * The Location API wrapped for the Sensor API.
@@ -59,8 +50,8 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     public void registerListener(SensorEventListener l, int rate, int delay) {
         super.registerListener(l,rate,delay);
 
-        if (!PermissionDialog.location(mContext))
-            return;
+        //if (!PermissionDialog.location(mContext))
+        //    return;
 
         if (mListeners.size() > 0)
             mGoogleApiClient.connect();
@@ -91,14 +82,18 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     @Override
     public void onConnected(Bundle bundle) {
         Location l =  LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-        if (l!=null) mLastLocation = l;
         mConnected = true;
-        notifyListeners();
         onNewListener();
+        if (l!=null) onLocationChanged(l);
     }
 
     @Override
     public void onConnectionSuspended(int i) {
+    }
+
+    @Override
+    public void flush(SensorEventListener l) {
+        onLocationChanged(mLastLocation);
     }
 
     @Override

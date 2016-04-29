@@ -1,12 +1,12 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 'Google Inc.:Google APIs:23'
+    compileSdkVersion 'Google Inc.:Google APIs (ARM System Image):19'
     buildToolsVersion "23.0.1"
 
     defaultConfig {
-        minSdkVersion 21
-        targetSdkVersion 21
+        minSdkVersion 19
+        targetSdkVersion 19
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -21,14 +21,9 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.android.support:appcompat-v7:23+'
-    compile 'com.google.android.support:wearable:1.3.0'
-    compile 'com.google.android.gms:play-services-wearable:+'
-    compile 'com.android.support:support-v4:23+'
-    compile 'com.google.android.gms:play-services-location:+'
-
-
-    androidTestCompile 'junit:junit:4.12'
-    androidTestCompile 'com.android.support.test:runner:0.4.1'
-    androidTestCompile 'com.android.support.test:rules:0.4.1'
+    compile 'com.android.support:appcompat-v7:19+'
+    compile 'com.google.android.gms:play-services-location:8.3+'
+    androidTestCompile 'junit:junit:4+'
+    androidTestCompile 'com.android.support.test:runner:0.4+'
+    androidTestCompile 'com.android.support.test:rules:0.4+'
 }

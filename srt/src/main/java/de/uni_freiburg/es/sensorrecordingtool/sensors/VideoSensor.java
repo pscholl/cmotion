@@ -2,16 +2,12 @@ package de.uni_freiburg.es.sensorrecordingtool.sensors;
 
 import android.content.Context;
 import android.graphics.PixelFormat;
-import android.hardware.Camera;
-import android.hardware.SensorEventListener;
-import android.hardware.BlockSensorEvent;
+import android.hardware.*;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.WindowManager;
-
-import de.uni_freiburg.es.sensorrecordingtool.PermissionDialog;
 
 /** Grabs frames at the specified videorate and returns them in raw format at maximum
  * resolution as sensorevents.
@@ -29,7 +25,7 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
     public VideoSensor(Context c) {
         super(c, 1);
         context = c;
-        mEvent = new BlockSensorEvent();
+        mEvent = new SensorEvent(0);
     }
 
     @Override
@@ -39,8 +35,8 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
 
     @Override
     public void registerListener(SensorEventListener l, int rate_in_mus, int delay) {
-        if (!PermissionDialog.camera(context))
-            return;
+        //if (!PermissionDialog.camera(context))
+        //    return;
 
         if (mListeners.size() == 0) {
             mRateInMilliHz = (int) (1000 * 1000 / rate_in_mus) * 1000;
@@ -79,9 +75,8 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
     protected Camera.PreviewCallback preview = new Camera.PreviewCallback() {
         @Override
         public void onPreviewFrame(byte[] bytes, Camera camera) {
-            BlockSensorEvent e = (BlockSensorEvent) mEvent;
-            e.timestamp = System.currentTimeMillis() * 1000 * 1000;
-            e.rawdata = bytes;
+            mEvent.timestamp = System.currentTimeMillis() * 1000 * 1000;
+            mEvent.rawdata = bytes;
             notifyListeners();
         }
 

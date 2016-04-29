@@ -1,4 +1,4 @@
-package de.uni_freiburg.es.sensorrecordingtool;
+package es.uni_freiburg.de.cmotion;
 
 import android.Manifest;
 import android.content.Context;
@@ -7,7 +7,6 @@ import android.content.pm.PackageManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 
 import de.uni_freiburg.es.sensorrecordingtool.commands.startRecording;
 
@@ -54,8 +53,6 @@ public class PermissionDialog extends AppCompatActivity
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] perms, int[] grantResults) {
-        Log.d(Recorder.TAG, "onRequestPermissionsResult()");
-
         if (requestCode != PERMISSION_REQUEST)
             return;
 

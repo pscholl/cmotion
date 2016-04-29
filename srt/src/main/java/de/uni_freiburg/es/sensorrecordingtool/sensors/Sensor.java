@@ -1,12 +1,8 @@
 package de.uni_freiburg.es.sensorrecordingtool.sensors;
 
 import android.content.Context;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -25,21 +21,7 @@ public abstract class Sensor {
     public Sensor(Context context, int num) {
         mContext = context;
         mListeners = new LinkedList<ParameterizedListener>();
-
-        try {         // XXX yay for nice permissions
-            Class<?> c = Class.forName(SensorEvent.class.getCanonicalName());
-            Constructor<?> co = c.getDeclaredConstructors()[0];
-            co.setAccessible(true);
-            mEvent = (SensorEvent) co.newInstance(num);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        }
+        mEvent = new SensorEvent(4);
     }
 
     public abstract String getStringType();

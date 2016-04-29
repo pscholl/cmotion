@@ -2,10 +2,6 @@ package de.uni_freiburg.es.sensorrecordingtool;
 
 import android.app.Service;
 import android.content.Intent;
-import android.hardware.BlockSensorEvent;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
@@ -26,6 +22,8 @@ import java.util.LinkedList;
 import java.util.TimeZone;
 
 import de.uni_freiburg.es.sensorrecordingtool.sensors.Sensor;
+import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEvent;
+import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEventListener;
 
 /**
  * A tool for recording arbitrary combinations of sensor attached and reachable via Android. The
@@ -98,7 +96,6 @@ public class Recorder extends Service {
          * make sure that we have permission to write the external folder, if we do not have
          * permission currently the user will be bugged about it. And this service will be
          * restarted with a null action intent.
-         */
         if (!PermissionDialog.externalStorage(this)) {
             Intent diag = new Intent(this, PermissionDialog.class);
             if (i.getExtras() != null)
@@ -107,6 +104,7 @@ public class Recorder extends Service {
             startActivity(diag);
             return START_NOT_STICKY;
         }
+         */
 
         /*
          * terminate the recording right now, if the user wishes so.
@@ -197,6 +195,7 @@ public class Recorder extends Service {
                 Notification.newRecording(this, mRecordings.indexOf(r), r);
             } catch (Exception e) {
                 error(sensors[j] + ": " + e.getLocalizedMessage());
+                e.printStackTrace();
                 /* we do best effort recordings */
             }
         }
@@ -411,11 +410,6 @@ public class Recorder extends Service {
             return mBuf.array();
         }
 
-
-        @Override
-        public void onAccuracyChanged(android.hardware.Sensor sensor, int i) {
-        }
-
         private void terminate() throws IOException {
             mSensor.unregisterListener(this);
             mOut.close();
@@ -429,8 +423,7 @@ public class Recorder extends Service {
 
         @Override
         public byte[] transfer(SensorEvent sensorEvent) {
-            BlockSensorEvent b = (BlockSensorEvent) sensorEvent;
-            return ((BlockSensorEvent) sensorEvent).rawdata;
+            return sensorEvent.rawdata;
         }
     }
 
