@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.Camera;
 import android.hardware.Sensor;
 import android.os.BatteryManager;
 import android.os.Build;
@@ -34,12 +35,18 @@ public class VideoTest {
     private Intent i;
     private String o;
     private static int count = 0;
+    private Camera.Size mSize;
 
     @Before public void setup() {
         c = InstrumentationRegistry.getTargetContext();
         i = new Intent(c, Recorder.class);
         o = Recorder.getDefaultOutputPath() + Integer.toString(count++);
         i.putExtra("-o", o);
+
+        Camera cam = Camera.open();
+        Camera.Parameters p = cam.getParameters();
+        mSize = p.getPreviewSize();
+        cam.release();
     }
 
     public void delete(File f) throws FileNotFoundException {
@@ -64,7 +71,7 @@ public class VideoTest {
         i.putExtra("-d", 5.0);
         String result = callForResult(i);
         Assert.assertNotNull("timeout before completion", result);
-        assertRecording(result, "video", (int) (15*5 * (1920*1080*1.5)));
+        assertRecording(result, "video", (int) (15*5 * (mSize.width*mSize.height*1.5)));
     }
 
     @Test public void doVideoAndOtherSensor() throws InterruptedException {
@@ -73,7 +80,7 @@ public class VideoTest {
         i.putExtra("-d", 5.0);
         String result = callForResult(i);
         Assert.assertNotNull("timeout before completion", result);
-        assertRecording(result, "video", (int) (15*5 * (1920*1080*1.5)));
+        assertRecording(result, "video", (int) (15*5 * (mSize.width*mSize.height*1.5)));
     }
 
 
