@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.TimeZone;
 
+import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.Sensor;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEvent;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEventListener;
@@ -63,7 +64,7 @@ public class Recorder extends Service {
     static final String RECORDER_OUTPUT = "-o";
 
     /* the main action for recording */
-    public static final String RECORD_ACTION = "senserec";
+    public static final String RECORD_ACTION = ForwardedUtils.RECORD_ACTION;
 
     /* action for reporting error from the recorder service */
     static final String ERROR_ACTION  = "recorder_error";

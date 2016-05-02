@@ -1,0 +1,25 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="de.uni_freiburg.es.intentforwarder">
+
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+
+
+    <application
+        android:allowBackup="true"
+        android:label="@string/app_name"
+        android:supportsRtl="true">
+
+        <service android:name=".IntentForwarderService"
+            android:exported="true">
+        </service>
+
+        <receiver android:name=".IntentForwarder">
+            <intent-filter>
+                <action android:name="android.bluetooth.adapter.action.CONNECTION_STATE_CHANGED"/>
+                <action android:name="senserec"/>
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

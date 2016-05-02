@@ -7,6 +7,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
 
+import de.uni_freiburg.es.intentforwarder.IntentForwarderService;
+import de.uni_freiburg.es.sensorrecordingtool.Recorder;
+
 
 public class CMotionActivity extends Activity {
 
@@ -15,6 +18,10 @@ public class CMotionActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_cmotion);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        /** just make sure that the IntentForwarderService is eventually started */
+        Intent i = new Intent(this, IntentForwarderService.class);
+        startService(i);
     }
 
     @Override

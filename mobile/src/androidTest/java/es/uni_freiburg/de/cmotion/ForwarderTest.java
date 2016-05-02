@@ -7,6 +7,8 @@ import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
+
 /**
  * Functional test for some of the functions in the Wearforwarder.
  *
@@ -15,7 +17,7 @@ import org.junit.Test;
 public class ForwarderTest {
     @Test public void testFromJson() throws JSONException {
         JSONObject o = new JSONObject().put("-i", "acceleration").put("-r", 1.);
-        Bundle b = WearForwarder.fromJson(o);
+        Bundle b = ForwardedUtils.fromJson(o);
         Assert.assertEquals("acceleration", b.get("-i"));
         Assert.assertEquals(1., b.getDouble("-r"), 1e8);
     }
@@ -26,7 +28,7 @@ public class ForwarderTest {
         JSONObject o = new JSONObject()
                 .put("-i", JSONObject.wrap(sarr))
                 .put("-r", JSONObject.wrap(darr));
-        Bundle b = WearForwarder.fromJson(o);
+        Bundle b = ForwardedUtils.fromJson(o);
         Assert.assertArrayEquals(sarr, b.getStringArray("-i"));
         Assert.assertArrayEquals(darr, b.getDoubleArray("-r"), 1e-8);
     }
@@ -37,7 +39,7 @@ public class ForwarderTest {
         Bundle b = new Bundle();
         b.putStringArray("-i", sarr);
         b.putDoubleArray("-r", darr);
-        b = WearForwarder.fromJson(WearForwarder.toJson(b));
+        b = ForwardedUtils.fromJson(ForwardedUtils.toJson(b));
         Assert.assertArrayEquals(sarr, b.getStringArray("-i"));
         Assert.assertArrayEquals(darr, b.getDoubleArray("-r"), 1e-8);
     }

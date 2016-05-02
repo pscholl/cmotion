@@ -14,13 +14,12 @@ import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 
+import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
 import de.uni_freiburg.es.sensorrecordingtool.Recorder;
 
 /** A Service which is responsible for forwarding recording Intents to the Services running on
@@ -30,7 +29,6 @@ import de.uni_freiburg.es.sensorrecordingtool.Recorder;
  */
 public class WearForwarder extends WearableListenerService
     implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
-    static final String RECORD_ACTION_FORWARDED = "RECORD_ACTION_FORWARDED";
     private static final String WEAR_FORWARD_PATH = "/senserec_wear";
     private static final String TAG = WearForwarder.class.getName();
     private GoogleApiClient mGoogleApiClient;
@@ -73,12 +71,12 @@ public class WearForwarder extends WearableListenerService
 
         try {
             JSONObject o = new JSONObject(new String(messageEvent.getData()));
-            Bundle bundle = fromJson(o);
+            //Bundle bundle = ForwardedUtils.fromJson(o);
             Log.d(TAG, "rx'ed msg " + o.toString());
 
             Intent omgwtf = new Intent(this, Recorder.class);
-            omgwtf.setAction(RECORD_ACTION_FORWARDED);
-            omgwtf.putExtras(bundle);
+            //omgwtf.setAction(ForwardedUtils.RECORD_ACTION_FORWARDED);
+            //omgwtf.putExtras(bundle);
             startService(omgwtf);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -92,7 +90,7 @@ public class WearForwarder extends WearableListenerService
         Log.d(TAG, "forwarding messages " + mQ.size());
 
         if (mQ.size() <= 0) return;
-        final byte[] msg = toJson(mQ.peekFirst().getExtras()).toString().getBytes();
+        final byte[] msg = new byte[0]; //ForwardedUtils.toJson(mQ.peekFirst().getExtras()).toString().getBytes();
 
         /*
          * define a callback for the ack of sending the message.
@@ -134,61 +132,6 @@ public class WearForwarder extends WearableListenerService
          * now finally, get all connected nodes and do something.
          */
         Wearable.NodeApi.getConnectedNodes(mGoogleApiClient).setResultCallback(tx);
-    }
-
-    public static Bundle fromJson(JSONObject s) {
-        Bundle bundle = new Bundle();
-
-        for (Iterator<String> it = s.keys(); it.hasNext(); ) {
-            String key = it.next();
-            JSONArray arr = s.optJSONArray(key);
-            Double num = s.optDouble(key);
-            String str = s.optString(key);
-
-            if (arr != null && arr.length() <= 0)
-                bundle.putStringArray(key, new String[]{});
-
-            else if (arr != null && !Double.isNaN(arr.optDouble(0))) {
-                double[] newarr = new double[arr.length()];
-                for (int i=0; i<arr.length(); i++)
-                    newarr[i] = arr.optDouble(i);
-                bundle.putDoubleArray(key, newarr);
-            }
-
-            else if (arr != null && arr.optString(0) != null) {
-                String[] newarr = new String[arr.length()];
-                for (int i=0; i<arr.length(); i++)
-                    newarr[i] = arr.optString(i);
-                bundle.putStringArray(key, newarr);
-            }
-
-            else if (!num.isNaN())
-                bundle.putDouble(key, num);
-
-            else if (str != null)
-                bundle.putString(key, str);
-
-            else
-                System.err.println("unable to transform json to bundle " + key);
-        }
-
-        return bundle;
-    }
-
-    public static JSONObject toJson(Bundle bundle) {
-        JSONObject json = new JSONObject();
-
-        if (bundle == null)
-            return json;
-
-        for (String key : bundle.keySet())
-            try {
-                json.put(key, JSONObject.wrap(bundle.get(key)));
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-        return json;
     }
 
     @Override

@@ -8,7 +8,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 
-import de.uni_freiburg.es.sensorrecordingtool.commands.startRecording;
+import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
 
 /** Just ask for the permission and restart the Recorder, now with hopefully
  * enabled permissions.
@@ -68,7 +68,7 @@ public class PermissionDialog extends AppCompatActivity
             if (p.equals(Manifest.permission.WRITE_EXTERNAL_STORAGE) &&
                 resu == PackageManager.PERMISSION_GRANTED) {
 
-                Intent ii = new Intent(startRecording.ACTION);
+                Intent ii = new Intent(ForwardedUtils.RECORD_ACTION);
                 if (getIntent().getExtras() != null)
                     ii.putExtras(getIntent().getExtras());
                 sendBroadcast(ii);
