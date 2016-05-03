@@ -47,6 +47,9 @@ public class IntentForwarderService extends Service {
             mServerThread = new ServerThread();
         }
 
+        if (intent == null)
+            return super.onStartCommand(intent, flags, startId);
+
         if (intent.getAction() != null) {
             /** got a broadcast action, let's forward to all bound nodes */
             BluetoothAdapter a = BluetoothAdapter.getDefaultAdapter();

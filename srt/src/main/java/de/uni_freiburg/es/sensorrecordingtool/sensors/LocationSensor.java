@@ -47,8 +47,8 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     }
 
     @Override
-    public void registerListener(SensorEventListener l, int rate, int delay) {
-        super.registerListener(l,rate,delay);
+    public void registerListener(SensorEventListener l, int rate, int delay, String format) {
+        super.registerListener(l,rate,delay, format);
 
         //if (!PermissionDialog.location(mContext))
         //    return;

@@ -21,6 +21,7 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
     private Camera mCamera;
     private int mRateInMilliHz = 0;
     private SurfaceView mSurface;
+    private Camera.Parameters mParameters;
 
     public VideoSensor(Context c) {
         super(c, 1);
@@ -34,26 +35,42 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
     }
 
     @Override
-    public void registerListener(SensorEventListener l, int rate_in_mus, int delay) {
+    public void registerListener(SensorEventListener l, int rate_in_mus, int delay, String format) {
         //if (!PermissionDialog.camera(context))
         //    return;
 
         if (mListeners.size() == 0) {
+            mCamera = Camera.open();
+            mParameters = mCamera.getParameters();
+            Camera.Size mSize = mParameters.getPreviewSize();
+
+            try {
+                String[] wh = format.split("x");
+                mParameters.setPreviewSize(
+                        Integer.parseInt(wh[0]),
+                        Integer.parseInt(wh[1]));
+                mCamera.setParameters(mParameters);
+
+            } catch (Exception e) {
+                Log.d(TAG, String.format(
+                    "unable to parse format '" + (format==null?"":format) +
+                    "' using %dx%d resolution", mSize.width, mSize.height));
+            }
             mRateInMilliHz = (int) (1000 * 1000 / rate_in_mus) * 1000;
             startRecording();
         }
 
-        super.registerListener(l,rate_in_mus,delay);
+        super.registerListener(l,rate_in_mus,delay, format);
     }
 
     /** can't do a recording without a preview surface, which is why a system overlay is created
-     * here that can seen from anywhere.
+     * here that it can seen from anywhere.
      */
     public void startRecording() {
         WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
         mSurface = new SurfaceView(mContext);
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
-            8, 8, 0, 0,
+            200, 100, 0, 0,
             WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
             WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
             PixelFormat.TRANSLUCENT);
@@ -99,10 +116,10 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
         Camera.Parameters p = null;
         try {
-            mCamera = Camera.open();
+            if (mCamera==null)
+                mCamera = Camera.open();
             p = mCamera.getParameters();
             p.setPreviewFpsRange(mRateInMilliHz, mRateInMilliHz);
-            //p.setPreviewSize(640,480);
             mCamera.setParameters(p);
 
             Log.d(TAG, "starting recording with pixel format " + p.getPictureFormat());

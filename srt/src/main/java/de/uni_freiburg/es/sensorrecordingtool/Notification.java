@@ -13,21 +13,25 @@ import android.util.Log;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * This is just a placeholder for showing, hiding and updating the notification shown for
- * each recording process. Mainly to unclutter the code in the Recorder class.
+/** This is just a placeholder for showing, hiding and updating the notification shown for
+ *  each recording process. Mainly to unclutter the code in the Recorder class.
  *
  * Created by phil on 2/29/16.
  */
 public class Notification {
     private static final long DELAY = 250;
     private static final String RECORDING_GROUP_KEY = "recording_group_key";
+    public static final String NEW_RECORDING = "es.uni_freiburg.es.sensorrecordingtool.NEW_RECORDING";
+    public static final String CANCEL_RECORDING = "es.uni_freiburg.es.sensorrecordingtool.CANCEL_RECORDING";
+    public static final String FINISHED_RECORDING = "es.uni_freiburg.es.sensorrecordingtool.FINISHED_RECORDING";
+    public static final String EXTRA_NUM_SENSORS = "NUM_SENSORS";
+    public static final String EXTRA_DURATION = "DURATION";
+
     static Set<Integer> isCanceled = new HashSet<Integer>();
 
     static public void newRecording(final Context c, final int id, final Recorder.Recording r) {
-        Intent cancel_intent = new Intent(c, Recorder.class);
+        Intent cancel_intent = new Intent(Recorder.CANCEL_ACTION);
         cancel_intent.putExtra(Recorder.RECORDING_ID, id);
-        cancel_intent.setAction(Recorder.CANCEL_ACTION);
         PendingIntent pending  = PendingIntent.getService(c, id, cancel_intent,
                                             PendingIntent.FLAG_UPDATE_CURRENT);
 
@@ -60,7 +64,7 @@ public class Notification {
 
         /*
          * also create a handler for updating the progress on the Recording, and make sure to
-         * stop updating was this recording has been canceled.
+         * stop updating once this recording has been canceled.
          */
         final Handler h = new Handler();
         h.postDelayed(new Runnable() {
@@ -75,6 +79,10 @@ public class Notification {
                 if (r.mInputList.size() == 0) {
                     notification.mActions.clear();
                     notification.setContentTitle(c.getString(R.string.done_title));
+
+                    Intent i = new Intent(FINISHED_RECORDING);
+                    i.putExtra(Recorder.RECORDING_ID, id);
+                    c.sendBroadcast(i);
                 }
 
                 notification.setProgress((int) total, (int) done, false);
@@ -90,11 +98,24 @@ public class Notification {
 
         if (isCanceled.contains(id))
             isCanceled.remove(id);
+
+        /** also send a broadcast to notify other components, for example on Glass to update
+         * their displays. */
+        Intent i = new Intent(NEW_RECORDING);
+        i.putExtra(EXTRA_NUM_SENSORS, r.mInputList.size());
+        i.putExtra(EXTRA_DURATION, r.mInputList.get(0).mDur);
+        i.putExtra(Recorder.RECORDING_ID, id);
+        c.sendBroadcast(i);
     }
 
     public static void cancelRecording(Context c, int id) {
         NotificationManager mgr = (NotificationManager) c.getSystemService(c.NOTIFICATION_SERVICE);
         isCanceled.add(id);
         mgr.cancel(id);
+
+        /** and also send the cancel action */
+        Intent i = new Intent(CANCEL_RECORDING);
+        i.putExtra(Recorder.RECORDING_ID, id);
+        c.sendBroadcast(i);
     }
 }

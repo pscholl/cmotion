@@ -35,7 +35,7 @@ public class AudioSensor extends Sensor {
     }
 
     @Override
-    public void registerListener(SensorEventListener l, int rate_in_mus, int delay) {
+    public void registerListener(SensorEventListener l, int rate_in_mus, int delay, String format) {
         //if (!PermissionDialog.camera(context))
         //    return;
 
@@ -44,7 +44,7 @@ public class AudioSensor extends Sensor {
             startRecording();
         }
 
-        super.registerListener(l,rate_in_mus,delay);
+        super.registerListener(l,rate_in_mus,delay, format);
     }
 
     public void startRecording() {

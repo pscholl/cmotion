@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">cmotion</string>
-    <string name="title_activity_cmotion_card_service">Uni Freiburg CMotion</string>
-    <string name="action_stop">Stop</string>
-    <string name="hello_world">Hello world!</string>
+    <string name="app_name">CMotion Recorder</string>
+    <string name="title_activity_cmotion_card_service">cmotion</string>
+    <string name="action_stop">dismiss</string>
+    <string name="stop_recording">stop recording</string>
 </resources>

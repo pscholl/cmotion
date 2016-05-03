@@ -33,12 +33,35 @@ import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEventListener;
  * if you would want to record the accelerometer and the orientation at 50Hz you can do so with
  * the following Intent:
  *
- *     Intent i = new Intent();
- *     i.putString('-i', ['accelerometer', 'orientation']);
- *     i.putFloat('-r', 50.0);
- *     sendBroadcast(i);
+ *      Intent i = new Intent(Recorder.RECORD_ACTION);
+ *      i.putString('-i', ['accelerometer', 'orientation']);
+ *      i.putFloat('-r', 50.0);
+ *      sendBroadcast(i);
  *
  *  or from the adb shell:
+ *
+ *      adb shell am broadcast -a senserec -e -i accelerometer
+ *
+ *   Supported arguments are:
+ *
+ *     -i [String or list of String]
+ *        sensors to record, providing an unknown one will print a list on logcat
+ *
+ *     -r [int/filoat or list of int/float]
+ *        recording rate of each input, or if only a single value is given the rate for all sensors
+ *
+ *     -o [String]
+ *        output directory under /sdcard/DCIM under which the recordings are stored
+ *
+ *     -f [single strign or list of strings]
+ *        list of string specifying the sensor format for each input, null to use the default,
+ *        currently only the video sensor has any specs, which is the recording size given as
+ *        widthxheight, e.g. 1280x720.
+ *
+ *   A Broadcast Intent is sent once the recording is started or canceled. The latest recording
+ *   can be canceled with the senserec_cancel broadcast action, e.g.:
+ *
+ *      adb shell am broadcast -a senserec_cancel
  *
  * Created by phil on 2/22/16.
  */
@@ -63,6 +86,9 @@ public class Recorder extends Service {
     /* the optional output path */
     static final String RECORDER_OUTPUT = "-o";
 
+    /* optional format specifier for each sensor */
+    static final String RECORDER_FORMAT = "-f";
+
     /* the main action for recording */
     public static final String RECORD_ACTION = ForwardedUtils.RECORD_ACTION;
 
@@ -73,8 +99,8 @@ public class Recorder extends Service {
     static final String FINISH_PATH   = "recording_path";
 
     /* for handing over the cancel action from a notification */
-    static final String CANCEL_ACTION = "cancel";
-    static final String RECORDING_ID = "-r";
+    public static final String CANCEL_ACTION = "senserec_cancel";
+    public static final String RECORDING_ID = "-r";
 
     /* keep track of all running recordings */
     private LinkedList<Recording> mRecordings = new LinkedList<Recording>();
@@ -86,6 +112,7 @@ public class Recorder extends Service {
     @Override
     public int onStartCommand(Intent i, int flags, int startId) {
         String[] sensors = i.getStringArrayExtra(RECORDER_INPUT);
+        String[] formats = i.getStringArrayExtra(RECORDER_FORMAT);
         String output    = i.getStringExtra(RECORDER_OUTPUT);
         double[] rates   = getIntFloatOrDoubleArray(i, RECORDER_RATE, 50.);
         double duration  = getIntFloatOrDouble(i, RECORDER_DURATION, 5.);
@@ -111,7 +138,7 @@ public class Recorder extends Service {
          * terminate the recording right now, if the user wishes so.
          */
         if (CANCEL_ACTION.equals(i.getAction())) {
-            int id = i.getIntExtra(RECORDING_ID, -1);
+            int id = i.getIntExtra(RECORDING_ID, mRecordings.size()-1);
 
             try {
                 Notification.cancelRecording(this, id);
@@ -147,6 +174,23 @@ public class Recorder extends Service {
             return error("no input supplied");
 
         /*
+         * check for optional format specifier
+         */
+        if (formats == null && i.getStringExtra(RECORDER_FORMAT)!=null)
+            formats = new String[] {i.getStringExtra(RECORDER_FORMAT)};
+
+        if (formats == null)
+            formats = new String[sensors.length];
+
+        if (formats.length != sensors.length) {
+            String[] fmts = new String[sensors.length];
+            Arrays.fill(fmts, null);
+            for (int j=0; j<formats.length; j++)
+                fmts[j] = formats[j];
+            formats = fmts;
+        }
+
+        /*
          * convert a single rate to an array, convert a single element array to a length
          * matching the sensor input array, check whether lengths are matching.
          */
@@ -175,6 +219,7 @@ public class Recorder extends Service {
          * duration. And create the output folder beforehand.
          */
         assert(rates.length==sensors.length);
+        assert(formats.length==sensors.length);
 
         Recording r = new Recording(output, duration);
         for (int j=0; j<rates.length; j++) {
@@ -185,9 +230,9 @@ public class Recorder extends Service {
                 SensorProcess sp;
 
                 if (sensors[j].contains("video") || sensors[j].contains("audio"))
-                    sp = new BlockSensorProcess(sensors[j], rates[j], duration, bf);
+                    sp = new BlockSensorProcess(sensors[j], rates[j], formats[j], duration, bf);
                 else
-                    sp = new SensorProcess(sensors[j], rates[j], duration, bf);
+                    sp = new SensorProcess(sensors[j], rates[j], formats[j], duration, bf);
 
                 r.add(sp);
                 mRecordings.add(r);
@@ -220,7 +265,7 @@ public class Recorder extends Service {
         }
 
         if (iarr != null) {
-            double out[] = new double[farr.length];
+            double out[] = new double[iarr.length];
             for (int j=0; j<out.length; j++)
                 out[j] = iarr[j];
             return out;
@@ -293,7 +338,7 @@ public class Recorder extends Service {
         double mDiff = 0;
         double mElapsed = 0;
 
-        public SensorProcess(String sensor, double rate, double dur,
+        public SensorProcess(String sensor, double rate, String format, double dur,
                              BufferedOutputStream bf) throws Exception  {
             mRate = rate;
             mDur = dur;
@@ -303,7 +348,7 @@ public class Recorder extends Service {
 
             /* TODO setting maxreport to 5minutes can get problematic later for ffmpeg */
             mSensor = getMatchingSensor(sensor);
-            mSensor.registerListener(this, (int) (1 / rate * 1000 * 1000), maxreportdelay_us);
+            mSensor.registerListener(this, (int) (1 / rate * 1000 * 1000), maxreportdelay_us, format);
         }
 
         /** given a String tries to find a matching sensor given these rules:
@@ -418,8 +463,9 @@ public class Recorder extends Service {
     }
 
     protected class BlockSensorProcess extends SensorProcess {
-        public BlockSensorProcess(String sensor, double rate, double dur, BufferedOutputStream bf) throws Exception {
-            super(sensor, rate, dur, bf);
+        public BlockSensorProcess(String sensor, double rate, String format, double dur,
+                                  BufferedOutputStream bf) throws Exception {
+            super(sensor, rate, format, dur, bf);
         }
 
         @Override

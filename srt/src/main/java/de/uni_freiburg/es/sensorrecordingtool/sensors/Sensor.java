@@ -51,7 +51,7 @@ public abstract class Sensor {
             pl.l.onSensorChanged(mEvent);
     }
 
-    public void registerListener(SensorEventListener l, int rate, int delay) {
+    public void registerListener(SensorEventListener l, int rate, int delay, String format) {
         mListeners.add(new ParameterizedListener(l, rate / 1000, delay / 1000));
     }
 

@@ -29,7 +29,7 @@ public class SensorWrapper extends Sensor {
     }
 
     @Override
-    public void registerListener(SensorEventListener l, int rate, int delay) {
+    public void registerListener(SensorEventListener l, int rate, int delay, String format) {
         SensorEventListenerWrapper wl = new SensorEventListenerWrapper(l);
         mSensorMgr.registerListener(get(l), mSensor, rate, delay);
     }

@@ -3,7 +3,32 @@
     android:layout_height="match_parent" android:padding="@dimen/card_margin"
     tools:context=".CMotionCardService">
 
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="@string/hello_world" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="00:00"
+        android:id="@+id/elapsed"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:id="@+id/duration"
+        android:layout_below="@+id/elapsed"
+        android:layout_centerHorizontal="true"
+        android:text="of 05:00"
+        android:textColor="@android:color/darker_gray" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="recording"
+        android:id="@+id/recording"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true" />
 
 </RelativeLayout>

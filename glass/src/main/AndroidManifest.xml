@@ -7,17 +7,50 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
+
+        <receiver android:name=".CMotionReceiver">
+            <intent-filter>
+                <action android:name="es.uni_freiburg.es.sensorrecordingtool.FINISHED_RECORDING"/>
+                <action android:name="es.uni_freiburg.es.sensorrecordingtool.CANCEL_RECORDING"/>
+                <action android:name="es.uni_freiburg.es.sensorrecordingtool.NEW_RECORDING"/>
+            </intent-filter>
+        </receiver>
+
         <service
             android:name=".CMotionCardService"
+            android:exported="true"
             android:icon="@drawable/ic_glass_logo"
             android:label="@string/title_activity_cmotion_card_service" >
+        </service>
+
+        <service
+            android:name=".CMotionStartRecording"
+            android:exported="true"
+            android:icon="@drawable/ic_glass_logo"
+            android:label="@string/title_activity_cmotion_card_service" >
+
             <intent-filter>
                 <action android:name="com.google.android.glass.action.VOICE_TRIGGER" />
             </intent-filter>
 
             <meta-data
                 android:name="com.google.android.glass.VoiceTrigger"
-                android:resource="@xml/voice_trigger" />
+                android:resource="@xml/start_voice_trigger" />
+        </service>
+
+        <service
+            android:name=".CMotionStopRecording"
+            android:exported="true"
+            android:icon="@drawable/ic_glass_logo"
+            android:label="@string/title_activity_cmotion_card_service" >
+
+            <intent-filter>
+                <action android:name="com.google.android.glass.action.VOICE_TRIGGER" />
+            </intent-filter>
+
+            <meta-data
+                android:name="com.google.android.glass.VoiceTrigger"
+                android:resource="@xml/stop_voice_trigger" />
         </service>
 
         <activity
