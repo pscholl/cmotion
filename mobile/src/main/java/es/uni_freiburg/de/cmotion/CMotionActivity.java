@@ -18,10 +18,6 @@ public class CMotionActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_cmotion);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        /** just make sure that the IntentForwarderService is eventually started */
-        Intent i = new Intent(this, IntentForwarderService.class);
-        startService(i);
     }
 
     @Override
@@ -47,10 +43,11 @@ public class CMotionActivity extends Activity {
     }
 
     @Override
-    protected void onResume() {
+    protected void onStart() {
+        super.onStart();
         startService(new Intent(this, LocalSensorService.class));
         startService(new Intent(this, WearService.class));
-        super.onStart();
+        startService(new Intent(this, IntentForwarderService.class));
     }
 
     @Override

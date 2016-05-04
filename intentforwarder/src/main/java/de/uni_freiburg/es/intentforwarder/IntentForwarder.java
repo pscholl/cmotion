@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 
 /** Activated on startrecording intent and when new Bluetooth devices are bonded with. Checks
  * if a new bluetooth is bonded, and starts the service or forwards the recording intent to
@@ -14,13 +15,15 @@ import android.content.Intent;
  */
 public class IntentForwarder extends BroadcastReceiver {
     protected static final String TAG = IntentForwarder.class.getName();
-    protected static final String EXTRA_DOBLUETOOTHFORWARD = "doBlForward";
+    public static final String EXTRA_DOBLUETOOTHFORWARD = "doBlForward";
 
     @Override
     public void onReceive(Context context, Intent intent) {
         BluetoothDevice dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
         int state = intent.getIntExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE, -1);
         boolean doforward = intent.getBooleanExtra(IntentForwarder.EXTRA_DOBLUETOOTHFORWARD, true);
+
+        Log.d(TAG, "got intent " + intent + " " + state + " " + doforward);
 
         if (intent == null || intent.getAction() == null)
             return;

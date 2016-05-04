@@ -143,11 +143,17 @@ public class Recorder extends Service {
             try {
                 Notification.cancelRecording(this, id);
 
+                if (id < 0 || id >= mRecordings.size()) {
+                    Log.d(TAG, "invalid recording id " + id);
+                    return START_NOT_STICKY;
+                }
+
                 Recording r = mRecordings.get(id);
                 for( Iterator<SensorProcess> it = r.mInputList.iterator(); it.hasNext(); ) {
                     SensorProcess p = it.next();
                     p.terminate();
                 }
+                mRecordings.remove(id);
                 Log.d(TAG, "terminated recording " + id);
             } catch(IndexOutOfBoundsException e) {
                 Log.d(TAG, "unable to find recording with id " + id);
@@ -235,16 +241,16 @@ public class Recorder extends Service {
                     sp = new SensorProcess(sensors[j], rates[j], formats[j], duration, bf);
 
                 r.add(sp);
-                mRecordings.add(r);
-
-                /** create the notification. */
-                Notification.newRecording(this, mRecordings.indexOf(r), r);
             } catch (Exception e) {
                 error(sensors[j] + ": " + e.getLocalizedMessage());
                 e.printStackTrace();
                 /* we do best effort recordings */
             }
         }
+
+        mRecordings.add(r);
+        /** create the notification. */
+        Notification.newRecording(this, mRecordings.indexOf(r), r);
 
         return START_NOT_STICKY;
     }
@@ -512,7 +518,10 @@ public class Recorder extends Service {
 
             Intent i = new Intent(FINISH_ACTION);
             i.putExtra(FINISH_PATH, mOutputPath);
+            i.putExtra(RECORDING_ID, mRecordings.indexOf(this));
             sendBroadcast(i);
+            mRecordings.remove(this);
+
             if (mwl.isHeld())
                 mwl.release();
         }

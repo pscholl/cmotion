@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.support.v4.app.NotificationCompat;
 import android.text.format.DateUtils;
@@ -60,7 +61,10 @@ public class Notification {
                 .addAction(cancel.build());
 
         final NotificationManager mgr = (NotificationManager) c.getSystemService(c.NOTIFICATION_SERVICE);
-        mgr.notify(id, notification.build());
+
+        if (!isRunningOnGlass())
+            mgr.notify(id, notification.build());
+
 
         /*
          * also create a handler for updating the progress on the Recording, and make sure to
@@ -87,7 +91,8 @@ public class Notification {
 
                 notification.setProgress((int) total, (int) done, false);
                 if (!isCanceled.contains(id)) {
-                    mgr.notify(id, notification.build());
+                    if (!isRunningOnGlass())
+                        mgr.notify(id, notification.build());
 
                     if (r.mInputList.size() != 0)
                         h.postDelayed(this, DELAY);
@@ -118,4 +123,12 @@ public class Notification {
         i.putExtra(Recorder.RECORDING_ID, id);
         c.sendBroadcast(i);
     }
+
+    /** Determine whethe the code is runnong on Google Glass
+     * @return True if and only if Manufacturer is Google and Model begins with Glass
+     */
+    public static boolean isRunningOnGlass() {
+        return "Google".equalsIgnoreCase(Build.MANUFACTURER) && Build.MODEL.startsWith("Glass");
+    }
+
 }

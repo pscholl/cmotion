@@ -45,9 +45,12 @@ public class IntentForwarderService extends Service {
         /** make sure that we can receive forwarded messages on the Bluetooth connection */
         if (mServerThread == null) {
             mServerThread = new ServerThread();
+        } else {
+            mServerThread.interrupt();
         }
 
-        if (intent == null)
+        if (intent == null || (intent.getAction() != null &&
+            BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED.equals(intent.getAction())))
             return super.onStartCommand(intent, flags, startId);
 
         if (intent.getAction() != null) {
@@ -90,34 +93,39 @@ public class IntentForwarderService extends Service {
         public void run() {
             while (running) {
                 try {
+                    Log.d(TAG, "serverthread started");
+
                     BluetoothAdapter a = BluetoothAdapter.getDefaultAdapter();
-                    if (!a.isEnabled()) return;
+                    if (!a.isEnabled()) break;
+
+                    Log.d(TAG, "starting to listen for Bluetooth connections");
 
                     mServerSocket = a.listenUsingRfcommWithServiceRecord(NAME, uuid);
                     BluetoothSocket s = mServerSocket.accept();
                     mServerSocket.close();
+                    mServerSocket = null;
 
                     Log.d(TAG, "accepted connection");
 
                     BufferedInputStream is = new BufferedInputStream(s.getInputStream());
-                    ByteBuffer msglen = ByteBuffer.allocate(4);
-                    is.read(msglen.array());
-                    byte[] msg = new byte[msglen.asIntBuffer().get()];
+                    byte[] fuckingjava = new byte[4];
+                    is.read(fuckingjava);
+                    byte[] msg = new byte[ByteBuffer.wrap(fuckingjava).asIntBuffer().get()];
                     is.read(msg);
                     s.close();
 
                     Intent jmsg = ForwardedUtils.fromJson(msg);
-                    sendBroadcast(jmsg);
                     jmsg.putExtra(IntentForwarder.EXTRA_DOBLUETOOTHFORWARD, false);
+                    sendBroadcast(jmsg);
+
                     Log.d(TAG, "forwarded intent " + jmsg);
 
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (JSONException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
 
+            Log.d(TAG, "serverthread killed");
             /** this is part of handling the case when bluetooth is not enabled */
             mServerThread = null;
         }
@@ -137,12 +145,13 @@ public class IntentForwarderService extends Service {
         public void run() {
             BluetoothSocket s = null;
             try {
-                ByteBuffer buf = ByteBuffer.allocate(mExtras.toString().length() + 4);
+                ByteBuffer buf = ByteBuffer.allocate(mExtras.toString().getBytes().length + 4);
                 s = mDevice.createRfcommSocketToServiceRecord(uuid);
                 s.connect();
                 buf.putInt(mExtras.toString().length());
                 buf.put(mExtras.toString().getBytes());
                 s.getOutputStream().write(buf.array());
+                s.getOutputStream().flush();
                 s.getInputStream().read();
             } catch (IOException e) {
                 e.printStackTrace();

@@ -29,11 +29,11 @@ public class ForwardedUtils {
         try { // to load the extras bundle
             JSONObject extras = s.getJSONObject(JSON_KEY_EXTRAS);
 
-            for (Iterator<String> it = s.keys(); it.hasNext(); ) {
+            for (Iterator<String> it = extras.keys(); it.hasNext(); ) {
                 String key = it.next();
-                JSONArray arr = s.optJSONArray(key);
-                Double num = s.optDouble(key);
-                String str = s.optString(key);
+                JSONArray arr = extras.optJSONArray(key);
+                Double num = extras.optDouble(key);
+                String str = extras.optString(key);
 
                 if (arr != null && arr.length() <= 0)
                     bundle.putStringArray(key, new String[]{});

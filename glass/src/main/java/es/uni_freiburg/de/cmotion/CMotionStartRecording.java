@@ -6,6 +6,7 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import de.uni_freiburg.es.intentforwarder.IntentForwarder;
 import de.uni_freiburg.es.sensorrecordingtool.Recorder;
 
 /** Simply start a new recording with the default settings.

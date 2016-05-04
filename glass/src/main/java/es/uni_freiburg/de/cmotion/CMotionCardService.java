@@ -36,6 +36,9 @@ public class CMotionCardService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent == null)
+            return START_STICKY;
+
         String action = intent.getAction();
         Integer id = intent.getIntExtra(Recorder.RECORDING_ID, -1);
 
@@ -69,7 +72,7 @@ public class CMotionCardService extends Service {
         Log.d(TAG, "cancel recording " + id);
         String tag = LIVE_CARD_TAG+id.toString();
         LiveCard card = cards.get(id);
-        if (card != null && card.isPublished())
+        if (card != null)
             card.unpublish();
     }
 
@@ -88,7 +91,8 @@ public class CMotionCardService extends Service {
         card.setAction(PendingIntent.getActivity(this, 0,
                 menuIntent, PendingIntent.FLAG_UPDATE_CURRENT));
 
-        card.publish(PublishMode.REVEAL);
+        if (!card.isPublished())
+            card.publish(PublishMode.REVEAL);
     }
 
     private CharSequence recordingAsString(Integer numsensor) {
