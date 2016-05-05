@@ -28,7 +28,7 @@
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:text="recording"
         android:id="@+id/recording"
-        android:layout_alignParentBottom="true"
+        android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true" />
 
 </RelativeLayout>

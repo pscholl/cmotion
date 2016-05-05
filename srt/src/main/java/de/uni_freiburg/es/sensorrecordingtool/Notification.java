@@ -33,8 +33,8 @@ public class Notification {
     static public void newRecording(final Context c, final int id, final Recorder.Recording r) {
         Intent cancel_intent = new Intent(Recorder.CANCEL_ACTION);
         cancel_intent.putExtra(Recorder.RECORDING_ID, id);
-        PendingIntent pending  = PendingIntent.getService(c, id, cancel_intent,
-                                            PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pending  = PendingIntent.getBroadcast(c, id, cancel_intent,
+                                                            PendingIntent.FLAG_UPDATE_CURRENT);
 
         Intent openfolder = new Intent(Intent.ACTION_GET_CONTENT);
         openfolder.setDataAndType(Uri.parse("file://"+r.mOutputPath), "*/*");

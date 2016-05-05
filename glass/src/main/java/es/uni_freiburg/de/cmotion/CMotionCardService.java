@@ -1,7 +1,9 @@
     package es.uni_freiburg.de.cmotion;
 
+import com.google.android.glass.app.Card;
 import com.google.android.glass.timeline.LiveCard;
 import com.google.android.glass.timeline.LiveCard.PublishMode;
+import com.google.android.glass.widget.CardBuilder;
 
 import android.app.PendingIntent;
 import android.app.Service;
@@ -11,7 +13,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.RemoteViews;
-import android.widget.TextView;
 
 import java.util.HashMap;
 
@@ -64,16 +65,16 @@ public class CMotionCardService extends Service {
         Log.d(TAG, "finished recording " + id);
 
         UpdateLiveCard card = (UpdateLiveCard) cards.get(id);
-        if (card != null)
+        if (card != null) {
             card.setFinished(true);
+            card.unpublish();
+            cards.remove(id);
+        }
     }
 
     private void cancelRecording(Integer id) {
         Log.d(TAG, "cancel recording " + id);
-        String tag = LIVE_CARD_TAG+id.toString();
-        LiveCard card = cards.get(id);
-        if (card != null)
-            card.unpublish();
+        finishRecording(id);
     }
 
     private void newRecording(Integer id, Integer numsensor, double duration) {
@@ -83,10 +84,11 @@ public class CMotionCardService extends Service {
         if (card == null) {
             String tag = LIVE_CARD_TAG + id.toString();
             card = new UpdateLiveCard(this, tag, numsensor, duration);
+            card.setVoiceActionEnabled(true);
             cards.put(id, card);
         }
 
-        Intent menuIntent = new Intent(this, LiveCardMenuActivity.class);
+        Intent menuIntent = new Intent(this, CMotionCardMenuActivity.class);
         menuIntent.putExtra(Recorder.RECORDING_ID, id);
         card.setAction(PendingIntent.getActivity(this, 0,
                 menuIntent, PendingIntent.FLAG_UPDATE_CURRENT));
@@ -103,7 +105,7 @@ public class CMotionCardService extends Service {
         return String.format("recorded %d sensors", numsensor);
     }
 
-    private CharSequence durationAsString(double duration) {
+    public CharSequence durationAsString(double duration) {
         if (duration > 0)
             return String.format("%02d:%02d",
                     (int) (duration/60.), (int) (duration%60));
@@ -116,7 +118,7 @@ public class CMotionCardService extends Service {
         private final RemoteViews mViews;
         private final double mDuration;
         private final int mNumSensors;
-        private double mElapsed = -DELAY_MS/1000.;
+        public double mElapsed = -DELAY_MS/1000.;
         private boolean mFinished;
 
         public UpdateLiveCard(Context context, String tag, int numsensor, double duration) {
