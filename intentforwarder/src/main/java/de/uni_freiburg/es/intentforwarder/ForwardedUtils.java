@@ -75,15 +75,13 @@ public class ForwardedUtils {
         Bundle bundle = i.getExtras();
         JSONObject extras = new JSONObject();
 
-        if (bundle == null)
-            return extras;
-
-        for (String key : bundle.keySet())
-            try {
-                extras.put(key, JSONObject.wrap(bundle.get(key)));
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
+        if (bundle != null)
+            for (String key : bundle.keySet())
+                try {
+                    extras.put(key, JSONObject.wrap(bundle.get(key)));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
 
         JSONObject json = new JSONObject();
         try {

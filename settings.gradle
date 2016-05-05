@@ -1,1 +1,1 @@
-include ':mobile', ':wear', ':glass', ':srt', ':intentforwarder'
+include ':mobile', ':wear', ':glass', ':srt', ':intentforwarder', ':wearforwarder'

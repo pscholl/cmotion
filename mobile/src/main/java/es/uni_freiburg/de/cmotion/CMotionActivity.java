@@ -8,7 +8,6 @@ import android.view.MenuItem;
 import android.view.WindowManager;
 
 import de.uni_freiburg.es.intentforwarder.IntentForwarderService;
-import de.uni_freiburg.es.sensorrecordingtool.Recorder;
 
 
 public class CMotionActivity extends Activity {
@@ -46,14 +45,14 @@ public class CMotionActivity extends Activity {
     protected void onStart() {
         super.onStart();
         startService(new Intent(this, LocalSensorService.class));
-        startService(new Intent(this, WearService.class));
+        startService(new Intent(this, WearSensorService.class));
         startService(new Intent(this, IntentForwarderService.class));
     }
 
     @Override
     protected void onPause() {
         stopService(new Intent(this, LocalSensorService.class));
-        stopService(new Intent(this, WearService.class));
+        stopService(new Intent(this, WearSensorService.class));
         super.onPause();
     }
 }

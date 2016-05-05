@@ -1,5 +1,6 @@
-package es.uni_freiburg.de.cmotion;
+package de.uni_freiburg.es.wearforwarder;
 
+import android.app.Service;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -15,22 +16,19 @@ import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
 
 import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.util.LinkedList;
 
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
-import de.uni_freiburg.es.sensorrecordingtool.Recorder;
 
 /** A Service which is responsible for forwarding recording Intents to the Services running on
  * the Wear Device.
  *
  * Created by phil on 2/24/16.
  */
-public class WearForwarder extends WearableListenerService
+public class WearForwarderService extends WearableListenerService
     implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
     private static final String WEAR_FORWARD_PATH = "/senserec_wear";
-    private static final String TAG = WearForwarder.class.getName();
+    private static final String TAG = WearForwarderService.class.getName();
     private GoogleApiClient mGoogleApiClient;
     private LinkedList<Intent> mQ = new LinkedList<Intent>();
 
@@ -40,8 +38,10 @@ public class WearForwarder extends WearableListenerService
         /**
          * only forward the ones that have not yet been forwarded.
          */
-        if (intent == null)
-            return START_NOT_STICKY;
+        if (intent == null ||
+            intent.getAction() == null ||
+            intent.getAction().contains("BOOT"))
+            return Service.START_NOT_STICKY;
 
         /**
          * add up all intent into a queue, and whenever we have a connection to the google
@@ -61,7 +61,7 @@ public class WearForwarder extends WearableListenerService
         else
             forwardNextIntent();
 
-        return START_NOT_STICKY;
+        return Service.START_NOT_STICKY;
     }
 
     @Override
@@ -70,14 +70,10 @@ public class WearForwarder extends WearableListenerService
             return;
 
         try {
-            JSONObject o = new JSONObject(new String(messageEvent.getData()));
-            //Bundle bundle = ForwardedUtils.fromJson(o);
-            Log.d(TAG, "rx'ed msg " + o.toString());
-
-            Intent omgwtf = new Intent(this, Recorder.class);
-            //omgwtf.setAction(ForwardedUtils.RECORD_ACTION_FORWARDED);
-            //omgwtf.putExtras(bundle);
-            startService(omgwtf);
+            Intent i = ForwardedUtils.fromJson(messageEvent.getData());
+            i.putExtra(WearForwarder.EXTRA_DOWEARFORWARD, false);
+            sendBroadcast(i);
+            Log.d(TAG, "forwarded intent " + i);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -90,7 +86,11 @@ public class WearForwarder extends WearableListenerService
         Log.d(TAG, "forwarding messages " + mQ.size());
 
         if (mQ.size() <= 0) return;
-        final byte[] msg = new byte[0]; //ForwardedUtils.toJson(mQ.peekFirst().getExtras()).toString().getBytes();
+
+        Intent tofw = mQ.peekFirst();
+        tofw.putExtra(WearForwarder.EXTRA_DOWEARFORWARD, false);
+
+        final byte[] msg = ForwardedUtils.toJson(tofw).toString().getBytes();
 
         /*
          * define a callback for the ack of sending the message.

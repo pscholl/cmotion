@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.util.Log;
 
 /** Activated on startrecording intent and when new Bluetooth devices are bonded with. Checks
@@ -31,6 +32,8 @@ public class IntentForwarder extends BroadcastReceiver {
             return;
         else if (!doforward)
             return; // nothing to do if already forwarded
+        else if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH))
+            return; // yeah, because we can't create listening socket, but sending ones work! WTF
 
         /** try and start the service, this makes sure that we're actually listening or
          * forwarding the currently rx'ed action intent. */

@@ -23,8 +23,8 @@ import java.util.ArrayList;
  *
  * Created by phil on 1/5/16.
  */
-public class WearService extends Service implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
-    private static final String TAG = WearService.class.getName();
+public class WearSensorService extends Service implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
+    private static final String TAG = WearSensorService.class.getName();
     private GoogleApiClient mApiClient;
     private static final String MESSAGE_API_PATH = "ROTATION_VECTOR_MESSAGE";
     private ArrayList<String> mWearableIdentifcations = new ArrayList<String>();
