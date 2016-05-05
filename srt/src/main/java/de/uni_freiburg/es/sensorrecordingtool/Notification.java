@@ -41,7 +41,7 @@ public class Notification {
         Log.d(Recorder.TAG, r.mOutputPath);
         PendingIntent openfolderp = PendingIntent.getActivity(c, id,
                 Intent.createChooser(openfolder, c.getString(R.string.choose)),
-                                            PendingIntent.FLAG_UPDATE_CURRENT);
+                PendingIntent.FLAG_UPDATE_CURRENT);
 
         NotificationCompat.Action.Builder cancel = new NotificationCompat.Action.Builder(
                 R.drawable.cancel, c.getString(R.string.cancel_text), pending);
