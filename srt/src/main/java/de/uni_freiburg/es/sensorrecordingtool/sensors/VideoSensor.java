@@ -1,6 +1,7 @@
 package de.uni_freiburg.es.sensorrecordingtool.sensors;
 
 import android.content.Context;
+import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.hardware.*;
 import android.util.Log;
@@ -8,6 +9,8 @@ import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.WindowManager;
+
+import java.util.LinkedList;
 
 /** Grabs frames at the specified videorate and returns them in raw format at maximum
  * resolution as sensorevents.
@@ -21,7 +24,6 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
     private Camera mCamera;
     private int mRateInMilliHz = 0;
     private SurfaceView mSurface;
-    private Camera.Parameters mParameters;
 
     public VideoSensor(Context c) {
         super(c, 1);
@@ -41,16 +43,23 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
 
         if (mListeners.size() == 0) {
             mCamera = Camera.open();
-            mParameters = mCamera.getParameters();
-            Camera.Size mSize = mParameters.getPreviewSize();
+            Camera.Parameters params = mCamera.getParameters();
+            Camera.Size mSize = params.getPreviewSize();
 
             try {
                 String[] wh = format.split("x");
-                mParameters.setPreviewSize(
+                params.setPreviewSize(
                         Integer.parseInt(wh[0]),
                         Integer.parseInt(wh[1]));
-                mCamera.setParameters(mParameters);
+                mCamera.setParameters(params);
+                mSize = params.getPreviewSize();
 
+                int bytesPerBuffer = (int) Math.ceil(
+                    ImageFormat.getBitsPerPixel(params.getPreviewFormat()) / 8.
+                    * mSize.width * mSize.height);
+
+                mCamera.addCallbackBuffer(new byte[bytesPerBuffer]);
+                mCamera.addCallbackBuffer(new byte[bytesPerBuffer]);
             } catch (Exception e) {
                 Log.d(TAG, String.format(
                     "unable to parse format '" + (format==null?"":format) +
@@ -70,7 +79,7 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
         WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
         mSurface = new SurfaceView(mContext);
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
-            200, 100, 0, 0,
+            200, 100, 0, 300,
             WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
             WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
             PixelFormat.TRANSLUCENT);
@@ -95,6 +104,9 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
             mEvent.timestamp = System.currentTimeMillis() * 1000 * 1000;
             mEvent.rawdata = bytes;
             notifyListeners();
+
+            /** add the buffer again to the queue */
+            mCamera.addCallbackBuffer(bytes);
         }
 
         // Default format is YCbCr'NV21
@@ -126,7 +138,7 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
             Log.d(TAG, "resolution " + p.getPreviewSize().width + "x" + p.getPreviewSize().height);
 
             mCamera.setPreviewDisplay(mSurface.getHolder());
-            mCamera.setPreviewCallback(preview);
+            mCamera.setPreviewCallbackWithBuffer(preview);
             mCamera.startPreview();
 
         } catch(Exception e) {
