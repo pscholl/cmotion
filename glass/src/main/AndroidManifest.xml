@@ -22,14 +22,14 @@
         <service
             android:name=".CMotionCardService"
             android:exported="true"
-            android:icon="@drawable/ic_glass_logo"
+            android:icon="@drawable/logo"
             android:label="@string/title_activity_cmotion_card_service" >
         </service>
 
         <service
             android:name=".CMotionStartRecording"
             android:exported="true"
-            android:icon="@drawable/ic_glass_logo"
+            android:icon="@drawable/recording"
             android:label="@string/title_activity_cmotion_card_service" >
 
             <intent-filter>
@@ -44,7 +44,7 @@
         <service
             android:name=".CMotionStopRecording"
             android:exported="true"
-            android:icon="@drawable/ic_glass_logo"
+            android:icon="@drawable/cancel"
             android:label="@string/title_activity_cmotion_card_service" >
 
             <intent-filter>
