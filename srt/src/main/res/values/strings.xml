@@ -4,9 +4,10 @@
     <string name="notification_title">currently recording</string>
     <string name="done_title">recording finished</string>
     <string name="choose">open folder with</string>
+    <string name="duration">for %2$s</string>
     <plurals name="notification_text">
-        <item quantity="one">%1$d sensor for %2$s</item>
-        <item quantity="few">%1$d sensors for %2$s</item>
-        <item quantity="other">%1$d sensors for %2$s</item>
+        <item quantity="one">%1$d sensor</item>
+        <item quantity="few">%1$d sensors</item>
+        <item quantity="other">%1$d sensors</item>
     </plurals>
 </resources>

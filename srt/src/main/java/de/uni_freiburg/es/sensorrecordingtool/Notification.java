@@ -46,12 +46,19 @@ public class Notification {
         NotificationCompat.Action.Builder cancel = new NotificationCompat.Action.Builder(
                 R.drawable.cancel, c.getString(R.string.cancel_text), pending);
 
+        String content;
+        content = c.getResources().getQuantityString(
+                R.plurals.notification_text,
+                r.mInputList.size(),
+                r.mInputList.size());
+
+        if (r.mInputList.get(0).mDur > 0)
+            content += c.getResources().getString(R.string.duration,
+                       DateUtils.formatElapsedTime((long) r.mInputList.get(0).mDur));
+
         final NotificationCompat.Builder notification = new NotificationCompat.Builder(c)
                 .setContentTitle(c.getString(R.string.notification_title))
-                .setContentText(String.format(c.getResources()
-                    .getQuantityString(R.plurals.notification_text, r.mInputList.size()),
-                        r.mInputList.size(),
-                        DateUtils.formatElapsedTime((long) r.mInputList.get(0).mDur)))
+                .setContentText(content)
                 .setSmallIcon(R.drawable.recording)
                 .setLocalOnly(true)
                 .setContentIntent(openfolderp)

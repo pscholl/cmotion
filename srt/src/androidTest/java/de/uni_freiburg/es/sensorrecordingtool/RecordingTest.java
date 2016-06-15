@@ -7,6 +7,8 @@ import android.content.IntentFilter;
 import android.hardware.Sensor;
 import android.os.BatteryManager;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 import android.test.suitebuilder.annotation.MediumTest;
@@ -116,9 +118,32 @@ public class RecordingTest {
         i.putExtra(Recorder.RECORDER_INPUT, "location");
         i.putExtra("-d", 5.0);
         String result = callForResult(i);
-        Assert.assertNotNull("timeout", result);
+        Assert.assertNotNull("timed out", result);
 
         assertRecording(result, "location", 50*(4)*4*5);
+    }
+
+    @Test public void doInfiniteRecordingTest() throws InterruptedException {
+        i.putExtra("-d", -1);
+        i.putExtra("-i", "acc");
+
+        /* send a cancel request after five seconds */
+        Handler h = new Handler(c.getMainLooper());
+        h.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Intent cancel = new Intent(Recorder.CANCEL_ACTION);
+                c.sendBroadcast(cancel);
+            }
+        }, 5000);
+
+        String result = callForResult(i);
+        Assert.assertNotNull("timed out", result);
+
+        File path = new File(new File(result), "acc");
+        Assert.assertTrue("no output file ", path.exists());
+        Assert.assertTrue(String.format("at least 5 seconds (%d)", path.length()),
+                          path.length() > 50*3*4*5);
     }
 
     /* we assume that some models are residing on their magnetized charging gradle while plugged

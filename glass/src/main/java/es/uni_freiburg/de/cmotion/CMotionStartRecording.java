@@ -28,7 +28,8 @@ public class CMotionStartRecording extends Service {
         Intent start = new Intent(Recorder.RECORD_ACTION);
         start.putExtra("-i", "acc gyr mag video".split(" "));
         start.putExtra("-r", new int[] {50,50,50,15});
-        start.putExtra("-d", 20*60.);
+        start.putExtra("-f", new String[] {"","","","640x480"});
+        start.putExtra("-d", -1.); // recording until canceled
         sendBroadcast(start);
 
         return super.onStartCommand(intent, flags, startId);

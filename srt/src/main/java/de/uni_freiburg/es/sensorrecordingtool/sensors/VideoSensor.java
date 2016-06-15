@@ -44,27 +44,29 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
         if (mListeners.size() == 0) {
             mCamera = Camera.open();
             Camera.Parameters params = mCamera.getParameters();
-            Camera.Size mSize = params.getPreviewSize();
+            Camera.Size mSize = params.getPictureSize();
 
             try {
                 String[] wh = format.split("x");
                 params.setPreviewSize(
                         Integer.parseInt(wh[0]),
                         Integer.parseInt(wh[1]));
-                mCamera.setParameters(params);
-                mSize = params.getPreviewSize();
-
-                int bytesPerBuffer = (int) Math.ceil(
-                    ImageFormat.getBitsPerPixel(params.getPreviewFormat()) / 8.
-                    * mSize.width * mSize.height);
-
-                mCamera.addCallbackBuffer(new byte[bytesPerBuffer]);
-                mCamera.addCallbackBuffer(new byte[bytesPerBuffer]);
-            } catch (Exception e) {
+            } catch(Exception e) {
                 Log.d(TAG, String.format(
-                    "unable to parse format '" + (format==null?"":format) +
-                    "' using %dx%d resolution", mSize.width, mSize.height));
+                        "unable to parse format '%s', using default resolution %dx%d",
+                        (format!=null?format:""), mSize.width, mSize.height));
             }
+
+            mCamera.setParameters(params);
+            mSize = params.getPreviewSize();
+
+            int bytesPerBuffer = (int) Math.ceil(
+                ImageFormat.getBitsPerPixel(params.getPreviewFormat()) / 8.
+                * mSize.width * mSize.height);
+
+            mCamera.addCallbackBuffer(new byte[bytesPerBuffer]);
+            mCamera.addCallbackBuffer(new byte[bytesPerBuffer]);
+
             mRateInMilliHz = (int) (1000 * 1000 / rate_in_mus) * 1000;
             startRecording();
         }

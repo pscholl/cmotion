@@ -47,13 +47,13 @@ import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEventListener;
  *     -i [String or list of String]
  *        sensors to record, providing an unknown one will print a list on logcat
  *
- *     -r [int/filoat or list of int/float]
+ *     -r [int/float or list of int/float]
  *        recording rate of each input, or if only a single value is given the rate for all sensors
  *
  *     -o [String]
  *        output directory under /sdcard/DCIM under which the recordings are stored
  *
- *     -f [single strign or list of strings]
+ *     -f [single string or list of strings]
  *        list of string specifying the sensor format for each input, null to use the default,
  *        currently only the video sensor has any specs, which is the recording size given as
  *        widthxheight, e.g. 1280x720.
@@ -62,6 +62,10 @@ import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEventListener;
  *   can be canceled with the senserec_cancel broadcast action, e.g.:
  *
  *      adb shell am broadcast -a senserec_cancel
+ *
+ *   it is also possible to cancel a specific recording by supplying its id:
+ *
+ *      adb shell am broadcast -a senserec_cancel -r <id>
  *
  * Created by phil on 2/22/16.
  */
@@ -115,7 +119,7 @@ public class Recorder extends Service {
         String[] formats = i.getStringArrayExtra(RECORDER_FORMAT);
         String output    = i.getStringExtra(RECORDER_OUTPUT);
         double[] rates   = getIntFloatOrDoubleArray(i, RECORDER_RATE, 50.);
-        double duration  = getIntFloatOrDouble(i, RECORDER_DURATION, 5.);
+        double duration  = getIntFloatOrDouble(i, RECORDER_DURATION, -1);
 
         if (i == null)
             return START_NOT_STICKY;
@@ -148,17 +152,12 @@ public class Recorder extends Service {
                     return START_NOT_STICKY;
                 }
 
-                Recording r = mRecordings.get(id);
-                for( Iterator<SensorProcess> it = r.mInputList.iterator(); it.hasNext(); ) {
-                    SensorProcess p = it.next();
-                    p.terminate();
-                }
+                /* flush instead of terminating to get all sensor data up until now */
+                mRecordings.get(id).mCallFlush.run();
                 mRecordings.remove(id);
                 Log.d(TAG, "terminated recording " + id);
             } catch(IndexOutOfBoundsException e) {
                 Log.d(TAG, "unable to find recording with id " + id);
-            } catch (IOException e) {
-                e.printStackTrace();
             }
 
             return START_NOT_STICKY;
@@ -350,7 +349,9 @@ public class Recorder extends Service {
             mDur = dur;
             mOut = bf;
 
-            int maxreportdelay_us = Math.min((int) mDur * 1000 * 1000 / 2, LATENCY_US);
+            int maxreportdelay_us = LATENCY_US;
+            if ( mDur > 0 && (int) mDur * 1000 * 1000 / 2 < LATENCY_US )
+                maxreportdelay_us = (int) mDur * 1000 * 1000 / 2;
 
             /* TODO setting maxreport to 5minutes can get problematic later for ffmpeg */
             mSensor = getMatchingSensor(sensor);
@@ -437,7 +438,7 @@ public class Recorder extends Service {
                     mDiff -= 1 / mRate;
                     mElapsed += 1 / mRate;
 
-                    if (mElapsed > mDur+.5/mRate) {
+                    if (mDur > 0 && mElapsed > mDur+.5/mRate) {
                         terminate();
                         return;
                     } else
@@ -498,7 +499,8 @@ public class Recorder extends Service {
              * afterwards. This is to avoid sensor that do not report data continuously. For example
              * in the case of a failure condition */
             mTimeout = new Handler();
-            mTimeout.postDelayed(mCallFlush, (long) (duration*1000) + 2000);
+            if (duration > 0)
+                mTimeout.postDelayed(mCallFlush, (long) (duration*1000) + 2000);
         }
 
         public void add(SensorProcess s) {
