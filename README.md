@@ -1,6 +1,10 @@
 # Sensor Recorder
 
- This Android Application records sensor data of a Smartphone and of connected Wearables Devices. The data is stored locally on each device in binary format. Each sensor gets its own file and recording rates can be specified per sensors.
+ This is a multi-device sensor recording utility.
+ In records data from a Smartphone, Smartwatch and Google Glass in parallel.
+ Additionally a live stream can be recorded.
+ The data is stored locally on each device in binary format.
+ Each sensor gets its own file and recording rates can be specified per sensors.
 
 ## Building and Deploying
 
