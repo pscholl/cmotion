@@ -82,4 +82,27 @@ public class FFMpegTest {
         Assert.assertTrue(new String(b,0,i), e==0);
         Assert.assertTrue(new File(filepath, filename).isFile());
     }
+
+    @Test public void encodeMultipleIntoMatroska() throws IOException, InterruptedException {
+        byte[] b = new byte[4096];
+        FFMpegProcess p = FFMpegProcess.ffmpeg(c,
+                "-ar 50  -f u8 -i tcp://localhost:%port?listen " +
+                "-ar 1   -f u8 -i tcp://localhost:%port?listen " +
+                "-ar 100 -f u8 -i tcp://localhost:%port?listen " +
+                "-c:a wavpack -map 0 -map 1 -map 2 -f matroska -y "+filename);
+
+        p.getOutputStream(0).write(b);
+        p.getOutputStream(1).write(b);
+        p.getOutputStream(2).write(b);
+        p.getOutputStream(2).write(b);
+        p.getOutputStream(0).close();
+        p.getOutputStream(1).close();
+        p.getOutputStream(2).close();
+
+        int e = p.waitFor();
+        int i = p.getErrorStream().read(b);
+
+        Assert.assertTrue(new String(b,0,i), e==0);
+        Assert.assertTrue(new File(filepath, filename).isFile());
+    }
 }

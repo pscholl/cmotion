@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Collections;
@@ -29,39 +30,47 @@ public class FFMpegProcess {
     protected final Process p;
     protected final ProcessBuilder pb;
     protected final LinkedList<Socket> sockets;
+    protected final LinkedList<Integer> ports;
 
     protected FFMpegProcess(ProcessBuilder process) throws IOException {
         boolean isinputarg = false;
         LinkedList<String> newargs;
-        LinkedList<Integer> t;
 
         pb = process;
-        t = new LinkedList<Integer>();
+        ports = new LinkedList<Integer>();
         sockets = new LinkedList<Socket>();
         newargs = new LinkedList<String>();
-
 
         for (String arg : pb.command()) {
             if (isinputarg) {
                 Integer port = getFreeTCPPort();
                 arg = arg.replaceFirst("%port", port.toString());
-                t.add(port);
+                ports.add(port);
             }
 
             isinputarg = arg.contentEquals("-i");
-            newargs.add(arg);
+            if (arg.trim().length() !=0 )
+                newargs.add(arg.trim());
         }
 
         pb.command(newargs);
         p = pb.start();
-
-        for (int i=0, time=0; i<t.size() && time<2000; time+=5)
-            try { sockets.push(new Socket("localhost", t.get(i))); i++; }
-            catch (Exception e) { sleep(5); }
     }
 
-    public OutputStream getOutputStream(int i) throws IOException {
-        return sockets.get(i).getOutputStream();
+    public OutputStream getOutputStream(int i) throws IOException, InterruptedException {
+        try {
+            return sockets.get(i).getOutputStream();
+        } catch (IndexOutOfBoundsException e) {
+            if (sockets.size() != i)
+                throw new IOException("need to retrieve outputs streams in order");
+
+            Integer port = ports.get(i);
+            for (int t=0; t<2000; t+=5) {
+                try { sockets.add(new Socket("localhost", port)); break; }
+                catch (ConnectException e1) { Thread.sleep(5); }
+            }
+            return sockets.get(i).getOutputStream();
+        }
     }
 
     private void sleep(int ms) {
