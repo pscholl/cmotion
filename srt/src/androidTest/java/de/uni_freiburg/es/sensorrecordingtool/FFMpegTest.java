@@ -95,11 +95,75 @@ public class FFMpegTest {
         p.getOutputStream(1).write(b);
         p.getOutputStream(2).write(b);
         p.getOutputStream(2).write(b);
+        p.getOutputStream(2).write(b);
+        p.getOutputStream(2).write(b);
+        p.getOutputStream(2).write(b);
+        p.getOutputStream(2).write(b);
+        p.getOutputStream(2).write(b);
+        p.getOutputStream(2).write(b);
+
+
         p.getOutputStream(0).close();
         p.getOutputStream(1).close();
         p.getOutputStream(2).close();
 
         int e = p.waitFor();
+        int i = p.getErrorStream().read(b);
+
+        Assert.assertTrue(new String(b,0,i), e==0);
+        Assert.assertTrue(new File(filepath, filename).isFile());
+    }
+
+    @Test public void encodeWithBuilder() throws Exception {
+        byte[] b = new byte[4096];
+        FFMpegProcess p = FFMpegProcess.builder()
+            .addAudio("u8", 50)
+                .setStreamTag("name", "acceleration")
+                .setStreamTag("location", "hip")
+            .addAudio("u8", 1)
+                .setStreamTag("name", "gps")
+                .setStreamTag("location", "hip")
+            .setCodec("a", "wavpack")
+            .setOutput(new File(filepath, filename).toString(), "matroska")
+            .build(c);
+
+        p.getOutputStream(0).write(b);
+        p.getOutputStream(1).write(b);
+
+        p.getOutputStream(0).close();
+        p.getOutputStream(1).close();
+
+        int e = p.waitFor();
+        int i = p.getErrorStream().read(b);
+
+        Assert.assertTrue(new String(b,0,i), e==0);
+        Assert.assertTrue(new File(filepath, filename).isFile());
+    }
+
+    @Test public void encodeWithBuilderVideo() throws Exception {
+        byte[] b = new byte[4096],
+               a = new byte[10*320*240*12/8]; // nv21 has 12bit per pixel
+
+        FFMpegProcess p = FFMpegProcess.builder()
+            .addAudio("u8", 50)
+                .setStreamTag("name", "acceleration")
+                .setStreamTag("location", "hip")
+            .addAudio("u8", 1)
+                .setStreamTag("name", "gps")
+                .setStreamTag("location", "hip")
+            .addVideo(320,240,10,"rawvideo", "nv21")
+                .setStreamTag("name", "frontcam")
+            .setCodec("a", "wavpack")
+            .addOutputSwitch("-c:v", "libtheora")
+            .addOutputSwitch("-qscale:v", "7")
+            .setOutput(new File(filepath, filename).toString(), "matroska")
+            .build(c);
+
+        p.getOutputStream(0).write(b);
+        p.getOutputStream(1).write(b);
+        p.getOutputStream(2).write(a);
+
+        int e = p.terminate();
         int i = p.getErrorStream().read(b);
 
         Assert.assertTrue(new String(b,0,i), e==0);
