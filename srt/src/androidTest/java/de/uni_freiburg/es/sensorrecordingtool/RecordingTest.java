@@ -4,11 +4,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.hardware.Sensor;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
-import android.os.Looper;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 import android.test.suitebuilder.annotation.MediumTest;
@@ -38,7 +36,7 @@ public class RecordingTest {
     @Before public void setup() {
         c = InstrumentationRegistry.getTargetContext();
         i = new Intent(c, Recorder.class);
-        o = Recorder.getDefaultOutputPath() + Integer.toString(count++);
+        o = RecordingProcess.getDefaultOutputPath() + Integer.toString(count++);
         i.putExtra("-o", o);
     }
 

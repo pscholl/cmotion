@@ -13,7 +13,6 @@ import android.test.suitebuilder.annotation.MediumTest;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
@@ -37,7 +36,7 @@ public class AudioTest {
     @Before public void setup() {
         c = InstrumentationRegistry.getTargetContext();
         i = new Intent(c, Recorder.class);
-        o = Recorder.getDefaultOutputPath() + Integer.toString(count++);
+        o = RecordingProcess.getDefaultOutputPath() + Integer.toString(count++);
         i.putExtra("-o", o);
     }
 

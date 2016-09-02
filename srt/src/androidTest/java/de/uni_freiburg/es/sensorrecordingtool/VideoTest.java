@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.Camera;
-import android.hardware.Sensor;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.support.test.InstrumentationRegistry;
@@ -40,7 +39,7 @@ public class VideoTest {
     @Before public void setup() {
         c = InstrumentationRegistry.getTargetContext();
         i = new Intent(c, Recorder.class);
-        o = Recorder.getDefaultOutputPath() + Integer.toString(count++);
+        o = RecordingProcess.getDefaultOutputPath() + Integer.toString(count++);
         i.putExtra("-o", o);
 
         Camera cam = Camera.open();

@@ -12,9 +12,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.Socket;
 
 /**
  * Created by phil on 8/26/16.
@@ -63,9 +61,8 @@ public class FFMpegTest {
         p.getOutputStream(0).close();
 
         int e = p.waitFor();
-        int i = p.getErrorStream().read(b);
 
-        Assert.assertTrue(new String(b,0,i), e==0);
+        Assert.assertTrue("ffmpeg exited cleanly", e==0);
         Assert.assertTrue(new File(filepath, filename).isFile());
     }
 
@@ -77,9 +74,8 @@ public class FFMpegTest {
         p.getOutputStream(0).close();
 
         int e = p.waitFor();
-        int i = p.getErrorStream().read(b);
 
-        Assert.assertTrue(new String(b,0,i), e==0);
+        Assert.assertTrue("ffmpeg exited cleanly", e==0);
         Assert.assertTrue(new File(filepath, filename).isFile());
     }
 
@@ -116,7 +112,7 @@ public class FFMpegTest {
 
     @Test public void encodeWithBuilder() throws Exception {
         byte[] b = new byte[4096];
-        FFMpegProcess p = FFMpegProcess.builder()
+        FFMpegProcess p = new FFMpegProcess.Builder()
             .addAudio("u8", 50)
                 .setStreamTag("name", "acceleration")
                 .setStreamTag("location", "hip")
@@ -144,7 +140,7 @@ public class FFMpegTest {
         byte[] b = new byte[4096],
                a = new byte[10*320*240*12/8]; // nv21 has 12bit per pixel
 
-        FFMpegProcess p = FFMpegProcess.builder()
+        FFMpegProcess p = new FFMpegProcess.Builder()
             .addAudio("u8", 50)
                 .setStreamTag("name", "acceleration")
                 .setStreamTag("location", "hip")

@@ -14,6 +14,8 @@ import android.util.Log;
 import java.util.HashSet;
 import java.util.Set;
 
+import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorProcess;
+
 /** This is just a placeholder for showing, hiding and updating the notification shown for
  *  each recording process. Mainly to unclutter the code in the Recorder class.
  *
@@ -30,15 +32,15 @@ public class Notification {
 
     static Set<Integer> isCanceled = new HashSet<Integer>();
 
-    static public void newRecording(final Context c, final int id, final Recorder.Recording r) {
+    static public void newRecording(final Context c, final int id, final RecordingProcess r) {
         Intent cancel_intent = new Intent(Recorder.CANCEL_ACTION);
         cancel_intent.putExtra(Recorder.RECORDING_ID, id);
         PendingIntent pending  = PendingIntent.getBroadcast(c, id, cancel_intent,
                                                             PendingIntent.FLAG_UPDATE_CURRENT);
 
         Intent openfolder = new Intent(Intent.ACTION_GET_CONTENT);
-        openfolder.setDataAndType(Uri.parse("file://"+r.mOutputPath), "*/*");
-        Log.d(Recorder.TAG, r.mOutputPath);
+        openfolder.setDataAndType(Uri.parse("file://"+r.output), "*/*");
+        Log.d(Recorder.TAG, r.output);
         PendingIntent openfolderp = PendingIntent.getActivity(c, id,
                 Intent.createChooser(openfolder, c.getString(R.string.choose)),
                 PendingIntent.FLAG_UPDATE_CURRENT);
@@ -52,7 +54,7 @@ public class Notification {
                 r.mInputList.size(),
                 r.mInputList.size());
 
-        if (r.mInputList.get(0).mDur > 0)
+        if (r.duration > 0)
             content += c.getResources().getString(R.string.duration,
                        DateUtils.formatElapsedTime((long) r.mInputList.get(0).mDur));
 
@@ -82,7 +84,7 @@ public class Notification {
             @Override
             public void run() {
                 double total = 0, done = 0;
-                for (Recorder.SensorProcess p : r.mInputList) {
+                for (SensorProcess p : r.mInputList) {
                     done += p.mElapsed;
                     total += p.mDur;
                 }

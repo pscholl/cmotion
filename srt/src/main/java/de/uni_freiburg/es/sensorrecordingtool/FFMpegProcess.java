@@ -1,14 +1,13 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
 import android.content.Context;
+import android.os.AsyncTask;
 import android.os.Environment;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.RandomAccessFile;
-import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Collections;
@@ -31,6 +30,23 @@ public class FFMpegProcess {
     protected final ProcessBuilder pb;
     protected final LinkedList<Socket> sockets;
     protected final LinkedList<Integer> ports;
+    protected final AsyncTask<InputStream, Void, Void> verbose =
+        new AsyncTask<InputStream, Void, Void>() {
+        @Override
+        protected Void doInBackground(InputStream... ps) {
+            InputStream is = ps[0];
+
+            try {
+                byte buf[] = new byte[4096];
+
+                while(true) {
+                    int n = is.read(buf);
+                    System.err.write(buf, 0, n);
+                }
+            } catch (IOException e) {}
+            return null;
+    }};
+
 
     protected FFMpegProcess(ProcessBuilder process) throws IOException {
         boolean isinputarg = false;
@@ -55,6 +71,10 @@ public class FFMpegProcess {
 
         pb.command(newargs);
         p = pb.start();
+
+        System.err.println("executing "+ pb.command().toString());
+
+        verbose.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, p.getErrorStream());
     }
 
     public OutputStream getOutputStream(int i) throws IOException, InterruptedException {
@@ -65,24 +85,14 @@ public class FFMpegProcess {
                 throw new IOException("need to retrieve outputs streams in order");
 
             Integer port = ports.get(i);
-            for (int t=0; t<2000; t+=5) {
-                try { sockets.add(new Socket("localhost", port)); break; }
-                catch (ConnectException e1) { Thread.sleep(5); }
-            }
-
-            if (sockets.size()-1 != i) { // ffmpeg failed to start
-                byte buf[] = new byte[4096];
-                int n = p.getErrorStream().read(buf);
-                throw new IOException(new String(buf, 0, n));
-            }
-
+            sockets.add(new AsyncSocket("localhost", port));
             return sockets.get(i).getOutputStream();
         }
     }
 
     private void sleep(int ms) {
         try { Thread.sleep(ms); }
-        catch (Exception e) {}
+        catch (Exception e) {System.err.println("wtf");}
     }
 
     private Integer getFreeTCPPort() {
@@ -135,10 +145,6 @@ public class FFMpegProcess {
 
     public InputStream getErrorStream() { return p.getErrorStream();  }
 
-    public static FFMpegProcessBuilder builder() {
-        return new FFMpegProcessBuilder();
-    }
-
     public int terminate() throws InterruptedException {
         for (Socket s : sockets)
             try { s.close(); }
@@ -151,19 +157,20 @@ public class FFMpegProcess {
      * free to add additional stuff here. You can always add your own command line switches with
      * the addSwitch() function.
      */
-    protected static class FFMpegProcessBuilder  {
+    protected static class Builder {
         LinkedList<String> inputopts = new LinkedList<String>(),
                           outputopts = new LinkedList<String>();
         int numinputs  = 0;
+        private String output_fmt;
+        private String output;
 
         /** add an audio stream to the ffmpeg input
-         *
          * @param format sample format, list them with ffmpeg -formats or documentation
          * @param rate   sample rate in Hz
          */
-        public FFMpegProcessBuilder addAudio(String format, int rate) {
+        public Builder addAudio(String format, double rate) {
             Collections.addAll(inputopts, String.format(
-                "-f %s -ar %d -i tcp://localhost:%%port?listen",format, rate).split(" "));
+                "-f %s -ar %f -i tcp://localhost:%%port?listen",format, rate).split(" "));
 
             numinputs ++;
             return this;
@@ -179,11 +186,11 @@ public class FFMpegProcess {
          *                set to null if specified by the input format. The default for Android is
          *                NV21.
          */
-        public FFMpegProcessBuilder addVideo(int width, int height, int rate, String fmt, String pixfmt) {
+        public Builder addVideo(int width, int height, double rate, String fmt, String pixfmt) {
             String optarg = pixfmt == null ? "" : String.format("-pix_fmt %s", pixfmt);
 
             Collections.addAll(inputopts,
-                String.format("-r %d -s %d:%d -f %s %s -i tcp://localhost:%%port?listen",
+                String.format("-r %f -s %d:%d -f %s %s -i tcp://localhost:%%port?listen",
                        rate, width, height, fmt, optarg).split(" "));
 
             numinputs ++;
@@ -195,7 +202,7 @@ public class FFMpegProcess {
          * @param key name of tag to set
          * @param value value of the specified tag
          */
-        public FFMpegProcessBuilder setStreamTag(String key, String value) throws Exception {
+        public Builder setStreamTag(String key, String value) throws Exception {
             if (numinputs == 0)
                 throw new Exception("no stream to apply tags to, please add one first");
 
@@ -210,7 +217,7 @@ public class FFMpegProcess {
          * @param key name of the tag
          * @param value value of the tag
          */
-        public FFMpegProcessBuilder setTag(String key, String value) {
+        public Builder setTag(String key, String value) {
             outputopts.add("-metadata");
             outputopts.add(String.format("%s=%s", key, value));
 
@@ -222,7 +229,7 @@ public class FFMpegProcess {
          *
          * @param codec set the codec to encode the output with
          */
-        public FFMpegProcessBuilder setStreamCodec(String codec) throws Exception {
+        public Builder setStreamCodec(String codec) throws Exception {
             if (numinputs == 0)
                 throw new Exception("no stream to apply tags to, please add one first");
 
@@ -237,7 +244,7 @@ public class FFMpegProcess {
          * @param stream stream specifier
          * @param codec audio codec to use
          */
-        public FFMpegProcessBuilder setCodec(String stream, String codec) {
+        public Builder setCodec(String stream, String codec) {
             outputopts.add(String.format("-c:%s", stream));
             outputopts.add(codec);
             return this;
@@ -248,7 +255,7 @@ public class FFMpegProcess {
          * @param option include the leading dash to the command line option
          * @param value the value of this option
          */
-        public FFMpegProcessBuilder addOutputSwitch(String option, String value) {
+        public Builder addOutputSwitch(String option, String value) {
             outputopts.add(option);
             outputopts.add(value);
 
@@ -260,7 +267,7 @@ public class FFMpegProcess {
          * @param option include the leading dash to the command line option
          * @param value the value of this option
          */
-        public FFMpegProcessBuilder addInputSwitch(String option, String value) {
+        public Builder addInputSwitch(String option, String value) {
             inputopts.add(option);
             inputopts.add(value);
 
@@ -273,22 +280,31 @@ public class FFMpegProcess {
          * @param output the output file, channel etc. that ffmpeg supports (defaults to overwriting)
          * @param format set to null if ffmpeg is to decide, otherwise choose a container
          */
-        public FFMpegProcessBuilder setOutput(String output, String format) {
-            for (int i=0; i<numinputs; i++) {
-                outputopts.add("-map");
-                outputopts.add(String.format("%d", i));
-            }
-            outputopts.add("-f");
-            outputopts.add(format);
-            outputopts.add("-y");
-            outputopts.add(output);
+        public Builder setOutput(String output, String format) {
+            this.output = output;
+            this.output_fmt = format;
+            return this;
+        }
 
+        public Builder setLoglevel(String level) {
+            outputopts.add("-loglevel");
+            outputopts.add(level);
             return this;
         }
 
         public FFMpegProcess build(Context c) throws IOException {
             LinkedList<String> cmdline = new LinkedList<String>();
             File path = new File(new File(c.getFilesDir().getParentFile(), "lib"), "libffmpeg.so");
+
+            for (int i=0; i<numinputs; i++) {
+                outputopts.add("-map");
+                outputopts.add(String.format("%d", i));
+            }
+            outputopts.add("-f");
+            outputopts.add(output_fmt);
+            outputopts.add("-y");
+            outputopts.add(output);
+
             cmdline.add(path.toString());
             cmdline.addAll(inputopts);
             cmdline.addAll(outputopts);

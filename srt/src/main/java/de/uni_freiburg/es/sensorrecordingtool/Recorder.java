@@ -1,30 +1,18 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.PowerManager;
 import android.util.Log;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.TimeZone;
 
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
-import de.uni_freiburg.es.sensorrecordingtool.sensors.Sensor;
-import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEvent;
-import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEventListener;
+import de.uni_freiburg.es.sensorrecordingtool.sensors.BlockSensorProcess;
+import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorProcess;
 
 /**
  * A tool for recording arbitrary combinations of sensor attached and reachable via Android. The
@@ -107,20 +95,14 @@ public class Recorder extends Service {
     public static final String RECORDING_ID = "-r";
 
     /* keep track of all running recordings */
-    private LinkedList<Recording> mRecordings = new LinkedList<Recording>();
+    private LinkedList<RecordingProcess> mRecordings = new LinkedList<RecordingProcess>();
 
     /** called with the startService routine, will parse all RECORDER_INPUTs for known values
      *  and start the recording. If no RECORDER_OUTPUT directory is given it will default to
      *  a directory named with the current timestamp in ISO-format on the sdcard.
      */
     @Override
-    public int onStartCommand(Intent i, int flags, int startId) {
-        String[] sensors = i.getStringArrayExtra(RECORDER_INPUT);
-        String[] formats = i.getStringArrayExtra(RECORDER_FORMAT);
-        String output    = i.getStringExtra(RECORDER_OUTPUT);
-        double[] rates   = getIntFloatOrDoubleArray(i, RECORDER_RATE, 50.);
-        double duration  = getIntFloatOrDouble(i, RECORDER_DURATION, -1);
-
+    public int onStartCommand(final Intent i, int flags, int startId) {
         if (i == null)
             return START_NOT_STICKY;
 
@@ -142,116 +124,83 @@ public class Recorder extends Service {
          * terminate the recording right now, if the user wishes so.
          */
         if (CANCEL_ACTION.equals(i.getAction())) {
-            int id = i.getIntExtra(RECORDING_ID, mRecordings.size()-1);
+            int id = i.getIntExtra(RECORDING_ID, mRecordings.size() - 1);
 
             try {
-                Notification.cancelRecording(this, id);
+                Notification.cancelRecording(this.getApplicationContext(), id);
 
                 if (id < 0 || id >= mRecordings.size()) {
                     Log.d(TAG, "invalid recording id " + id);
                     return START_NOT_STICKY;
                 }
 
-                /* flush instead of terminating to get all sensor data up until now */
-                mRecordings.get(id).mCallFlush.run();
+                mRecordings.get(id).terminate();
                 mRecordings.remove(id);
                 Log.d(TAG, "terminated recording " + id);
-            } catch(IndexOutOfBoundsException e) {
+            } catch (IndexOutOfBoundsException e) {
                 Log.d(TAG, "unable to find recording with id " + id);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
 
             return START_NOT_STICKY;
         }
 
-        /*
-         * check the output file
-         */
-        if (output == null)
-            output = getDefaultOutputPath();
+        newRecordingProcess(i);
 
-        /*
-         * check if we have sensor input
-         */
-        if (sensors == null && i.getStringExtra(RECORDER_INPUT)!=null)
-            sensors = new String[] {i.getStringExtra(RECORDER_INPUT)};
-
-        if (sensors == null)
-            return error("no input supplied");
-
-        /*
-         * check for optional format specifier
-         */
-        if (formats == null && i.getStringExtra(RECORDER_FORMAT)!=null)
-            formats = new String[] {i.getStringExtra(RECORDER_FORMAT)};
-
-        if (formats == null)
-            formats = new String[sensors.length];
-
-        if (formats.length != sensors.length) {
-            String[] fmts = new String[sensors.length];
-            Arrays.fill(fmts, null);
-            for (int j=0; j<formats.length; j++)
-                fmts[j] = formats[j];
-            formats = fmts;
-        }
-
-        /*
-         * convert a single rate to an array, convert a single element array to a length
-         * matching the sensor input array, check whether lengths are matching.
-         */
-        if (rates.length == 1) {
-            rates = Arrays.copyOf(rates, sensors.length);
-            Arrays.fill(rates, rates[0]);
-        }
-
-        if (rates.length != sensors.length)
-            return error("either rates and sensors must of same length or a single rate must be given");
-
-        for (double r : rates)
-            if (r <= 0)
-                return error("rate must be larger than zero, but was " + r);
-
-        /* now try and create the output folder */
-        File path = new File(output);
-        if ( !path.exists() && !path.mkdirs() )
-            return error("unable to create " + path);
-
-        if ( path.exists() && !path.isDirectory() )
-            return error("path is not a directory " + path);
-        /*
-         * All good here, now start to create a sensorlistener for each input and create its
-         * accompanying output file and start the whole process. Give each bundle a maximum
-         * duration. And create the output folder beforehand.
-         */
-        assert(rates.length==sensors.length);
-        assert(formats.length==sensors.length);
-
-        Recording r = new Recording(output, duration);
-        for (int j=0; j<rates.length; j++) {
-            try {
-                BufferedOutputStream bf =  new BufferedOutputStream(
-                        new FileOutputStream(new File(output, sensors[j])));
-
-                SensorProcess sp;
-
-                if (sensors[j].contains("video") || sensors[j].contains("audio"))
-                    sp = new BlockSensorProcess(sensors[j], rates[j], formats[j], duration, bf);
-                else
-                    sp = new SensorProcess(sensors[j], rates[j], formats[j], duration, bf);
-
-                r.add(sp);
-            } catch (Exception e) {
-                error(sensors[j] + ": " + e.getLocalizedMessage());
-                e.printStackTrace();
-                /* we do best effort recordings */
+        /*new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Recorder.this.newRecordingProcess(i);
             }
-        }
-
-        mRecordings.add(r);
-        /** create the notification. */
-        Notification.newRecording(this, mRecordings.indexOf(r), r);
+        }).start();*/
 
         return START_NOT_STICKY;
+    }
+
+    public void newRecordingProcess(final Intent i) {
+        try {
+            for (String key : i.getExtras().keySet())
+                System.out.print(i.getStringArrayExtra(RECORDER_INPUT));
+
+            RecordingProcess recording = new RecordingProcess(
+                this.getApplicationContext(),
+                i.getStringExtra(RECORDER_OUTPUT),
+                getStringOrArray(i, RECORDER_INPUT),
+                getStringOrArray(i, RECORDER_FORMAT),
+                getIntFloatOrDoubleArray(i, RECORDER_RATE, 50.),
+                getIntFloatOrDouble(i, RECORDER_DURATION, -1) );
+
+            for (int j=0; j<recording.sensors.length; j++) {
+                BufferedOutputStream os = new BufferedOutputStream(recording.getOutputStream(j));
+                SensorProcess sp = newSensorProcess( recording.sensors[j],
+                                                     recording.formats[j],
+                                                     recording.rates[j],
+                                                     recording.duration, os );
+                recording.mInputList.add(sp);
+            }
+
+            mRecordings.add(recording);
+            //Notification.newRecording(this, mRecordings.indexOf(recording), recording);
+        } catch (Exception e) {
+            e.printStackTrace();}
+    }
+
+    private SensorProcess newSensorProcess(String sensor, String format, double rate,
+                                           double dur, BufferedOutputStream os) throws Exception {
+        Context c = this.getApplicationContext();
+
+        if (sensor.contains("video"))
+            return new BlockSensorProcess(c, sensor, rate, format, dur, os);
+        else
+            return new SensorProcess(c, sensor, rate, format, dur, os);
+    }
+
+    public static String[] getStringOrArray(Intent i, String extra) {
+        String[] arr = i.getStringArrayExtra(extra);
+        if (arr == null)
+            arr = new String[] { i.getStringExtra(extra) };
+        return arr;
     }
 
     public static double[] getIntFloatOrDoubleArray(Intent i, String extra, double def) {
@@ -305,250 +254,7 @@ public class Recorder extends Service {
         Intent err = new Intent(ERROR_ACTION);
         err.putExtra(ERROR_REASON, s);
         sendBroadcast(err);
-        Log.e(TAG, s);
+        Log.e(TAG, s==null ? "" : s);
         return START_NOT_STICKY;
-    }
-
-    /** utility function for ISO datetime folder on public storage */
-    static String getDefaultOutputPath() {
-        TimeZone tz = TimeZone.getTimeZone("UTC");
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmZ");
-        df.setTimeZone(tz);
-        File path = new File("/sdcard/DCIM/");
-        return new File(path, df.format(new Date())).toString();
-    }
-
-    /** Copies *sensor* data for *dur* seconds at *rate* to a bufferedwriter *bf*. Automatically
-     * closes the output buffer when done.
-     *
-     * This is all done in binary float format, all the channels are recorded and the current
-     * accuracy of the process. For example the accelerometer reports all three axes, so one sample
-     * is 3 (channels) * 4 (bytes per float) + 4 (bytes for accuracy as float).
-     *
-     * Arguments:
-     *  sensor - a string representation for the sensor, must match Android Sensor types
-     *  dur    - a double seconds of recording duration
-     *  rate   - double Hz for the recording, non-negative
-     *  bf     - a bufferedwriter, where data gets written to in binary format.
-     *
-     */
-    protected class SensorProcess implements SensorEventListener {
-        public static final int LATENCY_US = 5 * 60 * 1000 * 1000;
-        final Sensor mSensor;
-        final double mRate;
-        final BufferedOutputStream mOut;
-        final double mDur;
-        ByteBuffer mBuf;
-        long mLastTimestamp = -1;
-        double mDiff = 0;
-        double mElapsed = 0;
-
-        public SensorProcess(String sensor, double rate, String format, double dur,
-                             BufferedOutputStream bf) throws Exception  {
-            mRate = rate;
-            mDur = dur;
-            mOut = bf;
-
-            int maxreportdelay_us = LATENCY_US;
-            if ( mDur > 0 && (int) mDur * 1000 * 1000 / 2 < LATENCY_US )
-                maxreportdelay_us = (int) mDur * 1000 * 1000 / 2;
-
-            /* TODO setting maxreport to 5minutes can get problematic later for ffmpeg */
-            mSensor = getMatchingSensor(sensor);
-            mSensor.registerListener(this, (int) (1 / rate * 1000 * 1000), maxreportdelay_us, format);
-        }
-
-        /** given a String tries to find a matching sensor given these rules:
-         *
-         *   1. find all sensors which string description (getStringType()) contains the *sensor*
-         *   2. choose the shortest one of that list
-         *
-         *  e.g., when "gyro" is given, choose android.sensor.type.gyroscope rather than
-         *  android.sensor.type.gyroscope_uncalibrated. Matching is case-insensitive.
-         *
-         * @param sensor sensor name to match for
-         * @return the sensor for which the description is shortest and contains the *sensor*
-         * @throws Exception when no or multiple matches are found
-         */
-        public Sensor getMatchingSensor(String sensor) throws Exception {
-            LinkedList<Sensor> candidates = new LinkedList<Sensor>();
-
-            for (Sensor s : Sensor.getAvailableSensors(getApplicationContext()))
-                if (s.getStringType().toLowerCase().contains(sensor.toLowerCase()))
-                    candidates.add(s);
-
-            if (candidates.size() == 0) {
-                StringBuilder b = new StringBuilder();
-                for (Sensor s : Sensor.getAvailableSensors(getApplicationContext())) {
-                    b.append(s.getStringType());
-                    b.append("\n");
-                }
-                throw new Exception("no matches for " + sensor + " found."+
-                                    "Options are: \n"+b.toString());
-            }
-
-            int minimum = Integer.MAX_VALUE;
-
-            for (Sensor s : candidates)
-                minimum = Math.min(minimum, s.getStringType().length());
-
-            Iterator<Sensor> it = candidates.iterator();
-            while(it.hasNext())
-                if (it.next().getStringType().length() != minimum)
-                    it.remove();
-
-            if (candidates.size() != 1) {
-                StringBuilder b = new StringBuilder();
-                for (Sensor s : candidates) {
-                    b.append(s.getStringType());
-                    b.append(", ");
-                }
-                throw new Exception("too many sensor candidates for " + sensor +
-                        " options are " + b.toString());
-            }
-
-            return candidates.getFirst();
-        }
-
-        @Override
-        public void onSensorChanged(SensorEvent sensorEvent) {
-            if (mLastTimestamp == -1) {
-                mLastTimestamp = sensorEvent.timestamp;
-                return;
-            }
-
-            try {
-                /*
-                 * the sensorrate might not be constant, which is why we do a simple repetition
-                 * interpolation here. I.e. we make sure that at least 1/rate seconds have passed
-                 * between samples.
-                 */
-                assert( mLastTimestamp < sensorEvent.timestamp );
-                mDiff += (sensorEvent.timestamp - mLastTimestamp) * 1e-9;
-
-                /*
-                 * transfer a sensor sample and the current accuracy measure
-                 */
-                byte[] arr = transfer(sensorEvent);
-
-                /*
-                 * store it or multiple copies of the same, close when done.
-                 */
-                while (mDiff >= 1/mRate) {
-                    mDiff -= 1 / mRate;
-                    mElapsed += 1 / mRate;
-
-                    if (mDur > 0 && mElapsed > mDur+.5/mRate) {
-                        terminate();
-                        return;
-                    } else
-                        mOut.write(arr);
-                }
-
-                mLastTimestamp = sensorEvent.timestamp;
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        public byte[] transfer(SensorEvent sensorEvent) {
-            if (mBuf == null)
-                mBuf = ByteBuffer.allocate(sensorEvent.values.length * 4);
-            else
-                mBuf.clear();
-
-            for (float v : sensorEvent.values)
-                mBuf.putFloat(v);
-
-            return mBuf.array();
-        }
-
-        private void terminate() throws IOException {
-            mSensor.unregisterListener(this);
-            mOut.close();
-        }
-    }
-
-    protected class BlockSensorProcess extends SensorProcess {
-        public BlockSensorProcess(String sensor, double rate, String format, double dur,
-                                  BufferedOutputStream bf) throws Exception {
-            super(sensor, rate, format, dur, bf);
-        }
-
-        @Override
-        public byte[] transfer(SensorEvent sensorEvent) {
-            return sensorEvent.rawdata;
-        }
-    }
-
-    public class Recording {
-        final String mOutputPath;
-        final ArrayList<SensorProcess> mInputList;
-        final PowerManager mpm;
-        final PowerManager.WakeLock mwl;
-        final Handler mTimeout;
-
-        public Recording(String output, double duration) {
-            mOutputPath = output;
-            mInputList = new ArrayList<SensorProcess>();
-
-            mpm = (PowerManager) getSystemService(POWER_SERVICE);
-            mwl = mpm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, Integer.toString(this.hashCode()));
-
-            /* have a timeout after the duration to flush the sensor and terminate the process
-             * afterwards. This is to avoid sensor that do not report data continuously. For example
-             * in the case of a failure condition */
-            mTimeout = new Handler();
-            if (duration > 0)
-                mTimeout.postDelayed(mCallFlush, (long) (duration*1000) + 2000);
-        }
-
-        public void add(SensorProcess s) {
-            if (mInputList.size() == 0)
-                mwl.acquire();
-            mInputList.add(s);
-        }
-
-        public void terminate() throws IOException {
-            /* this is a special hack for completely failing sensors: terminate them as
-             * soon as another process terminates. */
-            for (Iterator<SensorProcess> it = mInputList.iterator(); it.hasNext();) {
-                SensorProcess p = it.next();
-                p.terminate();
-                it.remove();
-            }
-
-            Intent i = new Intent(FINISH_ACTION);
-            i.putExtra(FINISH_PATH, mOutputPath);
-            i.putExtra(RECORDING_ID, mRecordings.indexOf(this));
-            sendBroadcast(i);
-            mRecordings.remove(this);
-
-            if (mwl.isHeld())
-                mwl.release();
-        }
-
-
-        private Runnable mCallFlush = new Runnable() {
-            @Override
-            public void run() {
-                for (SensorProcess p : mInputList)
-                    p.mSensor.flush(p);
-
-                // TODO 1sec for flushing? there is no way to know when flushing finished?!
-                mTimeout.postDelayed(mCallTerminate, 1000);
-            }
-        };
-
-        private final Runnable mCallTerminate = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    terminate();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        };
     }
 }
