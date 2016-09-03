@@ -2,50 +2,58 @@ package de.uni_freiburg.es.sensorrecordingtool;
 
 import android.os.AsyncTask;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.net.Socket;
+import java.util.concurrent.LinkedBlockingQueue;
 
-/**
+/** It ain't pretty
+ *
  * Created by phil on 9/1/16.
  */
-public class AsyncSocket extends Socket {
+public class AsyncSocket extends OutputStream {
     private final Integer port;
     private final String host;
     private final AsyncTask<Void, Void, Void> async;
+    private int numbytes;
     private Socket socket;
-    private boolean interrupted = false;
-    private PipedInputStream pipein;
-    private PipedOutputStream pipeout;
-    private boolean connected = false;
+    private ByteArrayOutputStream os;
+    private LinkedBlockingQueue<byte[]> q = new LinkedBlockingQueue<>();
+    private boolean isclosed = false;
 
     public AsyncSocket(final String host, final Integer port) throws IOException {
         this.host = host;
         this.port = port;
-        this.pipein = new PipedInputStream();
-        this.pipeout = new PipedOutputStream();
-        this.pipein.connect(this.pipeout);
+        this.os = new ByteArrayOutputStream();
+        this.numbytes = 0;
 
         this.async = new AsyncTask<Void, Void, Void>() {
             @Override
             protected Void doInBackground(Void... voids) {
                 try {
-                    byte buf[] = new byte[4096];
                     for (int t=0; t<2000; t+=5) {
-                        try { AsyncSocket.this.socket = new Socket(host, port); break; }
-                        catch (Exception e ) { e.printStackTrace(); sleep(5); }
+                        try {
+                            socket = new Socket(host, port);
+                            break;
+                        } catch (Exception e ) { sleep(5); }
                     }
-                    AsyncSocket.this.connected = true;
-                    while (!AsyncSocket.this.interrupted) {
-                        int n = AsyncSocket.this.pipein.read(buf, 0, buf.length);
-                        if (n>1) socket.getOutputStream().write(buf, 0, n);
-                        else     break;
+
+                    while (socket != null && socket.isConnected() && (!isclosed || q.size()!=0)) {
+                        byte buf[] = q.take();
+                        numbytes += buf.length;
+                        if (buf.length>1) socket.getOutputStream().write(buf);
+                        System.err.println(String.format("written %d bytes on %d", numbytes, port));
                     }
-                    socket.getOutputStream().close();
-                    pipeout.close();
-                } catch (IOException e) { e.printStackTrace(); }
+
+                    socket.close();
+                } catch (IOException e) {
+                    System.err.println(e.getMessage());
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
                 return null;
             }
 
@@ -61,12 +69,23 @@ public class AsyncSocket extends Socket {
         this.async.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
-    public OutputStream getOutputStream() {
-        return this.pipeout;
+    @Override
+    public void write(byte buf[]) {
+        q.add(buf);
     }
 
     @Override
-    public boolean isConnected() {
-        return connected;
+    public void write(int i) throws IOException {
+
+    }
+
+    @Override
+    public void write(byte[] buffer, int offset, int count) throws IOException {
+        q.add(buffer);
+    }
+
+    @Override
+    public void close() throws IOException {
+        isclosed = true;
     }
 }

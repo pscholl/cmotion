@@ -28,7 +28,7 @@ public class FFMpegProcess {
 
     protected final Process p;
     protected final ProcessBuilder pb;
-    protected final LinkedList<Socket> sockets;
+    protected final LinkedList<AsyncSocket> sockets;
     protected final LinkedList<Integer> ports;
     protected final AsyncTask<InputStream, Void, Void> verbose =
         new AsyncTask<InputStream, Void, Void>() {
@@ -54,7 +54,7 @@ public class FFMpegProcess {
 
         pb = process;
         ports = new LinkedList<Integer>();
-        sockets = new LinkedList<Socket>();
+        sockets = new LinkedList<AsyncSocket>();
         newargs = new LinkedList<String>();
 
         for (String arg : pb.command()) {
@@ -77,16 +77,16 @@ public class FFMpegProcess {
         verbose.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, p.getErrorStream());
     }
 
-    public OutputStream getOutputStream(int i) throws IOException, InterruptedException {
+    public AsyncSocket getOutputStream(int i) throws IOException, InterruptedException {
         try {
-            return sockets.get(i).getOutputStream();
+            return sockets.get(i);
         } catch (IndexOutOfBoundsException e) {
             if (sockets.size() != i)
                 throw new IOException("need to retrieve outputs streams in order");
 
             Integer port = ports.get(i);
             sockets.add(new AsyncSocket("localhost", port));
-            return sockets.get(i).getOutputStream();
+            return sockets.get(i);
         }
     }
 
@@ -136,7 +136,7 @@ public class FFMpegProcess {
     public int waitFor() throws InterruptedException {
         int ret = p.waitFor();
 
-        for (Socket s : sockets)
+        for (AsyncSocket s : sockets)
             try { s.close(); }
             catch (IOException e) {}
 
@@ -146,7 +146,7 @@ public class FFMpegProcess {
     public InputStream getErrorStream() { return p.getErrorStream();  }
 
     public int terminate() throws InterruptedException {
-        for (Socket s : sockets)
+        for (AsyncSocket s : sockets)
             try { s.close(); }
             catch (IOException e) {  }
 
@@ -167,10 +167,11 @@ public class FFMpegProcess {
         /** add an audio stream to the ffmpeg input
          * @param format sample format, list them with ffmpeg -formats or documentation
          * @param rate   sample rate in Hz
+         * @param channels number of channels
          */
-        public Builder addAudio(String format, double rate) {
+        public Builder addAudio(String format, double rate, int channels) {
             Collections.addAll(inputopts, String.format(
-                "-f %s -ar %f -i tcp://localhost:%%port?listen",format, rate).split(" "));
+                "-f %s -ar %f -ac %d -i tcp://localhost:%%port?listen",format, rate, channels).split(" "));
 
             numinputs ++;
             return this;
@@ -307,6 +308,7 @@ public class FFMpegProcess {
 
             cmdline.add(path.toString());
             cmdline.addAll(inputopts);
+            cmdline.add("-nostdin");
             cmdline.addAll(outputopts);
             ProcessBuilder pb = new ProcessBuilder(cmdline);
             pb.directory(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM));

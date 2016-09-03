@@ -98,7 +98,7 @@ public class RecordingProcess {
                 fp.addVideo(size.width, size.height, rates[j], "rawvideo", "nv21")
                   .setStreamTag("name", "Android Default Cam");
             } else
-                fp.addAudio("f32be", rates[j])
+                fp.addAudio("f32be", rates[j], 3)
                   .setStreamTag("name", sensors[j]);
         }
 
@@ -134,7 +134,7 @@ public class RecordingProcess {
         return new File(path, df.format(new Date())).toString();
     }
 
-    public OutputStream getOutputStream(int j) throws IOException, InterruptedException {
+    public AsyncSocket getOutputStream(int j) throws IOException, InterruptedException {
         return ffmpeg.getOutputStream(j);
     }
 

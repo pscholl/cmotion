@@ -104,19 +104,18 @@ public class FFMpegTest {
         p.getOutputStream(2).close();
 
         int e = p.waitFor();
-        int i = p.getErrorStream().read(b);
 
-        Assert.assertTrue(new String(b,0,i), e==0);
+        Assert.assertTrue("ffmpeg exited cleanly", e==0);
         Assert.assertTrue(new File(filepath, filename).isFile());
     }
 
     @Test public void encodeWithBuilder() throws Exception {
         byte[] b = new byte[4096];
         FFMpegProcess p = new FFMpegProcess.Builder()
-            .addAudio("u8", 50)
+            .addAudio("u8", 50, 1)
                 .setStreamTag("name", "acceleration")
                 .setStreamTag("location", "hip")
-            .addAudio("u8", 1)
+            .addAudio("u8", 1, 2)
                 .setStreamTag("name", "gps")
                 .setStreamTag("location", "hip")
             .setCodec("a", "wavpack")
@@ -130,9 +129,8 @@ public class FFMpegTest {
         p.getOutputStream(1).close();
 
         int e = p.waitFor();
-        int i = p.getErrorStream().read(b);
 
-        Assert.assertTrue(new String(b,0,i), e==0);
+        Assert.assertTrue("ffmpeg exited cleanly", e==0);
         Assert.assertTrue(new File(filepath, filename).isFile());
     }
 
@@ -141,10 +139,10 @@ public class FFMpegTest {
                a = new byte[10*320*240*12/8]; // nv21 has 12bit per pixel
 
         FFMpegProcess p = new FFMpegProcess.Builder()
-            .addAudio("u8", 50)
+            .addAudio("u8", 50, 1)
                 .setStreamTag("name", "acceleration")
                 .setStreamTag("location", "hip")
-            .addAudio("u8", 1)
+            .addAudio("u8", 1, 4)
                 .setStreamTag("name", "gps")
                 .setStreamTag("location", "hip")
             .addVideo(320,240,10,"rawvideo", "nv21")
@@ -160,9 +158,8 @@ public class FFMpegTest {
         p.getOutputStream(2).write(a);
 
         int e = p.terminate();
-        int i = p.getErrorStream().read(b);
 
-        Assert.assertTrue(new String(b,0,i), e==0);
+        Assert.assertTrue("ffmpeg exited cleanly", e==0);
         Assert.assertTrue(new File(filepath, filename).isFile());
     }
 }
