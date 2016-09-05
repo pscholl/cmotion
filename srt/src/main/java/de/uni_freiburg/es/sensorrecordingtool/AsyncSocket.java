@@ -42,15 +42,20 @@ public class AsyncSocket extends OutputStream {
                     while (socket != null && socket.isConnected() && (!isclosed || q.size()!=0)) {
                         byte buf[] = q.take();
                         numbytes += buf.length;
-                        if (buf.length>1) socket.getOutputStream().write(buf);
+                        socket.getOutputStream().write(buf);
                         System.err.println(String.format("written %d bytes on %d", numbytes, port));
                     }
-
-                    socket.close();
                 } catch (IOException e) {
                     System.err.println(e.getMessage());
                     e.printStackTrace();
                 } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    System.err.println(String.format("closing port %d", port));
+                    socket.close();
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
 

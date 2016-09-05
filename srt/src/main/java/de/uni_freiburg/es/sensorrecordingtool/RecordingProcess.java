@@ -88,7 +88,7 @@ public class RecordingProcess {
         fp.setOutput(output, "matroka");
         fp.setCodec("a", "wavpack");
         fp.setCodec("v", "libtheora");
-        fp.addOutputSwitch("-qscale:v", "7");
+        fp.addOutputArgument("-qscale:v", "7");
         fp.setLoglevel("debug");
 
         for (int j=0; j<sensors.length; j++)

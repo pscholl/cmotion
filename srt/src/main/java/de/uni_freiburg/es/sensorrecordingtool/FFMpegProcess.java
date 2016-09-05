@@ -7,11 +7,11 @@ import android.os.Environment;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * This is a wrapper for FFMpeg that allows to run ffmpeg executable and returns Process
@@ -19,13 +19,16 @@ import java.util.LinkedList;
  * streams to handle multiple input files. For this ffmpeg and ffprobe can be called with
  * a %port special string that will be replaced with a free port on the system. I.e.
  *
- *  FFMpegProcess.ffmpeg("ffmpeg -f u8 -i tcp://localhost:%port?list") will replace %port with
- *  a free TCP port on the system prior to execution.
+ * FFMpegProcess p = new FFMpegProcess.Builder()
+ *   .addInputArgument("-i", "tcp://localhost:%port?listen")
+ *   .build();
+ *
+ * will replace %port with a free TCP port on the system prior to execution.
  *
  * Created by phil on 8/26/16.
  */
 public class FFMpegProcess {
-
+    protected static final ExecutorService THREAD_POOL_EXECUTOR = Executors.newCachedThreadPool();
     protected final Process p;
     protected final ProcessBuilder pb;
     protected final LinkedList<AsyncSocket> sockets;
@@ -73,8 +76,7 @@ public class FFMpegProcess {
         p = pb.start();
 
         System.err.println("executing "+ pb.command().toString());
-
-        verbose.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, p.getErrorStream());
+        verbose.executeOnExecutor(THREAD_POOL_EXECUTOR, p.getErrorStream());
     }
 
     public AsyncSocket getOutputStream(int i) throws IOException, InterruptedException {
@@ -90,11 +92,6 @@ public class FFMpegProcess {
         }
     }
 
-    private void sleep(int ms) {
-        try { Thread.sleep(ms); }
-        catch (Exception e) {System.err.println("wtf");}
-    }
-
     private Integer getFreeTCPPort() {
         int port = 0;
 
@@ -105,32 +102,6 @@ public class FFMpegProcess {
         } catch (IOException e) {e.printStackTrace();}
 
         return port;
-    }
-
-    protected static LinkedList getCommand(File path, String[] args) {
-        LinkedList tokens = new LinkedList<String>();
-
-        tokens.add(path.toString());
-        if (args.length == 1)
-            Collections.addAll(tokens, args[0].split(" "));
-        else if (args.length > 1)
-            Collections.addAll(tokens, args);
-
-        return tokens;
-    }
-
-    public static FFMpegProcess ffmpeg(Context c, String... args) throws IOException {
-        File path = new File(new File(c.getFilesDir().getParentFile(), "lib"), "libffmpeg.so");
-        ProcessBuilder pb = new ProcessBuilder(getCommand(path,args));
-        pb.directory(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM));
-        return new FFMpegProcess(pb);
-    }
-
-    public static FFMpegProcess ffprobe(Context c, String... args) throws IOException {
-        File path = new File(new File(c.getFilesDir().getParentFile(), "lib"), "libffprobe.so");
-        ProcessBuilder pb = new ProcessBuilder(getCommand(path,args));
-        pb.directory(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM));
-        return new FFMpegProcess(pb);
     }
 
     public int waitFor() throws InterruptedException {
@@ -240,13 +211,15 @@ public class FFMpegProcess {
             return this;
         }
 
-        /** set the codec to use for a given stream specifier, see the ffmpeg manpage for details
+        /** set the codec to use for a given stream specifier (or all stream if omitted), see the
+         * ffmpeg manpage for details.
          *
-         * @param stream stream specifier
-         * @param codec audio codec to use
+         * @param stream stream specifier, optional, can be null
+         * @param codec codec to use
          */
         public Builder setCodec(String stream, String codec) {
-            outputopts.add(String.format("-c:%s", stream));
+            if (stream != null && stream.length()>0)
+                outputopts.add(String.format("-c:%s", stream));
             outputopts.add(codec);
             return this;
         }
@@ -256,7 +229,7 @@ public class FFMpegProcess {
          * @param option include the leading dash to the command line option
          * @param value the value of this option
          */
-        public Builder addOutputSwitch(String option, String value) {
+        public Builder addOutputArgument(String option, String value) {
             outputopts.add(option);
             outputopts.add(value);
 
@@ -268,7 +241,7 @@ public class FFMpegProcess {
          * @param option include the leading dash to the command line option
          * @param value the value of this option
          */
-        public Builder addInputSwitch(String option, String value) {
+        public Builder addInputArgument(String option, String value) {
             inputopts.add(option);
             inputopts.add(value);
 
@@ -281,7 +254,11 @@ public class FFMpegProcess {
          * @param output the output file, channel etc. that ffmpeg supports (defaults to overwriting)
          * @param format set to null if ffmpeg is to decide, otherwise choose a container
          */
-        public Builder setOutput(String output, String format) {
+        public Builder setOutput(String output, String format) throws Exception {
+            if (output == null)
+                throw new Exception("output must be non-null");
+            if (format == null)
+                throw new Exception("fomrat must be non-null");
             this.output = output;
             this.output_fmt = format;
             return this;
@@ -301,10 +278,13 @@ public class FFMpegProcess {
                 outputopts.add("-map");
                 outputopts.add(String.format("%d", i));
             }
-            outputopts.add("-f");
-            outputopts.add(output_fmt);
-            outputopts.add("-y");
-            outputopts.add(output);
+
+            if (output_fmt != null) {
+                outputopts.add("-f");
+                outputopts.add(output_fmt);
+                outputopts.add("-y");
+                outputopts.add(output);
+            }
 
             cmdline.add(path.toString());
             cmdline.addAll(inputopts);
