@@ -30,7 +30,6 @@ public class SensorEventListenerWrapper implements android.hardware.SensorEventL
 
     @Override
     public void onFlushCompleted(Sensor sensor) {
-        System.err.println(String.format("%s %S complete flush", this.toString(), sensor.toString()));
         mListener.onFlushCompleted();
     }
 }

@@ -7,7 +7,6 @@ import android.os.Environment;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.RandomAccessFile;
 import java.net.ServerSocket;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -30,6 +29,7 @@ import java.util.concurrent.Executors;
  * Created by phil on 8/26/16.
  */
 public class FFMpegProcess {
+    protected FFMpegProcess.ExitCallback exit;
     protected static final ExecutorService THREAD_POOL_EXECUTOR = Executors.newCachedThreadPool();
     protected final Process p;
     protected final ProcessBuilder pb;
@@ -49,6 +49,19 @@ public class FFMpegProcess {
                     System.err.write(buf, 0, n);
                 }
             } catch (IOException e) {}
+            return null;
+    }};
+    protected final AsyncTask<Process, Void, Void> exitMonitor = new AsyncTask<Process, Void, Void>() {
+        @Override
+        protected Void doInBackground(Process... ps) {
+            Process p = ps[0];
+            try {
+                p.waitFor();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            if (exit != null)
+                exit.processDone();
             return null;
     }};
 
@@ -79,6 +92,7 @@ public class FFMpegProcess {
 
         System.err.println("executing " + pb.command().toString());
         verboseMonitor.executeOnExecutor(THREAD_POOL_EXECUTOR, p.getErrorStream());
+        exitMonitor.executeOnExecutor(THREAD_POOL_EXECUTOR, p);
     }
 
     public AsyncSocket getOutputStream(int i) throws IOException, InterruptedException {
@@ -128,6 +142,10 @@ public class FFMpegProcess {
 
     public InputStream getInputStream() {
         return p.getInputStream();
+    }
+
+    public void exitCallback(FFMpegProcess.ExitCallback cb) {
+        this.exit = cb;
     }
 
     /** This is a helper class to build what my common usages for the FFMpeg tool will be, feel
@@ -302,5 +320,9 @@ public class FFMpegProcess {
             pb.directory(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM));
             return new FFMpegProcess(pb);
         }
+    }
+
+    public interface ExitCallback {
+        public void processDone();
     }
 }

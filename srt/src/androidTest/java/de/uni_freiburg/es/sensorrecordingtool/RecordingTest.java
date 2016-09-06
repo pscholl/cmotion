@@ -134,7 +134,7 @@ public class RecordingTest {
                 Intent cancel = new Intent(Recorder.CANCEL_ACTION);
                 c.sendBroadcast(cancel);
             }
-        }, 5000);
+        }, 5500);
 
         String result = callForResult(i);
         Assert.assertNotNull("timed out", result);

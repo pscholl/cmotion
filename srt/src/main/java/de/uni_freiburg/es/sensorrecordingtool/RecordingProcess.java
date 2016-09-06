@@ -1,7 +1,5 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
-import android.content.Context;
-import android.content.Intent;
 import android.hardware.Camera;
 import android.os.Environment;
 import android.os.Handler;
@@ -9,7 +7,6 @@ import android.os.PowerManager;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -17,7 +14,6 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.TimeZone;
 
-import de.uni_freiburg.es.sensorrecordingtool.sensors.Sensor;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.VideoSensor;
 
@@ -25,7 +21,7 @@ import de.uni_freiburg.es.sensorrecordingtool.sensors.VideoSensor;
  *
  * Created by phil on 9/1/16.
  */
-public class RecordingProcess {
+public class RecordingProcess implements FFMpegProcess.ExitCallback {
 
     public final FFMpegProcess ffmpeg;
     private final PowerManager mpm;
@@ -109,6 +105,7 @@ public class RecordingProcess {
         }
 
         this.ffmpeg = fp.build(c);
+        this.ffmpeg.exitCallback(this);
 
         mpm = (PowerManager) c.getSystemService(c.POWER_SERVICE);
         mwl = mpm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, Integer.toString(this.hashCode()));
@@ -147,10 +144,13 @@ public class RecordingProcess {
     public void terminate() throws IOException {
         for (SensorProcess p : mInputList)
             p.terminate(); // this closes all inputs, after which the ffmpeg process exits
+    }
 
+    @Override
+    public void processDone() {
         mRecorder.finished(this);
 
-        //if (mwl.isHeld())
-        //    mwl.release();
+        if (mwl.isHeld())
+            mwl.release();
     }
 }

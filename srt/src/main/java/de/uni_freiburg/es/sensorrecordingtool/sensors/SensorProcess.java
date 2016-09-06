@@ -30,7 +30,7 @@ import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEventListener;
  *
  */
 public class SensorProcess implements SensorEventListener {
-    public static final int DEFAULT_LATENCY_US = 5 * 1000 * 1000;
+    public static final int DEFAULT_LATENCY_US = 0;
     private final Context context;
     final Sensor mSensor;
     final double mRate;
@@ -49,7 +49,7 @@ public class SensorProcess implements SensorEventListener {
         mOut = bf;
 
         int maxreportdelay_us = DEFAULT_LATENCY_US;
-        if ( mDur > 0 && mDur > 1.) // make it one second shorter
+        if ( mDur-1 > 0 ) // make it one second shorter
             maxreportdelay_us = (int) (mDur-1.) * 1000 * 1000;
 
         mSensor = getMatchingSensor(context, sensor);
@@ -124,7 +124,7 @@ public class SensorProcess implements SensorEventListener {
             assert( mLastTimestamp < sensorEvent.timestamp );
             mDiff += (sensorEvent.timestamp - mLastTimestamp) * 1e-9;
 
-            if (mElapsed > mDur) {
+            if (mDur > 0 && mElapsed > mDur) {
                 terminate();
                 return;
             }
@@ -167,7 +167,7 @@ public class SensorProcess implements SensorEventListener {
     }
 
     public void terminate() throws IOException {
-        if (mDur < mElapsed)
+        if (mDur < mElapsed || mDur < 0)
             mSensor.flush(this);
         else
             onFlushCompleted();
