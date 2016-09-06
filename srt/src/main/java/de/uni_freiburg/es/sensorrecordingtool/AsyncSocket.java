@@ -6,6 +6,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /** It ain't pretty
@@ -13,13 +16,14 @@ import java.util.concurrent.LinkedBlockingQueue;
  * Created by phil on 9/1/16.
  */
 public class AsyncSocket extends OutputStream {
+    private static final Executor THREAD_POOL_EXECUTOR = Executors.newCachedThreadPool();
     private final Integer port;
     private final String host;
     private final AsyncTask<Void, Void, Void> async;
     private int numbytes;
     private Socket socket;
     private ByteArrayOutputStream os;
-    private LinkedBlockingQueue<byte[]> q = new LinkedBlockingQueue<>();
+    private LinkedBlockingDeque<byte[]> q = new LinkedBlockingDeque<>();
     private boolean isclosed = false;
 
     public AsyncSocket(final String host, final Integer port) throws IOException {
@@ -32,7 +36,7 @@ public class AsyncSocket extends OutputStream {
             @Override
             protected Void doInBackground(Void... voids) {
                 try {
-                    for (int t=0; t<2000; t+=5) {
+                    for (int t=0; t<20000; t+=5) {
                         try {
                             socket = new Socket(host, port);
                             break;
@@ -41,6 +45,8 @@ public class AsyncSocket extends OutputStream {
 
                     while (socket != null && socket.isConnected() && (!isclosed || q.size()!=0)) {
                         byte buf[] = q.take();
+                        if (buf.length == 0 && isclosed)
+                            break;
                         numbytes += buf.length;
                         socket.getOutputStream().write(buf);
                         System.err.println(String.format("written %d bytes on %d", numbytes, port));
@@ -71,7 +77,7 @@ public class AsyncSocket extends OutputStream {
             }
         };
 
-        this.async.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        this.async.executeOnExecutor(THREAD_POOL_EXECUTOR);
     }
 
     @Override
@@ -92,5 +98,6 @@ public class AsyncSocket extends OutputStream {
     @Override
     public void close() throws IOException {
         isclosed = true;
+        q.add(new byte[0]); // null write to wakeup the async
     }
 }

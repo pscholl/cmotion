@@ -5,4 +5,5 @@ package de.uni_freiburg.es.sensorrecordingtool.sensors;
  */
 public interface SensorEventListener {
     public void onSensorChanged(SensorEvent e);
+    public void onFlushCompleted();
 }

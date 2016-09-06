@@ -1,13 +1,16 @@
 package de.uni_freiburg.es.sensorrecordingtool.sensors;
 
 import android.content.Context;
+import android.os.Build;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import de.uni_freiburg.es.sensorrecordingtool.RecordingProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.Sensor;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEvent;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEventListener;
@@ -27,11 +30,11 @@ import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEventListener;
  *
  */
 public class SensorProcess implements SensorEventListener {
-    public static final int LATENCY_US = 5 * 60 * 1000 * 1000;
+    public static final int DEFAULT_LATENCY_US = 5 * 1000 * 1000;
     private final Context context;
     final Sensor mSensor;
     final double mRate;
-    final BufferedOutputStream mOut;
+    final OutputStream mOut;
     public final double mDur;
     ByteBuffer mBuf;
     long mLastTimestamp = -1;
@@ -39,19 +42,18 @@ public class SensorProcess implements SensorEventListener {
     public double mElapsed = 0;
 
     public SensorProcess(Context context, String sensor, double rate, String format, double dur,
-                         BufferedOutputStream bf) throws Exception  {
+                         OutputStream bf) throws Exception  {
         this.context = context;
         mRate = rate;
         mDur = dur;
         mOut = bf;
 
-        int maxreportdelay_us = LATENCY_US;
-        if ( mDur > 0 && (int) mDur * 1000 * 1000 / 2 < LATENCY_US )
-            maxreportdelay_us = (int) mDur * 1000 * 1000 / 2;
+        int maxreportdelay_us = DEFAULT_LATENCY_US;
+        if ( mDur > 0 && mDur > 1.) // make it one second shorter
+            maxreportdelay_us = (int) (mDur-1.) * 1000 * 1000;
 
-        /* TODO setting maxreport to 5minutes can get problematic later for ffmpeg */
-        mSensor = getMatchingSensor(sensor);
-        mSensor.registerListener(this, (int) (1 / rate * 1000 * 1000), 0, format);
+        mSensor = getMatchingSensor(context, sensor);
+        mSensor.registerListener(this, (int) (1 / rate * 1000 * 1000), maxreportdelay_us, format);
     }
 
     /** given a String tries to find a matching sensor given these rules:
@@ -66,7 +68,7 @@ public class SensorProcess implements SensorEventListener {
      * @return the sensor for which the description is shortest and contains the *sensor*
      * @throws Exception when no or multiple matches are found
      */
-    public Sensor getMatchingSensor(String sensor) throws Exception {
+    public static Sensor getMatchingSensor(Context context, String sensor) throws Exception {
         LinkedList<Sensor> candidates = new LinkedList<Sensor>();
 
         for (Sensor s : Sensor.getAvailableSensors(context))
@@ -122,6 +124,11 @@ public class SensorProcess implements SensorEventListener {
             assert( mLastTimestamp < sensorEvent.timestamp );
             mDiff += (sensorEvent.timestamp - mLastTimestamp) * 1e-9;
 
+            if (mElapsed > mDur) {
+                terminate();
+                return;
+            }
+
             /*
              * transfer a sensor sample and the current accuracy measure
              */
@@ -160,7 +167,31 @@ public class SensorProcess implements SensorEventListener {
     }
 
     public void terminate() throws IOException {
+        if (mDur < mElapsed)
+            mSensor.flush(this);
+        else
+            onFlushCompleted();
+    }
+
+    @Override
+    public void onFlushCompleted() {
         mSensor.unregisterListener(this);
-        mOut.close();
+        try { mOut.close();}
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static int getSampleSize(Context context, String sensor) throws Exception {
+        Sensor s = getMatchingSensor(context, sensor);
+
+        if (s instanceof SensorWrapper) {
+            Method m = android.hardware.Sensor.class.getDeclaredMethod("getMaxLengthValuesArray",
+                        new Class[]{android.hardware.Sensor.class, int.class});
+            m.setAccessible(true);
+            return (int) m.invoke(null, ((SensorWrapper) s).mSensor, Build.VERSION.SDK_INT);
+        }
+
+        throw new Exception("unknown sensor: " + sensor);
     }
 }

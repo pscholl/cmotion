@@ -8,6 +8,8 @@ import android.util.Log;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.LinkedList;
 
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
@@ -144,27 +146,15 @@ public class Recorder extends Service {
             }
 
             return START_NOT_STICKY;
+        } else {
+            newRecordingProcess(i);
+            return START_NOT_STICKY;
         }
-
-        newRecordingProcess(i);
-
-        /*new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Recorder.this.newRecordingProcess(i);
-            }
-        }).start();*/
-
-        return START_NOT_STICKY;
     }
 
-    public void newRecordingProcess(final Intent i) {
+    public void newRecordingProcess(Intent i) {
         try {
-            for (String key : i.getExtras().keySet())
-                System.out.print(i.getStringArrayExtra(RECORDER_INPUT));
-
-            RecordingProcess recording = new RecordingProcess(
-                this.getApplicationContext(),
+            RecordingProcess recording = new RecordingProcess(this,
                 i.getStringExtra(RECORDER_OUTPUT),
                 getStringOrArray(i, RECORDER_INPUT),
                 getStringOrArray(i, RECORDER_FORMAT),
@@ -172,7 +162,7 @@ public class Recorder extends Service {
                 getIntFloatOrDouble(i, RECORDER_DURATION, -1) );
 
             for (int j=0; j<recording.sensors.length; j++) {
-                BufferedOutputStream os = new BufferedOutputStream(recording.getOutputStream(j));
+                OutputStream os = recording.getOutputStream(j);
                 SensorProcess sp = newSensorProcess( recording.sensors[j],
                                                      recording.formats[j],
                                                      recording.rates[j],
@@ -181,13 +171,18 @@ public class Recorder extends Service {
             }
 
             mRecordings.add(recording);
-            //Notification.newRecording(this, mRecordings.indexOf(recording), recording);
+            Notification.newRecording(this, mRecordings.indexOf(recording), recording);
         } catch (Exception e) {
-            e.printStackTrace();}
+            i = new Intent();
+            i.setAction(ERROR_ACTION);
+            i.putExtra(ERROR_REASON, e.getMessage());
+            sendBroadcast(i);
+            e.printStackTrace();
+        }
     }
 
     private SensorProcess newSensorProcess(String sensor, String format, double rate,
-                                           double dur, BufferedOutputStream os) throws Exception {
+                                           double dur, OutputStream os) throws Exception {
         Context c = this.getApplicationContext();
 
         if (sensor.contains("video"))
@@ -198,9 +193,12 @@ public class Recorder extends Service {
 
     public static String[] getStringOrArray(Intent i, String extra) {
         String[] arr = i.getStringArrayExtra(extra);
-        if (arr == null)
-            arr = new String[] { i.getStringExtra(extra) };
-        return arr;
+        if (arr != null)
+            return arr;
+        else if (i.getStringExtra(extra) != null)
+            return new String[] { i.getStringExtra(extra) };
+        else
+            return new String[] { };
     }
 
     public static double[] getIntFloatOrDoubleArray(Intent i, String extra, double def) {
@@ -250,11 +248,11 @@ public class Recorder extends Service {
         return null;
     }
 
-    private int error(String s) {
-        Intent err = new Intent(ERROR_ACTION);
-        err.putExtra(ERROR_REASON, s);
-        sendBroadcast(err);
-        Log.e(TAG, s==null ? "" : s);
-        return START_NOT_STICKY;
+    public void finished(RecordingProcess recordingProcess) {
+        Intent i = new Intent(Recorder.FINISH_ACTION);
+        i.putExtra(Recorder.FINISH_PATH, recordingProcess.output);
+        i.putExtra(Recorder.RECORDING_ID, mRecordings.indexOf(this));
+        sendBroadcast(i);
+        mRecordings.remove(this);
     }
 }

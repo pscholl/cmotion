@@ -8,7 +8,7 @@ import android.hardware.SensorEvent;
  *
  * Created by phil on 4/29/16.
  */
-public class SensorEventListenerWrapper implements android.hardware.SensorEventListener {
+public class SensorEventListenerWrapper implements android.hardware.SensorEventListener2 {
     private final de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEventListener mListener;
     private final de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEvent mEvent;
 
@@ -26,5 +26,11 @@ public class SensorEventListenerWrapper implements android.hardware.SensorEventL
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
+    }
+
+    @Override
+    public void onFlushCompleted(Sensor sensor) {
+        System.err.println(String.format("%s %S complete flush", this.toString(), sensor.toString()));
+        mListener.onFlushCompleted();
     }
 }

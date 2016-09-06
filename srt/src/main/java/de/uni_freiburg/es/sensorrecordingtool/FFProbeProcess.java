@@ -70,7 +70,13 @@ public class FFProbeProcess {
 
         public Builder addInput(String input) {
             cmdline.add("-i");
-            cmdline.add(input);
+
+            /* this makes sure that files containing a colon are correctly parsed, otherwise
+             * ffprobe assumes the colon to be the separator between protocol and target part,
+             * i.e. abc:123 would mean abc is the protocol, and abc:123 would not be a file.
+             */
+            cmdline.add( new File(input).exists() && !input.startsWith("file:") ?
+                "file:"+input : input);
             return this;
         }
 

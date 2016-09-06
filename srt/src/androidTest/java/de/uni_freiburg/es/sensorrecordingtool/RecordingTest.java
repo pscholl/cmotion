@@ -20,6 +20,7 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -51,8 +52,8 @@ public class RecordingTest {
 
     @After public void teardown() {
         // not every test generates a directory.
-        try { delete(new File(o));
-        } catch (FileNotFoundException e) {}
+        //try { delete(new File(o));
+        //} catch (FileNotFoundException e) {}
     }
 
 
@@ -62,7 +63,7 @@ public class RecordingTest {
         Assert.assertEquals("error msg", "no input supplied", result);
     }
 
-    @Test public void doARecordingWithRates() throws InterruptedException {
+    @Test public void doARecordingWithRates() throws Exception {
         i.putExtra("-i", "accelerometer");
         i.putExtra("-r", 100.);
         i.putExtra("-d", 5.0);
@@ -72,7 +73,7 @@ public class RecordingTest {
         assertRecording(result, "accelerometer", 100 * (3) * 4 * 5);
     }
 
-     @Test public void doMultipleSensors() throws InterruptedException {
+     @Test public void doMultipleSensors() throws Exception {
         i.putExtra(Recorder.RECORDER_INPUT, new String[]{
                 "acc",
                 "gyr",
@@ -93,7 +94,7 @@ public class RecordingTest {
         assertRecording(result, "rot", 40 * (5) * 4 * 6);
     }
 
-    @Test public void doMultipleSensorsAndRates() throws InterruptedException {
+    @Test public void doMultipleSensorsAndRates() throws Exception {
         i.putExtra(Recorder.RECORDER_INPUT, new String[]{
                 "acc",
                 "gyr",
@@ -112,7 +113,7 @@ public class RecordingTest {
         assertRecording(result, "rot", 100*(5)*4*5);
     }
 
-    @Test public void doLocationTest() throws InterruptedException {
+    @Test public void doLocationTest() throws Exception {
         i.putExtra(Recorder.RECORDER_INPUT, "location");
         i.putExtra("-d", 5.0);
         String result = callForResult(i);
@@ -121,7 +122,7 @@ public class RecordingTest {
         assertRecording(result, "location", 50*(4)*4*5);
     }
 
-    @Test public void doInfiniteRecordingTest() throws InterruptedException {
+    @Test public void doInfiniteRecordingTest() throws Exception {
         i.putExtra("-d", -1);
         i.putExtra("-i", "acc");
 
@@ -138,10 +139,7 @@ public class RecordingTest {
         String result = callForResult(i);
         Assert.assertNotNull("timed out", result);
 
-        File path = new File(new File(result), "acc");
-        Assert.assertTrue("no output file ", path.exists());
-        Assert.assertTrue(String.format("at least 5 seconds (%d)", path.length()),
-                          path.length() > 50*3*4*5);
+        assertRecording(result, "acc", 50*3*4*5, true);
     }
 
     /* we assume that some models are residing on their magnetized charging gradle while plugged
@@ -159,18 +157,32 @@ public class RecordingTest {
         return i;
     }
 
-    public void assertRecording(String f, String p, int size) {
-        File path = new File(new File(f), p);
-        Assert.assertTrue("no output file " + path.toString(), path.exists());
-        Assert.assertEquals("wrong size", size, path.length());
+    public void assertRecording(String f, String sensor, int size) throws Exception {
+        assertRecording(f,sensor,size,false);
     }
 
+    private void assertRecording(String f, String sensor, int size, boolean b) throws Exception {
+        byte buf[] = new byte[size];
+        FFMpegProcess p = new FFMpegProcess.Builder()
+                .addInputArgument("-i", "file:"+f)
+                .addInputArgument("-map", String.format("m:name:%s",sensor))
+                .setOutput("-", "f32le")
+                .build(c);
+        p.waitFor();
+        if (b) {
+            int n = p.getInputStream().read(buf);
+            Assert.assertTrue(String.format("%d >= %d", n, size), n >= size);
+        } else
+            Assert.assertEquals(size, p.getInputStream().read(buf));
+    }
+
+
     private String callForError(Intent i) throws InterruptedException {
-        return callForResult(i, 15000, Recorder.ERROR_ACTION, Recorder.ERROR_REASON);
+        return callForResult(i, 25000, Recorder.ERROR_ACTION, Recorder.ERROR_REASON);
     }
 
     private String callForResult(Intent i) throws InterruptedException {
-        return callForResult(i, 15000, Recorder.FINISH_ACTION, Recorder.FINISH_PATH);
+        return callForResult(i, 25000, Recorder.FINISH_ACTION, Recorder.FINISH_PATH);
     }
 
     private String callForResult(Intent i, int ms, String action, final String extra)

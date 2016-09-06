@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * This is required since the Android sensor class is defined as final, so we can't create
- * our own sensors. Thumbs up!
+ * our own sensors. Thumbs up (why would you want that anyway)!
  *
  * Created by phil on 3/1/16.
  */

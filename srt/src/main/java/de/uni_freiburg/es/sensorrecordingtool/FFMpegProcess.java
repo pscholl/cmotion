@@ -7,9 +7,11 @@ import android.os.Environment;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.net.ServerSocket;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -33,7 +35,7 @@ public class FFMpegProcess {
     protected final ProcessBuilder pb;
     protected final LinkedList<AsyncSocket> sockets;
     protected final LinkedList<Integer> ports;
-    protected final AsyncTask<InputStream, Void, Void> verbose =
+    protected final AsyncTask<InputStream, Void, Void> verboseMonitor =
         new AsyncTask<InputStream, Void, Void>() {
         @Override
         protected Void doInBackground(InputStream... ps) {
@@ -75,8 +77,8 @@ public class FFMpegProcess {
         pb.command(newargs);
         p = pb.start();
 
-        System.err.println("executing "+ pb.command().toString());
-        verbose.executeOnExecutor(THREAD_POOL_EXECUTOR, p.getErrorStream());
+        System.err.println("executing " + pb.command().toString());
+        verboseMonitor.executeOnExecutor(THREAD_POOL_EXECUTOR, p.getErrorStream());
     }
 
     public AsyncSocket getOutputStream(int i) throws IOException, InterruptedException {
@@ -124,6 +126,10 @@ public class FFMpegProcess {
         return p.waitFor();
     }
 
+    public InputStream getInputStream() {
+        return p.getInputStream();
+    }
+
     /** This is a helper class to build what my common usages for the FFMpeg tool will be, feel
      * free to add additional stuff here. You can always add your own command line switches with
      * the addSwitch() function.
@@ -141,7 +147,7 @@ public class FFMpegProcess {
          * @param channels number of channels
          */
         public Builder addAudio(String format, double rate, int channels) {
-            Collections.addAll(inputopts, String.format(
+            Collections.addAll(inputopts, String.format(Locale.ROOT,
                 "-f %s -ar %f -ac %d -i tcp://localhost:%%port?listen",format, rate, channels).split(" "));
 
             numinputs ++;
@@ -162,7 +168,8 @@ public class FFMpegProcess {
             String optarg = pixfmt == null ? "" : String.format("-pix_fmt %s", pixfmt);
 
             Collections.addAll(inputopts,
-                String.format("-r %f -s %d:%d -f %s %s -i tcp://localhost:%%port?listen",
+                String.format(Locale.ROOT,
+                        "-r %f -s %d:%d -f %s %s -i tcp://localhost:%%port?listen",
                        rate, width, height, fmt, optarg).split(" "));
 
             numinputs ++;
@@ -259,7 +266,8 @@ public class FFMpegProcess {
                 throw new Exception("output must be non-null");
             if (format == null)
                 throw new Exception("fomrat must be non-null");
-            this.output = output;
+            this.output = new File(output).exists() && !output.startsWith("file:") ?
+                          "file:"+output : output;
             this.output_fmt = format;
             return this;
         }

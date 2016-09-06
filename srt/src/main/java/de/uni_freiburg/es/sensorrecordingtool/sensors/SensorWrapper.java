@@ -42,7 +42,7 @@ public class SensorWrapper extends Sensor {
     @Override
     public void flush(SensorEventListener l) { mSensorMgr.flush(get(l));  }
 
-    protected android.hardware.SensorEventListener get(SensorEventListener l) {
+    protected android.hardware.SensorEventListener2 get(SensorEventListener l) {
         SensorEventListenerWrapper wl = mSensorWrapper.get(l);
         if (wl == null) {
             wl = new SensorEventListenerWrapper(l);

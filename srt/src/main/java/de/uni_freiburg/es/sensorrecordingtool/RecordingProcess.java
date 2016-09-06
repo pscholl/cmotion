@@ -1,6 +1,7 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
 import android.content.Context;
+import android.content.Intent;
 import android.hardware.Camera;
 import android.os.Environment;
 import android.os.Handler;
@@ -16,6 +17,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.TimeZone;
 
+import de.uni_freiburg.es.sensorrecordingtool.sensors.Sensor;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.VideoSensor;
 
@@ -28,7 +30,8 @@ public class RecordingProcess {
     public final FFMpegProcess ffmpeg;
     private final PowerManager mpm;
     private final PowerManager.WakeLock mwl;
-    //private final Handler mTimeout;
+    private final Handler mTimeout;
+    private final Recorder mRecorder;
     public LinkedList<SensorProcess> mInputList = new LinkedList<SensorProcess>();
     public final String   output;
     public final String[] sensors;
@@ -36,15 +39,17 @@ public class RecordingProcess {
     public final double[] rates;
     public final double   duration;
 
-    public RecordingProcess(Context c,
+    public RecordingProcess(Recorder c,
                             String output,
                             String[] sensors,
                             String[] formats,
                             double[] rates,
                             double duration) throws Exception
     {
-        if (sensors == null)
-            throw new Exception("need at least one sensor as input");
+        this.mRecorder  = c;
+        
+        if (sensors == null || sensors.length == 0)
+            throw new Exception("no input supplied");
 
         if (formats == null)
             formats = new String[sensors.length];
@@ -66,7 +71,7 @@ public class RecordingProcess {
         }
 
         if (rates.length != sensors.length)
-            throw new Exception("either rates and sensors must of same length or a single rate must be given");
+            throw new Exception("either rates and sensors must be of same length or a single rate must be given");
 
         for (double r : rates)
             if (r <= 0)
@@ -85,7 +90,7 @@ public class RecordingProcess {
          * now start the ffmpeg process and the respective sensorprocesses
          */
         FFMpegProcess.Builder fp = new FFMpegProcess.Builder();
-        fp.setOutput(output, "matroka");
+        fp.setOutput(output, "matroska");
         fp.setCodec("a", "wavpack");
         fp.setCodec("v", "libtheora");
         fp.addOutputArgument("-qscale:v", "7");
@@ -98,7 +103,8 @@ public class RecordingProcess {
                 fp.addVideo(size.width, size.height, rates[j], "rawvideo", "nv21")
                   .setStreamTag("name", "Android Default Cam");
             } else
-                fp.addAudio("f32be", rates[j], 3)
+                fp.addAudio("f32be", rates[j],
+                            SensorProcess.getSampleSize(this.mRecorder, sensors[j]))
                   .setStreamTag("name", sensors[j]);
         }
 
@@ -110,6 +116,7 @@ public class RecordingProcess {
         /* have a timeout after the duration to flush the sensor and terminate the process
          * afterwards. This is to avoid sensor that do not report data continuously. For example
          * in the case of a failure condition
+         */
         mTimeout = new Handler();
         if (duration > 0)
             mTimeout.postDelayed(new Runnable() {
@@ -121,8 +128,7 @@ public class RecordingProcess {
                         e.printStackTrace();
                     }
                 }
-            }, (long) (duration * 1000) + 2000);
-            */
+            }, (long) (duration * 2 * 1000 + 1000));
     }
 
     /** utility function for ISO datetime path on public storage */
@@ -140,6 +146,11 @@ public class RecordingProcess {
 
     public void terminate() throws IOException {
         for (SensorProcess p : mInputList)
-            p.terminate();
+            p.terminate(); // this closes all inputs, after which the ffmpeg process exits
+
+        mRecorder.finished(this);
+
+        //if (mwl.isHeld())
+        //    mwl.release();
     }
 }
