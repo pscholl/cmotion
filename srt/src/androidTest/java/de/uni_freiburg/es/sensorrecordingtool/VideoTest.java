@@ -59,15 +59,15 @@ public class VideoTest {
 
     @After public void teardown() {
         // not every test generates a directory.
-        try { delete(new File(o));
-        } catch (FileNotFoundException e) {}
+        //try { delete(new File(o));
+        //} catch (FileNotFoundException e) {}
     }
 
 
     @Test public void doRecordingOnDefaultCamera() throws InterruptedException {
         i.putExtra("-i", "video");
         i.putExtra("-r", 15.);
-        i.putExtra("-d", 5.0);
+        i.putExtra("-d", 25.0);
         String result = callForResult(i);
         Assert.assertNotNull("timeout before completion", result);
         assertRecording(result, "video", (int) (15*5 * (mSize.width*mSize.height*1.5)));
@@ -105,11 +105,11 @@ public class VideoTest {
     }
 
     private String callForError(Intent i) throws InterruptedException {
-        return callForResult(i, 15000, Recorder.ERROR_ACTION, Recorder.ERROR_REASON);
+        return callForResult(i, 250000, Recorder.ERROR_ACTION, Recorder.ERROR_REASON);
     }
 
     private String callForResult(Intent i) throws InterruptedException {
-        return callForResult(i, 15000, Recorder.FINISH_ACTION, Recorder.FINISH_PATH);
+        return callForResult(i, 250000, Recorder.FINISH_ACTION, Recorder.FINISH_PATH);
     }
 
     private String callForResult(Intent i, int ms, String action, final String extra)

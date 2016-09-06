@@ -48,6 +48,7 @@ public class AsyncSocket extends OutputStream {
                         if (buf.length == 0 && isclosed)
                             break;
                         numbytes += buf.length;
+                        System.err.println("writing ");
                         socket.getOutputStream().write(buf);
                         System.err.println(String.format("written %d bytes on %d", numbytes, port));
                     }
@@ -87,7 +88,6 @@ public class AsyncSocket extends OutputStream {
 
     @Override
     public void write(int i) throws IOException {
-
     }
 
     @Override

@@ -86,9 +86,9 @@ public class RecordingProcess implements FFMpegProcess.ExitCallback {
          * now start the ffmpeg process and the respective sensorprocesses
          */
         FFMpegProcess.Builder fp = new FFMpegProcess.Builder();
-        fp.setOutput(output, "matroska");
+        fp.setOutput(output, "rawvideo");
         fp.setCodec("a", "wavpack");
-        fp.setCodec("v", "libtheora");
+        //fp.setCodec("v", "libtheora");
         fp.addOutputArgument("-qscale:v", "7");
         fp.setLoglevel("debug");
 

@@ -27,7 +27,8 @@ public abstract class Sensor {
     public abstract String getStringType();
 
     public void flush(SensorEventListener l) {
-        notifyListeners();
+        for (ParameterizedListener pl : mListeners)
+            pl.l.onFlushCompleted();
     }
 
     public static List<Sensor> getAvailableSensors(Context c) {

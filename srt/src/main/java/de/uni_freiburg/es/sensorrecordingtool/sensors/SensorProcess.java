@@ -40,6 +40,7 @@ public class SensorProcess implements SensorEventListener {
     long mLastTimestamp = -1;
     double mDiff = 0;
     public double mElapsed = 0;
+    private boolean flushing = false;
 
     public SensorProcess(Context context, String sensor, double rate, String format, double dur,
                          OutputStream bf) throws Exception  {
@@ -167,9 +168,10 @@ public class SensorProcess implements SensorEventListener {
     }
 
     public void terminate() throws IOException {
-        if (mDur < mElapsed || mDur < 0)
+        if (mDur < mElapsed || mDur < 0) {
+            flushing = true;
             mSensor.flush(this);
-        else
+        } else
             onFlushCompleted();
     }
 
