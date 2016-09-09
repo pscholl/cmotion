@@ -64,22 +64,22 @@ public class VideoTest {
     }
 
 
-    @Test public void doRecordingOnDefaultCamera() throws InterruptedException {
+    @Test public void doRecordingOnDefaultCamera() throws Exception {
         i.putExtra("-i", "video");
         i.putExtra("-r", 15.);
         i.putExtra("-d", 25.0);
         String result = callForResult(i);
         Assert.assertNotNull("timeout before completion", result);
-        assertRecording(result, "video", (int) (15*5 * (mSize.width*mSize.height*1.5)));
+        assertRecording(result, "video", (int) (15*5 * (mSize.width*mSize.height*1.5)), true);
     }
 
-    @Test public void doVideoAndOtherSensor() throws InterruptedException {
+    @Test public void doVideoAndOtherSensor() throws Exception {
         i.putExtra("-i", "video accelerometer".split(" "));
         i.putExtra("-r", new double[] {15., 50.});
         i.putExtra("-d", 5.0);
         String result = callForResult(i);
         Assert.assertNotNull("timeout before completion", result);
-        assertRecording(result, "video", (int) (15*5 * (mSize.width*mSize.height*1.5)));
+        assertRecording(result, "video", (int) (15*5 * (mSize.width*mSize.height*1.5)), true);
     }
 
 
@@ -98,10 +98,18 @@ public class VideoTest {
         return i;
     }
 
-    public void assertRecording(String f, String p, int size) {
-        File path = new File(new File(f), p);
-        Assert.assertTrue("no output file " + path.toString(), path.exists());
-        Assert.assertEquals("wrong size", size, path.length());
+    public void assertRecording(String f, String p, int size) throws Exception {
+        assertRecording(f, p, size, false);
+    }
+
+    private void assertRecording(String f, String sensor, int size, boolean b) throws Exception {
+        File file = new File(f);
+        long n = file.length();
+
+        if (b) {
+            Assert.assertTrue(String.format("%d >= %d", n, size), n <= size);
+        } else
+            Assert.assertEquals(size, n);
     }
 
     private String callForError(Intent i) throws InterruptedException {

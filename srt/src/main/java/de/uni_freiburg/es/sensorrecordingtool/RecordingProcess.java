@@ -86,10 +86,10 @@ public class RecordingProcess implements FFMpegProcess.ExitCallback {
          * now start the ffmpeg process and the respective sensorprocesses
          */
         FFMpegProcess.Builder fp = new FFMpegProcess.Builder();
-        fp.setOutput(output, "rawvideo");
+        fp.setOutput(output, "matroska");
         fp.setCodec("a", "wavpack");
-        //fp.setCodec("v", "libtheora");
-        fp.addOutputArgument("-qscale:v", "7");
+        fp.setCodec("v", "libx264");
+        fp.addOutputArgument("-preset", "ultrafast"); // for video codec
         fp.setLoglevel("debug");
 
         for (int j=0; j<sensors.length; j++)
