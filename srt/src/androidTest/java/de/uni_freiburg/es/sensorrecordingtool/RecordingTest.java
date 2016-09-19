@@ -118,7 +118,6 @@ public class RecordingTest {
         i.putExtra("-d", 5.0);
         String result = callForResult(i);
         Assert.assertNotNull("timed out", result);
-
         assertRecording(result, "location", 50*(4)*4*5);
     }
 

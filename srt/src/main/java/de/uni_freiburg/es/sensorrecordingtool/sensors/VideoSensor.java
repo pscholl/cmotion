@@ -42,6 +42,8 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
         //    return;
 
         if (mListeners.size() == 0) {
+            /** open the camera if we are just creating the first listeners, otherwise just
+             * add a new listener. */
             Camera.Size mSize = getCameraSize(format);
             mCamera = Camera.open();
             Camera.Parameters params = mCamera.getParameters();
@@ -63,25 +65,29 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
     }
 
     public static Camera.Size getCameraSize(String format) {
-        Camera cam = Camera.open();
-        Camera.Parameters params = cam.getParameters();
-        Camera.Size mSize = params.getPreviewSize();
+        Camera.Size mSize = null;
 
         try {
+            Camera cam = Camera.open();
+            Camera.Parameters params = cam.getParameters();
+            mSize = params.getPreviewSize();
+
             String[] wh = format.split("x");
             int w = Integer.parseInt(wh[0]),
                 h = Integer.parseInt(wh[1]);
 
-            mSize.width  = w;
+            mSize.width = w;
             mSize.height = h;
+
+            cam.unlock();
+            cam.release();
+        } catch(NullPointerException e) {
+            Log.d(TAG, "camera not available");
         } catch(Exception e) {
             Log.d(TAG, String.format(
                     "unable to parse format '%s', using default resolution %dx%d",
                     (format!=null?format:""), mSize.width, mSize.height));
         }
-
-        cam.unlock();
-        cam.release();
         return mSize;
     }
 

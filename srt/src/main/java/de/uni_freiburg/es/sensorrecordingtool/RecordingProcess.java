@@ -4,6 +4,7 @@ import android.hardware.Camera;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.PowerManager;
+import android.util.Log;
 
 import java.io.File;
 import java.io.IOException;
@@ -97,7 +98,7 @@ public class RecordingProcess implements FFMpegProcess.ExitCallback {
             if (sensors[j].contains("video")) {
                 Camera.Size size = VideoSensor.getCameraSize(formats[j]);
                 fp.addVideo(size.width, size.height, rates[j], "rawvideo", "nv21")
-                  .setStreamTag("name", "Android Default Cam");
+                    .setStreamTag("name", "Android Default Cam");
             } else
                 fp.addAudio("f32be", rates[j],
                             SensorProcess.getSampleSize(this.mRecorder, sensors[j]))

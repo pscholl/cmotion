@@ -22,6 +22,8 @@ import java.io.FileNotFoundException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import de.uni_freiburg.es.sensorrecordingtool.sensors.VideoSensor;
+
 /** Test the ability to record videos from one of the cameras connected to the Android
  * System.
  *
@@ -43,9 +45,12 @@ public class VideoTest {
         i.putExtra("-o", o);
 
         Camera cam = Camera.open();
-        Camera.Parameters p = cam.getParameters();
-        mSize = p.getPreviewSize();
-        cam.release();
+
+        if (cam!=null) {
+            Camera.Parameters p = cam.getParameters();
+            mSize = p.getPreviewSize();
+            cam.release();
+        }
     }
 
     public void delete(File f) throws FileNotFoundException {
@@ -59,8 +64,8 @@ public class VideoTest {
 
     @After public void teardown() {
         // not every test generates a directory.
-        //try { delete(new File(o));
-        //} catch (FileNotFoundException e) {}
+        try { delete(new File(o));
+        } catch (FileNotFoundException e) {}
     }
 
 
@@ -68,18 +73,30 @@ public class VideoTest {
         i.putExtra("-i", "video");
         i.putExtra("-r", 15.);
         i.putExtra("-d", 25.0);
-        String result = callForResult(i);
-        Assert.assertNotNull("timeout before completion", result);
-        assertRecording(result, "video", (int) (15*5 * (mSize.width*mSize.height*1.5)), true);
+
+        if (VideoSensor.getCameraSize("") == null) {
+            String result = callForError(i);
+            Assert.assertTrue("get a cam not available exception", result != null);
+        } else {
+            String result = callForResult(i);
+            Assert.assertNotNull("timeout before completion", result);
+            assertRecording(result, "video", (int) (15 * 5 * (mSize.width * mSize.height * 1.5)), true);
+        }
     }
 
     @Test public void doVideoAndOtherSensor() throws Exception {
         i.putExtra("-i", "video accelerometer".split(" "));
         i.putExtra("-r", new double[] {15., 50.});
         i.putExtra("-d", 5.0);
-        String result = callForResult(i);
-        Assert.assertNotNull("timeout before completion", result);
-        assertRecording(result, "video", (int) (15*5 * (mSize.width*mSize.height*1.5)), true);
+
+        if (VideoSensor.getCameraSize("") == null) {
+            String result = callForError(i);
+            Assert.assertTrue("get a cam not available exception", result != null);
+        } else {
+            String result = callForResult(i);
+            Assert.assertNotNull("timeout before completion", result);
+            assertRecording(result, "video", (int) (15 * 5 * (mSize.width * mSize.height * 1.5)), true);
+        }
     }
 
 
@@ -113,11 +130,11 @@ public class VideoTest {
     }
 
     private String callForError(Intent i) throws InterruptedException {
-        return callForResult(i, 250000, Recorder.ERROR_ACTION, Recorder.ERROR_REASON);
+        return callForResult(i, 25000, Recorder.ERROR_ACTION, Recorder.ERROR_REASON);
     }
 
     private String callForResult(Intent i) throws InterruptedException {
-        return callForResult(i, 250000, Recorder.FINISH_ACTION, Recorder.FINISH_PATH);
+        return callForResult(i, 25000, Recorder.FINISH_ACTION, Recorder.FINISH_PATH);
     }
 
     private String callForResult(Intent i, int ms, String action, final String extra)
