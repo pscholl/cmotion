@@ -2,6 +2,7 @@ package de.uni_freiburg.es.sensorrecordingtool.sensors;
 
 import android.content.Context;
 import android.hardware.SensorManager;
+import android.os.Build;
 
 import java.util.HashMap;
 
@@ -39,8 +40,20 @@ public class SensorWrapper extends Sensor {
         mSensorMgr.unregisterListener(pop(l));
     }
 
+    /** Determine whethe the code is runnong on Google Glass
+     * @return True if and only if Manufacturer is Google and Model begins with Glass
+     */
+    public boolean isRunningOnGlass() {
+        return "Google".equalsIgnoreCase(Build.MANUFACTURER) && Build.MODEL.startsWith("Glass");
+    }
+
     @Override
-    public void flush(SensorEventListener l) { mSensorMgr.flush(get(l));  }
+    public void flush(SensorEventListener l) {
+        if (isRunningOnGlass())
+            l.onFlushCompleted();
+        else
+            mSensorMgr.flush(get(l));
+    }
 
     protected android.hardware.SensorEventListener2 get(SensorEventListener l) {
         SensorEventListenerWrapper wl = mSensorWrapper.get(l);

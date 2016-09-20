@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.hardware.*;
+import android.os.Build;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.SurfaceHolder;
@@ -44,7 +45,7 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
         if (mListeners.size() == 0) {
             /** open the camera if we are just creating the first listeners, otherwise just
              * add a new listener. */
-            Camera.Size mSize = getCameraSize(format);
+            CameraSize mSize = getCameraSize(format);
             mCamera = Camera.open();
             Camera.Parameters params = mCamera.getParameters();
             params.setPreviewSize(mSize.width, mSize.height);
@@ -63,14 +64,30 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
 
         super.registerListener(l,rate_in_mus,delay, format);
     }
+    /** Determine whethe the code is runnong on Google Glass
+     * @return True if and only if Manufacturer is Google and Model begins with Glass
+     */
+    public static boolean isRunningOnGlass() {
+        return "Google".equalsIgnoreCase(Build.MANUFACTURER) && Build.MODEL.startsWith("Glass");
+    }
 
-    public static Camera.Size getCameraSize(String format) {
-        Camera.Size mSize = null;
+    public static CameraSize getCameraSize(String format) {
+        CameraSize mSize = null;
+
+        if (isRunningOnGlass()) { // camera impl is flawed
+            return new CameraSize(320,240);
+        }
 
         try {
             Camera cam = Camera.open();
             Camera.Parameters params = cam.getParameters();
-            mSize = params.getPreviewSize();
+            Camera.Size tmpSize = params.getPreviewSize();
+
+            mSize.width = tmpSize.width;
+            mSize.height = tmpSize.height;
+
+            cam.unlock();
+            cam.release();
 
             String[] wh = format.split("x");
             int w = Integer.parseInt(wh[0]),
@@ -78,9 +95,6 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
 
             mSize.width = w;
             mSize.height = h;
-
-            cam.unlock();
-            cam.release();
         } catch(NullPointerException e) {
             Log.d(TAG, "camera not available");
         } catch(Exception e) {
@@ -181,5 +195,14 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
         mSurface.getHolder().removeCallback(this);
         stopRecording();
+    }
+
+    public static class CameraSize {
+        public int width, height;
+
+        public CameraSize(int w, int h) {
+            width = w;
+            height = h;
+        }
     }
 }

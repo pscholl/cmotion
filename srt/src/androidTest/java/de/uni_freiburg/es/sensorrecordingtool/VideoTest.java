@@ -130,11 +130,11 @@ public class VideoTest {
     }
 
     private String callForError(Intent i) throws InterruptedException {
-        return callForResult(i, 25000, Recorder.ERROR_ACTION, Recorder.ERROR_REASON);
+        return callForResult(i, 35000, Recorder.ERROR_ACTION, Recorder.ERROR_REASON);
     }
 
     private String callForResult(Intent i) throws InterruptedException {
-        return callForResult(i, 25000, Recorder.FINISH_ACTION, Recorder.FINISH_PATH);
+        return callForResult(i, 35000, Recorder.FINISH_ACTION, Recorder.FINISH_PATH);
     }
 
     private String callForResult(Intent i, int ms, String action, final String extra)

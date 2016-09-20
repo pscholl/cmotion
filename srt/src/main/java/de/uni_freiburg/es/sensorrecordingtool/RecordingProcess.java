@@ -96,7 +96,7 @@ public class RecordingProcess implements FFMpegProcess.ExitCallback {
         for (int j=0; j<sensors.length; j++)
         {
             if (sensors[j].contains("video")) {
-                Camera.Size size = VideoSensor.getCameraSize(formats[j]);
+                VideoSensor.CameraSize size = VideoSensor.getCameraSize(formats[j]);
                 fp.addVideo(size.width, size.height, rates[j], "rawvideo", "nv21")
                     .setStreamTag("name", "Android Default Cam");
             } else
