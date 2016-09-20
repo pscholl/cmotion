@@ -20,7 +20,7 @@
 
  Recordings can be started via broadcast intents, for example from the adb shell:
 
-    adb shell am broadcast -e -i acceleration -a android.intent.action.SENSOR_RECORD
+    adb shell am broadcast -a senserec -e -i acceleration 
 
  which will record only the acceleromteter for the default duration of 5 seconds, at the default rate of 50 Hz.
 
@@ -35,7 +35,7 @@
 
  The allowed values for the input can be displayed by running the intent and monitoring the logcat output, e.g.:
 
-    adb shell am broadcast -e -i alop -a android.intent.action.SENSOR_RECORD
+    adb shell am broadcast -a senserec -e -i alop 
 
  The output on an LG G Watch W100 looks like this:
 
@@ -62,9 +62,9 @@
 
  Multiple sensor can be recored at multiple rates like this:
 
-    adb shell am broadcast --esa -i accel,gyro --efa -r 50,25 --ef -d 120 -a android.intent.action.SENSOR_RECORD
+    adb shell am broadcast -a senserec --esa -i accel,gyro --efa -r 50,25 --ef -d 120 
 
- This will record acceleration at 50Hz and the gyroscope at 25Hz for a total time of 2minutes. If you have multiple nodes in a Wearable network (for example by starting this on a smartwatch), all other nodes will also start to record sensor data.
+ This will record acceleration at 50Hz and the gyroscope at 25Hz for a total time of 2minutes. If you have multiple nodes in a Wearable network (for example by starting this on a smartwatch), all other nodes will also start to record sensor data. See the ```adb shell am broadcast -h``` help to learn howto forward argument values.
 
 ## Results
 
@@ -76,4 +76,4 @@
 
 ## Gotchas
 
- The broadcast receiver does not receive the above mentioned when the package has been just installed. In order for it to work the application must have been started at least once!
+ The broadcast receiver does not receive the above mentioned when the package has been just installed. In order for it to work the application must have been started at least once! This is a security measure of Android.
