@@ -87,7 +87,7 @@ public class RecordingProcess implements FFMpegProcess.ExitCallback {
          * now start the ffmpeg process and the respective sensorprocesses
          */
         FFMpegProcess.Builder fp = new FFMpegProcess.Builder();
-        fp.setOutput(output, "matroska");
+        fp.setOutput(this.output, "matroska");
         fp.setCodec("a", "wavpack");
         fp.setCodec("v", "libx264");
         fp.addOutputArgument("-preset", "ultrafast"); // for video codec
