@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">cMotion Theta</string>
+    <string name="title">Open Spherical Camera</string>
+    <string name="explanation">requires WiFi permission to operate a remote camera...</string>
+</resources>

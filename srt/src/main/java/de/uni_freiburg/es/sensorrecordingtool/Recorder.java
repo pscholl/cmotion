@@ -68,29 +68,29 @@ public class Recorder extends Service {
       *
       * Accelerometer for example is android.sensor.accelerometer, you can leave the android.sensor
       * prefix out. */
-    static final String RECORDER_INPUT = "-i";
+    public static final String RECORDER_INPUT = "-i";
 
     /* the rate at which to record, a single one will apply to all input. If multiple sensors are
      * given, multiple rates can be applied to each input. Default rate is 50Hz */
-    static final String RECORDER_RATE  = "-r";
+    public static final String RECORDER_RATE  = "-r";
 
     /* the duration of the recording, given in seconds, default is 10 seconds. */
-    static final String RECORDER_DURATION = "-d";
+    public static final String RECORDER_DURATION = "-d";
 
     /* the optional output path */
-    static final String RECORDER_OUTPUT = "-o";
+    public static final String RECORDER_OUTPUT = "-o";
 
     /* optional format specifier for each sensor */
-    static final String RECORDER_FORMAT = "-f";
+    public static final String RECORDER_FORMAT = "-f";
 
     /* the main action for recording */
     public static final String RECORD_ACTION = ForwardedUtils.RECORD_ACTION;
 
     /* action for reporting error from the recorder service */
-    static final String ERROR_ACTION  = "recorder_error";
-    static final String ERROR_REASON  = "error_reason";
-    static final String FINISH_ACTION = "recorder_done";
-    static final String FINISH_PATH   = "recording_path";
+    public static final String ERROR_ACTION  = "recorder_error";
+    public static final String ERROR_REASON  = "error_reason";
+    public static final String FINISH_ACTION = "recorder_done";
+    public static final String FINISH_PATH   = "recording_path";
 
     /* for handing over the cancel action from a notification */
     public static final String CANCEL_ACTION = "senserec_cancel";
