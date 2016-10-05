@@ -107,21 +107,7 @@ public class Recorder extends Service {
     public int onStartCommand(final Intent i, int flags, int startId) {
         if (i == null)
             return START_NOT_STICKY;
-
-        /*
-         * make sure that we have permission to write the external folder, if we do not have
-         * permission currently the user will be bugged about it. And this service will be
-         * restarted with a null action intent.
-        if (!PermissionDialog.externalStorage(this)) {
-            Intent diag = new Intent(this, PermissionDialog.class);
-            if (i.getExtras() != null)
-                diag.putExtras(i.getExtras());
-            diag.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(diag);
-            return START_NOT_STICKY;
-        }
-         */
-
+        
         /*
          * terminate the recording right now, if the user wishes so.
          */
