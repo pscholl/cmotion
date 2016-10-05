@@ -1,20 +1,22 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
-import android.app.Service;
+import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
-import android.os.IBinder;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.util.Log;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.LinkedList;
 
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.BlockSensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorProcess;
+import de.uni_freiburg.es.sensorrecordingtool.sensors.VideoSensor;
 
 /**
  * A tool for recording arbitrary combinations of sensor attached and reachable via Android. The
@@ -59,7 +61,7 @@ import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorProcess;
  *
  * Created by phil on 2/22/16.
  */
-public class Recorder extends Service {
+public class Recorder extends IntentService {
     static final String TAG = Recorder.class.getName();
 
     /* designate the sensor you want to record, can either be a single String or a list thereof,
@@ -96,149 +98,106 @@ public class Recorder extends Service {
     public static final String CANCEL_ACTION = "senserec_cancel";
     public static final String RECORDING_ID = "-r";
 
-    /* keep track of all running recordings */
-    private LinkedList<RecordingProcess> mRecordings = new LinkedList<RecordingProcess>();
+    /* whether we are currently recording */
+    public static volatile boolean recording = false;
+    private HandlerThread mSensorThread;
 
-    /** called with the startService routine, will parse all RECORDER_INPUTs for known values
-     *  and start the recording. If no RECORDER_OUTPUT directory is given it will default to
-     *  a directory named with the current timestamp in ISO-format on the sdcard.
-     */
-    @Override
-    public int onStartCommand(final Intent i, int flags, int startId) {
-        if (i == null)
-            return START_NOT_STICKY;
-        
-        /*
-         * terminate the recording right now, if the user wishes so.
-         */
-        if (CANCEL_ACTION.equals(i.getAction())) {
-            int id = i.getIntExtra(RECORDING_ID, mRecordings.size() - 1);
-
-            try {
-                Notification.cancelRecording(this.getApplicationContext(), id);
-
-                if (id < 0 || id >= mRecordings.size()) {
-                    Log.d(TAG, "invalid recording id " + id);
-                    return START_NOT_STICKY;
-                }
-
-                mRecordings.get(id).terminate();
-                mRecordings.remove(id);
-                Log.d(TAG, "terminated recording " + id);
-            } catch (IndexOutOfBoundsException e) {
-                Log.d(TAG, "unable to find recording with id " + id);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            return START_NOT_STICKY;
-        } else {
-            newRecordingProcess(i);
-            return START_NOT_STICKY;
-        }
-    }
-
-    public void newRecordingProcess(Intent i) {
-        try {
-            RecordingProcess recording = new RecordingProcess(this,
-                i.getStringExtra(RECORDER_OUTPUT),
-                getStringOrArray(i, RECORDER_INPUT),
-                getStringOrArray(i, RECORDER_FORMAT),
-                getIntFloatOrDoubleArray(i, RECORDER_RATE, 50.),
-                getIntFloatOrDouble(i, RECORDER_DURATION, -1) );
-
-            for (int j=0; j<recording.sensors.length; j++) {
-                OutputStream os = recording.getOutputStream(j);
-                SensorProcess sp = newSensorProcess( recording.sensors[j],
-                                                     recording.formats[j],
-                                                     recording.rates[j],
-                                                     recording.duration, os );
-                recording.mInputList.add(sp);
-            }
-
-            mRecordings.add(recording);
-            Notification.newRecording(this, mRecordings.indexOf(recording), recording);
-        } catch (Exception e) {
-            i = new Intent();
-            i.setAction(ERROR_ACTION);
-            i.putExtra(ERROR_REASON, e.getMessage());
-            sendBroadcast(i);
-            e.printStackTrace();
-        }
+    public Recorder() {
+        super(Recorder.class.getName());
     }
 
     private SensorProcess newSensorProcess(String sensor, String format, double rate,
                                            double dur, OutputStream os) throws Exception {
         Context c = this.getApplicationContext();
+        if (mSensorThread == null) {
+            mSensorThread = new HandlerThread("sensorprocess");
+            mSensorThread.start();
+        }
 
         if (sensor.contains("video"))
-            return new BlockSensorProcess(c, sensor, rate, format, dur, os);
+            return new BlockSensorProcess(c, sensor, rate, format, dur, os,
+                    new Handler(mSensorThread.getLooper()));
         else
-            return new SensorProcess(c, sensor, rate, format, dur, os);
+            return new SensorProcess(c, sensor, rate, format, dur, os,
+                    new Handler(mSensorThread.getLooper()));
+
     }
 
-    public static String[] getStringOrArray(Intent i, String extra) {
-        String[] arr = i.getStringArrayExtra(extra);
-        if (arr != null)
-            return arr;
-        else if (i.getStringExtra(extra) != null)
-            return new String[] { i.getStringExtra(extra) };
-        else
-            return new String[] { };
-    }
 
-    public static double[] getIntFloatOrDoubleArray(Intent i, String extra, double def) {
-        int iarr[] = i.getIntArrayExtra(extra);
-        float farr[] = i.getFloatArrayExtra(extra);
-        double darr[] = i.getDoubleArrayExtra(extra);
-
-        if (darr != null)
-            return darr;
-
-        if (farr != null) {
-            double out[] = new double[farr.length];
-            for (int j=0; j<out.length; j++)
-                out[j] = farr[j];
-            return out;
-        }
-
-        if (iarr != null) {
-            double out[] = new double[iarr.length];
-            for (int j=0; j<out.length; j++)
-                out[j] = iarr[j];
-            return out;
-        }
-
-        return new double[]{getIntFloatOrDouble(i,extra,def)};
-    }
-
-    public static double getIntFloatOrDouble(Intent i, String extra, double def) {
-        int ivalue = i.getIntExtra(extra, -1);
-        float fvalue = i.getFloatExtra(extra, -1);
-        double dvalue = i.getDoubleExtra(extra, -1);
-
-        if (dvalue != -1)
-            return dvalue;
-
-        if (fvalue != -1)
-            return fvalue;
-
-        if (ivalue != -1)
-            return ivalue;
-
-        return def;
-    }
-
+    /** just start a single recording until the flag is toggled or the duration has been hit.
+     *
+     * @param intent recording specification
+     */
     @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
+    protected void onHandleIntent(Intent intent) {
+        if (!RECORD_ACTION.equals(intent.getAction()))
+        {
+            Log.d(TAG, String.format(
+            "not a %s action, not doing anyhing", RECORD_ACTION));
+            return;
+        }
 
-    public void finished(RecordingProcess recordingProcess) {
-        Intent i = new Intent(Recorder.FINISH_ACTION);
-        i.putExtra(Recorder.FINISH_PATH, recordingProcess.output);
-        i.putExtra(Recorder.RECORDING_ID, mRecordings.indexOf(this));
-        sendBroadcast(i);
-        mRecordings.remove(this);
+        try {
+            intent = RecorderCommands.parseRecorderIntent(intent);
+
+            String output = intent.getStringExtra(RECORDER_OUTPUT);
+            String[] sensors = intent.getStringArrayExtra(RECORDER_INPUT);
+            String[] formats = intent.getStringArrayExtra(RECORDER_FORMAT);
+            double[] rates = intent.getDoubleArrayExtra(RECORDER_RATE);
+            double duration = intent.getIntExtra(RECORDER_DURATION, -1);
+
+            /** create an ffmpeg process that will demux all sensor recordings into
+             * a single file on one time axis. */
+            FFMpegProcess.Builder fp = new FFMpegProcess.Builder();
+            fp.setOutput(output, "matroska")
+                    .setCodec("a", "wavpack")
+                    .setCodec("v", "libx264")
+                    .addOutputArgument("-preset", "ultrafast")
+                    .setLoglevel("debug");
+
+            for (int j = 0; j < sensors.length; j++) {
+                if (sensors[j].contains("video")) {
+                    VideoSensor.CameraSize size = VideoSensor.getCameraSize(formats[j]);
+                    fp
+                    .addVideo(size.width, size.height, rates[j], "rawvideo", "nv21")
+                    .setStreamTag("name", "Android Default Cam");
+                } else
+                    fp
+                    .addAudio("f32be", rates[j], SensorProcess.getSampleSize(this, sensors[j]))
+                    .setStreamTag("name", sensors[j]);
+            }
+
+            FFMpegProcess ffmpeg = fp.build(this);
+
+            /** create sensorprocess for each input and wire it to the ffmpeg process */
+            for (int j = 0; j < sensors.length; j++)
+                newSensorProcess(sensors[j], formats[j], rates[j], duration,
+                                 ffmpeg.getOutputStream(j));
+
+            /** now wait until the recording is stopped or a timeout has occurred */
+            if (duration > 0)
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        recording = false;
+                    }
+                }, (int) duration * 1000);
+
+            for (recording = true; recording; )
+                ;
+
+            /** close all streams to notify each process that we're done */
+            for (int j = 0; j < sensors.length; j++)
+                ffmpeg.getOutputStream(j).close();
+
+            Intent i = new Intent(Recorder.FINISH_ACTION);
+            i.putExtra(Recorder.FINISH_PATH, output);
+            sendBroadcast(i);
+
+        } catch (Exception e) {
+            Log.d(TAG, "unable to start recording");
+            e.printStackTrace();
+            return;
+        }
     }
 }

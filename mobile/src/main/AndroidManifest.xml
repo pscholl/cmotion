@@ -25,6 +25,13 @@
 
         <service android:name=".LocalSensorService"></service>
         <service android:name=".WearSensorService"></service>
+
+        <receiver android:name=".RecorderCommands">
+            <intent-filter>
+                <action android:name="senserec"/>
+                <action android:name="senserec_cancel"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

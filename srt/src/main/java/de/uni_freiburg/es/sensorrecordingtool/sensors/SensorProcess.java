@@ -2,6 +2,7 @@ package de.uni_freiburg.es.sensorrecordingtool.sensors;
 
 import android.content.Context;
 import android.os.Build;
+import android.os.Handler;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -10,10 +11,6 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-import de.uni_freiburg.es.sensorrecordingtool.RecordingProcess;
-import de.uni_freiburg.es.sensorrecordingtool.sensors.Sensor;
-import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEvent;
-import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEventListener;
 
 /** Copies *sensor* data for *dur* seconds at *rate* to a bufferedwriter *bf*. Automatically
  * closes the output buffer when done.
@@ -31,7 +28,6 @@ import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorEventListener;
  */
 public class SensorProcess implements SensorEventListener {
     public static final int DEFAULT_LATENCY_US = 0;
-    private final Context context;
     final Sensor mSensor;
     final double mRate;
     final OutputStream mOut;
@@ -43,8 +39,7 @@ public class SensorProcess implements SensorEventListener {
     private boolean flushing = false;
 
     public SensorProcess(Context context, String sensor, double rate, String format, double dur,
-                         OutputStream bf) throws Exception  {
-        this.context = context;
+                         OutputStream bf, Handler h) throws Exception  {
         mRate = rate;
         mDur = dur;
         mOut = bf;
@@ -54,7 +49,7 @@ public class SensorProcess implements SensorEventListener {
             maxreportdelay_us = (int) (mDur-1.) * 1000 * 1000;
 
         mSensor = getMatchingSensor(context, sensor);
-        mSensor.registerListener(this, (int) (1 / rate * 1000 * 1000), maxreportdelay_us, format);
+        mSensor.registerListener(this, (int) (1 / rate * 1000 * 1000), maxreportdelay_us, format, h);
     }
 
     /** given a String tries to find a matching sensor given these rules:
@@ -152,6 +147,7 @@ public class SensorProcess implements SensorEventListener {
             mLastTimestamp = sensorEvent.timestamp;
         } catch (IOException e) {
             e.printStackTrace();
+            terminate();
         }
     }
 
@@ -167,7 +163,7 @@ public class SensorProcess implements SensorEventListener {
         return mBuf.array();
     }
 
-    public void terminate() throws IOException {
+    public void terminate() {
         if (mDur < mElapsed || mDur < 0) {
             flushing = true;
             mSensor.flush(this);
@@ -179,9 +175,7 @@ public class SensorProcess implements SensorEventListener {
     public void onFlushCompleted() {
         mSensor.unregisterListener(this);
         try { mOut.close();}
-        catch (IOException e) {
-            e.printStackTrace();
-        }
+        catch (IOException e) {}
     }
 
     public static int getSampleSize(Context context, String sensor) throws Exception {

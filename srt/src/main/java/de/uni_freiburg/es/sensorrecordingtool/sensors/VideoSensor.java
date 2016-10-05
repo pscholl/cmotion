@@ -5,13 +5,12 @@ import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.hardware.*;
 import android.os.Build;
+import android.os.Handler;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.WindowManager;
-
-import java.util.LinkedList;
 
 /** Grabs frames at the specified videorate and returns them in raw format at maximum
  * resolution as sensorevents.
@@ -38,7 +37,7 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
     }
 
     @Override
-    public void registerListener(SensorEventListener l, int rate_in_mus, int delay, String format) {
+    public void registerListener(SensorEventListener l, int rate_in_mus, int delay, String format, Handler h) {
         //if (!PermissionDialog.camera(context))
         //    return;
 
@@ -62,7 +61,7 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
             startRecording();
         }
 
-        super.registerListener(l,rate_in_mus,delay, format);
+        super.registerListener(l,rate_in_mus,delay, format, h);
     }
     /** Determine whethe the code is runnong on Google Glass
      * @return True if and only if Manufacturer is Google and Model begins with Glass

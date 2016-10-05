@@ -37,7 +37,7 @@ public class RecordingTest {
     @Before public void setup() {
         c = InstrumentationRegistry.getTargetContext();
         i = new Intent(c, Recorder.class);
-        o = RecordingProcess.getDefaultOutputPath() + Integer.toString(count++);
+        o = RecorderCommands.getDefaultOutputPath() + Integer.toString(count++);
         i.putExtra("-o", o);
     }
 
@@ -90,7 +90,8 @@ public class RecordingTest {
 
         assertRecording(result, "acc", 40 * (3) * 4 * 6);
         assertRecording(result, "gyr", 40 * (3) * 4 * 6);
-        assertRecording(result, "mag", zeroWhenOnGradle(40 * (3) * 4 * 6));
+        if (!onChargingGradle())
+            assertRecording(result, "mag", 40 * (3) * 4 * 6);
         assertRecording(result, "rot", 40 * (5) * 4 * 6);
     }
 
@@ -109,7 +110,8 @@ public class RecordingTest {
 
         assertRecording(result, "acc", 25 * (3) * 4 * 5);
         assertRecording(result, "gyr", 50*(3)*4*5);
-        assertRecording(result, "mag", zeroWhenOnGradle(75*(3)*4*5));
+        if (!onChargingGradle())
+            assertRecording(result, "mag", 40 * (3) * 4 * 6);
         assertRecording(result, "rot", 100*(5)*4*5);
     }
 
@@ -144,16 +146,13 @@ public class RecordingTest {
     /* we assume that some models are residing on their magnetized charging gradle while plugged
      * in. The magnetometer will not return any data in this case, which is why we have this corner-
      * case.     */
-    private int zeroWhenOnGradle(int i) {
+    private boolean onChargingGradle() {
         Intent intent = c.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         int plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
         boolean in  = plugged == BatteryManager.BATTERY_PLUGGED_AC ||
                       plugged == BatteryManager.BATTERY_PLUGGED_USB;
 
-        if (in && Build.MODEL.equalsIgnoreCase("G Watch"))
-            return 0;
-
-        return i;
+        return !(in && Build.MODEL.equalsIgnoreCase("G Watch"));
     }
 
     public void assertRecording(String f, String sensor, int size) throws Exception {

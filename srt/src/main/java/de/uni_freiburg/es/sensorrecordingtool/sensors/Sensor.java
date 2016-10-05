@@ -2,6 +2,7 @@ package de.uni_freiburg.es.sensorrecordingtool.sensors;
 
 import android.content.Context;
 import android.hardware.SensorManager;
+import android.os.Handler;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -52,7 +53,7 @@ public abstract class Sensor {
             pl.l.onSensorChanged(mEvent);
     }
 
-    public void registerListener(SensorEventListener l, int rate, int delay, String format) {
+    public void registerListener(SensorEventListener l, int rate, int delay, String format, Handler h) {
         mListeners.add(new ParameterizedListener(l, rate / 1000, delay / 1000));
     }
 

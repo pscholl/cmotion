@@ -2,6 +2,7 @@ package de.uni_freiburg.es.sensorrecordingtool.sensors;
 
 import android.content.Context;
 import android.media.MediaRecorder;
+import android.os.Handler;
 import android.os.ParcelFileDescriptor;
 
 import java.io.FileInputStream;
@@ -35,7 +36,7 @@ public class AudioSensor extends Sensor {
     }
 
     @Override
-    public void registerListener(SensorEventListener l, int rate_in_mus, int delay, String format) {
+    public void registerListener(SensorEventListener l, int rate_in_mus, int delay, String format, Handler h) {
         //if (!PermissionDialog.camera(context))
         //    return;
 
@@ -44,7 +45,7 @@ public class AudioSensor extends Sensor {
             startRecording();
         }
 
-        super.registerListener(l,rate_in_mus,delay, format);
+        super.registerListener(l,rate_in_mus,delay, format, h);
     }
 
     public void startRecording() {

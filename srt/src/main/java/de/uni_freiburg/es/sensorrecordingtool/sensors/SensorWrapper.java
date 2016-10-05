@@ -3,6 +3,7 @@ package de.uni_freiburg.es.sensorrecordingtool.sensors;
 import android.content.Context;
 import android.hardware.SensorManager;
 import android.os.Build;
+import android.os.Handler;
 
 import java.util.HashMap;
 
@@ -30,9 +31,9 @@ public class SensorWrapper extends Sensor {
     }
 
     @Override
-    public void registerListener(SensorEventListener l, int rate, int delay, String format) {
+    public void registerListener(SensorEventListener l, int rate, int delay, String format, Handler h) {
         SensorEventListenerWrapper wl = new SensorEventListenerWrapper(l);
-        mSensorMgr.registerListener(get(l), mSensor, rate, delay);
+        mSensorMgr.registerListener(get(l), mSensor, rate, delay, h);
     }
 
     @Override

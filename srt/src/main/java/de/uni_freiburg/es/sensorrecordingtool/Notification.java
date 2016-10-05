@@ -32,94 +32,7 @@ public class Notification {
 
     static Set<Integer> isCanceled = new HashSet<Integer>();
 
-    static public void newRecording(final Context c, final int id, final RecordingProcess r) {
-        Intent cancel_intent = new Intent(Recorder.CANCEL_ACTION);
-        cancel_intent.putExtra(Recorder.RECORDING_ID, id);
-        PendingIntent pending  = PendingIntent.getBroadcast(c, id, cancel_intent,
-                                                            PendingIntent.FLAG_UPDATE_CURRENT);
-
-        Intent openfolder = new Intent(Intent.ACTION_GET_CONTENT);
-        openfolder.setDataAndType(Uri.parse("file://"+r.output), "*/*");
-        Log.d(Recorder.TAG, r.output);
-        PendingIntent openfolderp = PendingIntent.getActivity(c, id,
-                Intent.createChooser(openfolder, c.getString(R.string.choose)),
-                PendingIntent.FLAG_UPDATE_CURRENT);
-
-        NotificationCompat.Action.Builder cancel = new NotificationCompat.Action.Builder(
-                R.drawable.cancel, c.getString(R.string.cancel_text), pending);
-
-        String content;
-        content = c.getResources().getQuantityString(
-                R.plurals.notification_text,
-                r.mInputList.size(),
-                r.mInputList.size());
-
-        if (r.duration > 0)
-            content += c.getResources().getString(R.string.duration,
-                       DateUtils.formatElapsedTime((long) r.mInputList.get(0).mDur));
-
-        final NotificationCompat.Builder notification = new NotificationCompat.Builder(c)
-                .setContentTitle(c.getString(R.string.notification_title))
-                .setContentText(content)
-                .setSmallIcon(R.drawable.recording)
-                .setLocalOnly(true)
-                .setContentIntent(openfolderp)
-                .setDeleteIntent(pending)
-                .setProgress(100, 0, false)
-                .setGroup(RECORDING_GROUP_KEY)
-                .addAction(cancel.build());
-
-        final NotificationManager mgr = (NotificationManager) c.getSystemService(c.NOTIFICATION_SERVICE);
-
-        if (!isRunningOnGlass())
-            mgr.notify(id, notification.build());
-
-
-        /*
-         * also create a handler for updating the progress on the Recording, and make sure to
-         * stop updating once this recording has been canceled.
-         */
-        final Handler h = new Handler();
-        h.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                double total = 0, done = 0;
-                for (SensorProcess p : r.mInputList) {
-                    done += p.mElapsed;
-                    total += p.mDur;
-                }
-
-                if (r.mInputList.size() == 0) {
-                    notification.mActions.clear();
-                    notification.setContentTitle(c.getString(R.string.done_title));
-
-                    Intent i = new Intent(FINISHED_RECORDING);
-                    i.putExtra(Recorder.RECORDING_ID, id);
-                    c.sendBroadcast(i);
-                }
-
-                notification.setProgress((int) total, (int) done, false);
-                if (!isCanceled.contains(id)) {
-                    if (!isRunningOnGlass())
-                        mgr.notify(id, notification.build());
-
-                    if (r.mInputList.size() != 0)
-                        h.postDelayed(this, DELAY);
-                }
-
-            }
-        }, DELAY);
-
-        if (isCanceled.contains(id))
-            isCanceled.remove(id);
-
-        /** also send a broadcast to notify other components, for example on Glass to update
-         * their displays. */
-        Intent i = new Intent(NEW_RECORDING);
-        i.putExtra(EXTRA_NUM_SENSORS, r.mInputList.size());
-        i.putExtra(EXTRA_DURATION, r.mInputList.get(0).mDur);
-        i.putExtra(Recorder.RECORDING_ID, id);
-        c.sendBroadcast(i);
+    static public void newRecording(final Context c, final int id, String output) {
     }
 
     public static void cancelRecording(Context c, int id) {
@@ -133,7 +46,7 @@ public class Notification {
         c.sendBroadcast(i);
     }
 
-    /** Determine whethe the code is runnong on Google Glass
+    /** Determine whether the code is running on Google Glass
      * @return True if and only if Manufacturer is Google and Model begins with Glass
      */
     public static boolean isRunningOnGlass() {

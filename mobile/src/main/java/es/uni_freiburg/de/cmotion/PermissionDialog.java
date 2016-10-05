@@ -1,6 +1,7 @@
 package es.uni_freiburg.de.cmotion;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -15,7 +16,7 @@ import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
  *
  * Created by phil on 2/28/16.
  */
-public class PermissionDialog extends AppCompatActivity
+public class PermissionDialog extends Activity
     implements  ActivityCompat.OnRequestPermissionsResultCallback {
 
     private static final int PERMISSION_REQUEST = 11;
@@ -25,31 +26,15 @@ public class PermissionDialog extends AppCompatActivity
         super.onResume();
         Intent start = getIntent();
 
-        if (!externalStorage(this) || !location(this))  {
-             ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                            Manifest.permission.READ_EXTERNAL_STORAGE,
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.CAMERA},
-                    PERMISSION_REQUEST);
-        }
-
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                        Manifest.permission.READ_EXTERNAL_STORAGE,
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.CAMERA},
+                PERMISSION_REQUEST);
     }
 
-    public static boolean externalStorage(Context c) {
-        return ContextCompat.checkSelfPermission(c, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                == PackageManager.PERMISSION_GRANTED;
-    }
 
-    public static boolean location(Context c) {
-        return ContextCompat.checkSelfPermission(c, Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED;
-    }
-
-    public static boolean camera(Context c) {
-        return ContextCompat.checkSelfPermission(c, Manifest.permission.CAMERA)
-                == PackageManager.PERMISSION_GRANTED;
-    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] perms, int[] grantResults) {
@@ -74,5 +59,24 @@ public class PermissionDialog extends AppCompatActivity
                 sendBroadcast(ii);
             }
         }
+    }
+
+    public static boolean externalStorage(Context c) {
+        return ContextCompat.checkSelfPermission(c, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    public static boolean location(Context c) {
+        return ContextCompat.checkSelfPermission(c, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    public static boolean camera(Context c) {
+        return ContextCompat.checkSelfPermission(c, Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    public static boolean needToAskForPermission(Context context) {
+        return !externalStorage(context); // is optional: || !location(context) || !camera(context))
     }
 }

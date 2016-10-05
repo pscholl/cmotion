@@ -3,6 +3,7 @@ package de.uni_freiburg.es.sensorrecordingtool.sensors;
 import android.content.Context;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -47,8 +48,8 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     }
 
     @Override
-    public void registerListener(SensorEventListener l, int rate, int delay, String format) {
-        super.registerListener(l,rate,delay, format);
+    public void registerListener(SensorEventListener l, int rate, int delay, String format, Handler h) {
+        super.registerListener(l,rate,delay, format, h);
 
         //if (!PermissionDialog.location(mContext))
         //    return;

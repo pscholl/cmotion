@@ -7,7 +7,9 @@ import android.os.Environment;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Locale;
@@ -33,7 +35,7 @@ public class FFMpegProcess {
     protected static final ExecutorService THREAD_POOL_EXECUTOR = Executors.newCachedThreadPool();
     protected final Process p;
     protected final ProcessBuilder pb;
-    protected final LinkedList<AsyncSocket> sockets;
+    protected final LinkedList<OutputStream> sockets;
     protected final LinkedList<Integer> ports;
     protected final AsyncTask<InputStream, Void, Void> verboseMonitor =
         new AsyncTask<InputStream, Void, Void>() {
@@ -72,7 +74,7 @@ public class FFMpegProcess {
 
         pb = process;
         ports = new LinkedList<Integer>();
-        sockets = new LinkedList<AsyncSocket>();
+        sockets = new LinkedList<OutputStream>();
         newargs = new LinkedList<String>();
 
         for (String arg : pb.command()) {
@@ -80,6 +82,8 @@ public class FFMpegProcess {
                 Integer port = getFreeTCPPort();
                 arg = arg.replaceFirst("%port", port.toString());
                 ports.add(port);
+
+                sockets.add(new EventualSocketOutputStream("localhost", port));
             }
 
             isinputarg = arg.contentEquals("-i");
@@ -95,17 +99,8 @@ public class FFMpegProcess {
         exitMonitor.executeOnExecutor(THREAD_POOL_EXECUTOR, p);
     }
 
-    public AsyncSocket getOutputStream(int i) throws IOException, InterruptedException {
-        try {
-            return sockets.get(i);
-        } catch (IndexOutOfBoundsException e) {
-            if (sockets.size() != i)
-                throw new IOException("need to retrieve outputs streams in order");
-
-            Integer port = ports.get(i);
-            sockets.add(new AsyncSocket("localhost", port));
-            return sockets.get(i);
-        }
+    public int getPort(int j) {
+        return ports.get(j);
     }
 
     private Integer getFreeTCPPort() {
@@ -123,7 +118,7 @@ public class FFMpegProcess {
     public int waitFor() throws InterruptedException {
         int ret = p.waitFor();
 
-        for (AsyncSocket s : sockets)
+        for (OutputStream s : sockets)
             try { s.close(); }
             catch (IOException e) {}
 
@@ -133,7 +128,7 @@ public class FFMpegProcess {
     public InputStream getErrorStream() { return p.getErrorStream();  }
 
     public int terminate() throws InterruptedException {
-        for (AsyncSocket s : sockets)
+        for (OutputStream s : sockets)
             try { s.close(); }
             catch (IOException e) {  }
 
@@ -147,6 +142,8 @@ public class FFMpegProcess {
     public void exitCallback(FFMpegProcess.ExitCallback cb) {
         this.exit = cb;
     }
+
+    public OutputStream getOutputStream(int j) { return sockets.get(j); }
 
     /** This is a helper class to build what my common usages for the FFMpeg tool will be, feel
      * free to add additional stuff here. You can always add your own command line switches with

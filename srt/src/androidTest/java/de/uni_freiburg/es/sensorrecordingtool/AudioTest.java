@@ -36,7 +36,7 @@ public class AudioTest {
     @Before public void setup() {
         c = InstrumentationRegistry.getTargetContext();
         i = new Intent(c, Recorder.class);
-        o = RecordingProcess.getDefaultOutputPath() + Integer.toString(count++);
+        o = RecorderCommands.getDefaultOutputPath() + Integer.toString(count++);
         i.putExtra("-o", o);
     }
 

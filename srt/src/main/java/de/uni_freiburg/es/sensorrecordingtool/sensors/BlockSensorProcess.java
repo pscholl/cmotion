@@ -1,6 +1,7 @@
 package de.uni_freiburg.es.sensorrecordingtool.sensors;
 
 import android.content.Context;
+import android.os.Handler;
 
 import java.io.BufferedOutputStream;
 import java.io.OutputStream;
@@ -11,7 +12,11 @@ import java.io.OutputStream;
 public class BlockSensorProcess extends SensorProcess {
     public BlockSensorProcess(Context c, String sensor, double rate, String format, double dur,
                               OutputStream bf) throws Exception {
-        super(c, sensor, rate, format, dur, bf);
+        super(c, sensor, rate, format, dur, bf, new Handler(c.getMainLooper()));
+    }
+
+    public BlockSensorProcess(Context c, String sensor, double rate, String format, double dur, OutputStream os, Handler handler) throws Exception {
+        super(c, sensor, rate, format, dur, os, handler);
     }
 
     @Override
