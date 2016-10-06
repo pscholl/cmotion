@@ -1,11 +1,15 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.ConnectException;
+import java.net.Inet4Address;
+import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
 
 /** Buffer all writes until the socket is connected, then send the buffer and afterwards directly
  * communicate on the socket's outputstream.
@@ -15,14 +19,18 @@ import java.net.SocketException;
 public class EventualSocketOutputStream extends OutputStream {
     private final String mHost;
     private final int mPort;
-    private ByteArrayOutputStream mBuff;
+    private OutputStream mOutS;
     private Socket mSock;
+    private int mNumBytes;
+    private boolean mClosed;
 
     public EventualSocketOutputStream(String host, int port) {
         mHost = host;
         mPort = port;
-        mBuff = new ByteArrayOutputStream();
+        mOutS = new ByteArrayOutputStream();
         mSock = null;
+        mNumBytes = 0;
+        mClosed = false;
     }
 
     @Override
@@ -37,21 +45,26 @@ public class EventualSocketOutputStream extends OutputStream {
 
     @Override
     public void write(byte[] buffer) throws IOException {
-        if (mSock == null) {
-            try {
-                mSock = new Socket(mHost, mPort);
-                mSock.getOutputStream().write(mBuff.toByteArray());
-                mBuff = null;
-            } catch (ConnectException e) {
-                mBuff.write(buffer);
-            }
-        } else {
-            mSock.getOutputStream().write(buffer);
+        mOutS.write(buffer);
+
+        if (mSock == null || !(mSock.isConnected() || mSock.isClosed())) try {
+            byte[] buf;
+            mSock = new Socket();
+            mSock.connect(new InetSocketAddress("localhost", mPort), 500);
+            buf = ((ByteArrayOutputStream) mOutS).toByteArray();
+            mOutS = new BufferedOutputStream(mSock.getOutputStream());
+            mOutS.write(buf);
+
+            if (mClosed)
+                mSock.close();
+        } catch (SocketTimeoutException e) {
+        } catch (ConnectException e) {
         }
     }
 
     @Override
     public void close() throws IOException {
+        mClosed = true;
         if (mSock != null)
             mSock.close();
     }

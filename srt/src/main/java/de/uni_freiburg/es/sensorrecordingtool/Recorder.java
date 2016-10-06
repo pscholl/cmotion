@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.PowerManager;
 import android.util.Log;
 
 import java.io.IOException;
@@ -12,6 +13,10 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.BlockSensorProcess;
@@ -96,11 +101,9 @@ public class Recorder extends IntentService {
 
     /* for handing over the cancel action from a notification */
     public static final String CANCEL_ACTION = "senserec_cancel";
-    public static final String RECORDING_ID = "-r";
 
     /* whether we are currently recording */
-    public static volatile boolean recording = false;
-    private HandlerThread mSensorThread;
+    public static Object isRecording = new Object();
 
     public Recorder() {
         super(Recorder.class.getName());
@@ -109,17 +112,18 @@ public class Recorder extends IntentService {
     private SensorProcess newSensorProcess(String sensor, String format, double rate,
                                            double dur, OutputStream os) throws Exception {
         Context c = this.getApplicationContext();
-        if (mSensorThread == null) {
-            mSensorThread = new HandlerThread("sensorprocess");
-            mSensorThread.start();
-        }
+
+        /** one thread for each sensor to make sure that they can block on write on their
+         * respective delivery outputstream without interacting with any other sensorprocesses */
+        HandlerThread h = new HandlerThread("sensorprocess " + sensor);
+        h.start();
 
         if (sensor.contains("video"))
             return new BlockSensorProcess(c, sensor, rate, format, dur, os,
-                    new Handler(mSensorThread.getLooper()));
+                    new Handler(h.getLooper()));
         else
             return new SensorProcess(c, sensor, rate, format, dur, os,
-                    new Handler(mSensorThread.getLooper()));
+                    new Handler(h.getLooper()));
 
     }
 
@@ -133,7 +137,7 @@ public class Recorder extends IntentService {
         if (!RECORD_ACTION.equals(intent.getAction()))
         {
             Log.d(TAG, String.format(
-            "not a %s action, not doing anyhing", RECORD_ACTION));
+            "not a %s action, not doing anything", RECORD_ACTION));
             return;
         }
 
@@ -144,7 +148,7 @@ public class Recorder extends IntentService {
             String[] sensors = intent.getStringArrayExtra(RECORDER_INPUT);
             String[] formats = intent.getStringArrayExtra(RECORDER_FORMAT);
             double[] rates = intent.getDoubleArrayExtra(RECORDER_RATE);
-            double duration = intent.getIntExtra(RECORDER_DURATION, -1);
+            final double duration = intent.getIntExtra(RECORDER_DURATION, -1);
 
             /** create an ffmpeg process that will demux all sensor recordings into
              * a single file on one time axis. */
@@ -174,22 +178,28 @@ public class Recorder extends IntentService {
                 newSensorProcess(sensors[j], formats[j], rates[j], duration,
                                  ffmpeg.getOutputStream(j));
 
-            /** now wait until the recording is stopped or a timeout has occurred */
-            if (duration > 0)
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        recording = false;
-                    }
-                }, (int) duration * 1000);
+            /** acquire a wake lock to avoid the sensor data generators to suspend */
+            PowerManager.WakeLock mWl =
+                    ((PowerManager) getSystemService(POWER_SERVICE))
+                    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
+            mWl.acquire();
 
-            for (recording = true; recording; )
-                ;
+            /** now wait until the recording is stopped or a timeout has occurred */
+            synchronized (isRecording) {
+                if (duration > 0)
+                    isRecording.wait((long) duration * 1000);
+                else
+                    isRecording.wait();
+            }
 
             /** close all streams to notify each process that we're done */
             for (int j = 0; j < sensors.length; j++)
                 ffmpeg.getOutputStream(j).close();
 
+            /** release the wakelock again */
+            mWl.release();
+
+            /** notify the system that a sensor recording is finished */
             Intent i = new Intent(Recorder.FINISH_ACTION);
             i.putExtra(Recorder.FINISH_PATH, output);
             sendBroadcast(i);
@@ -197,7 +207,18 @@ public class Recorder extends IntentService {
         } catch (Exception e) {
             Log.d(TAG, "unable to start recording");
             e.printStackTrace();
+
+            Intent i = new Intent(Recorder.ERROR_ACTION);
+            i.putExtra(Recorder.ERROR_REASON, e.getMessage());
+            sendBroadcast(i);
+
             return;
+        }
+    }
+
+    public static void stopCurrentRecording() {
+        synchronized (isRecording) {
+            isRecording.notifyAll();
         }
     }
 }

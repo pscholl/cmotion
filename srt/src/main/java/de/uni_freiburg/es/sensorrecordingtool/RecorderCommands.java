@@ -10,6 +10,9 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /** A Broadcast which distributes a recording intent to the proper Services and also makes
  * sure to stop an ongoing recording if there is any.
@@ -23,7 +26,7 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
             return;
 
         /** stop any recording per default, whether this is a cancel or start request */
-        Recorder.recording = false;
+        Recorder.stopCurrentRecording();
 
         /** parse the intent and forward only if a new recording is to be started. */
         if (!Recorder.RECORD_ACTION.equals(intent.getAction()))
@@ -57,7 +60,7 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
 
         output = output==null ? getDefaultOutputPath() : output;
 
-        if (sensors.length < 0)
+        if (sensors.length <= 0)
             throw new Exception("no input supplied");
 
         if (formats == null)

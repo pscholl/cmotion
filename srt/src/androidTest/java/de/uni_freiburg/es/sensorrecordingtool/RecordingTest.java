@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
+import android.test.suitebuilder.annotation.LargeTest;
 import android.test.suitebuilder.annotation.MediumTest;
 
 import org.junit.After;
@@ -27,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  * Created by phil on 2/23/16.
  */
 @RunWith(AndroidJUnit4.class)
-@MediumTest
+@LargeTest
 public class RecordingTest {
     private Context c;
     private Intent i;
@@ -39,6 +40,7 @@ public class RecordingTest {
         i = new Intent(c, Recorder.class);
         o = RecorderCommands.getDefaultOutputPath() + Integer.toString(count++);
         i.putExtra("-o", o);
+        i.setAction(Recorder.RECORD_ACTION);
     }
 
     public void delete(File f) throws FileNotFoundException {
@@ -135,7 +137,7 @@ public class RecordingTest {
                 Intent cancel = new Intent(Recorder.CANCEL_ACTION);
                 c.sendBroadcast(cancel);
             }
-        }, 5500);
+        }, 55500);
 
         String result = callForResult(i);
         Assert.assertNotNull("timed out", result);

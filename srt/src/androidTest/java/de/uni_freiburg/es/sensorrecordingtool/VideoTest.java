@@ -43,6 +43,7 @@ public class VideoTest {
         i = new Intent(c, Recorder.class);
         o = RecorderCommands.getDefaultOutputPath() + Integer.toString(count++);
         i.putExtra("-o", o);
+        i.setAction(Recorder.RECORD_ACTION);
 
         Camera cam = Camera.open();
 

@@ -3,6 +3,7 @@ package de.uni_freiburg.es.sensorrecordingtool.sensors;
 import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
+import android.os.PowerManager;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -27,16 +28,18 @@ import java.util.LinkedList;
  *
  */
 public class SensorProcess implements SensorEventListener {
-    public static final int DEFAULT_LATENCY_US = 0;
+    /** when no duration is set this constant is used for the maximum delay to report
+     * on new sensor data. We chose ten minutes for no specific reason. */
+    public static final int DEFAULT_LATENCY_US = 10 * 60 * 1000 * 1000;
     final Sensor mSensor;
     final double mRate;
     final OutputStream mOut;
     public final double mDur;
+    private final PowerManager.WakeLock mWl;
     ByteBuffer mBuf;
     long mLastTimestamp = -1;
-    double mDiff = 0;
     public double mElapsed = 0;
-    private boolean flushing = false;
+    double mDiff = 0;
 
     public SensorProcess(Context context, String sensor, double rate, String format, double dur,
                          OutputStream bf, Handler h) throws Exception  {
@@ -50,6 +53,10 @@ public class SensorProcess implements SensorEventListener {
 
         mSensor = getMatchingSensor(context, sensor);
         mSensor.registerListener(this, (int) (1 / rate * 1000 * 1000), maxreportdelay_us, format, h);
+
+        mWl = ((PowerManager) context.getSystemService(Context.POWER_SERVICE))
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
+        mWl.acquire();
     }
 
     /** given a String tries to find a matching sensor given these rules:
@@ -133,9 +140,9 @@ public class SensorProcess implements SensorEventListener {
             /*
              * store it or multiple copies of the same, close when done.
              */
-            while (mDiff >= 1/mRate) {
-                mDiff -= 1 / mRate;
-                mElapsed += 1 / mRate;
+            while (mDiff >= 1./mRate) {
+                mDiff -= 1. / mRate;
+                mElapsed += 1. / mRate;
 
                 if (mDur > 0 && mElapsed > mDur+.5/mRate) {
                     terminate();
@@ -164,15 +171,15 @@ public class SensorProcess implements SensorEventListener {
     }
 
     public void terminate() {
-        if (mDur < mElapsed || mDur < 0) {
-            flushing = true;
+        if (mDur < mElapsed || mDur < 0)
             mSensor.flush(this);
-        } else
+        else
             onFlushCompleted();
     }
 
     @Override
     public void onFlushCompleted() {
+        mWl.release();
         mSensor.unregisterListener(this);
         try { mOut.close();}
         catch (IOException e) {}

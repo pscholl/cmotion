@@ -14,6 +14,7 @@ import org.json.JSONObject;
 import java.util.List;
 
 import de.uni_freiburg.es.sensorrecordingtool.Recorder;
+import de.uni_freiburg.es.sensorrecordingtool.RecorderCommands;
 
 /** Sequencializes request for forwarding the recording commands to the Theta or any compatible
  * OSC camera. This involves several steps:
@@ -74,7 +75,7 @@ public class ThetaService extends IntentService {
 
     private boolean isVideoRecordingIntent(Intent intent) {
         boolean hasVideo = false;
-        for (String input : Recorder.getStringOrArray(intent, Recorder.RECORDER_INPUT))
+        for (String input : RecorderCommands.getStringOrArray(intent, Recorder.RECORDER_INPUT))
             hasVideo |= input.contains("vid");
 
         return Recorder.RECORD_ACTION.equals(intent.getAction()) && hasVideo;

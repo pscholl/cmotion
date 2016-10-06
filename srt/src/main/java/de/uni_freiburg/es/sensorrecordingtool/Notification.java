@@ -42,11 +42,11 @@ public class Notification {
 
         /** and also send the cancel action */
         Intent i = new Intent(CANCEL_RECORDING);
-        i.putExtra(Recorder.RECORDING_ID, id);
         c.sendBroadcast(i);
     }
 
-    /** Determine whether the code is running on Google Glass
+    /** Determine whether the code is running on Google Glass.
+     *
      * @return True if and only if Manufacturer is Google and Model begins with Glass
      */
     public static boolean isRunningOnGlass() {
