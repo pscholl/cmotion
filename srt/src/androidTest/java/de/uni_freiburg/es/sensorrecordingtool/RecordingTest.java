@@ -37,7 +37,7 @@ public class RecordingTest {
 
     @Before public void setup() {
         c = InstrumentationRegistry.getTargetContext();
-        i = new Intent(c, Recorder.class);
+        i = new Intent();
         o = RecorderCommands.getDefaultOutputPath() + Integer.toString(count++);
         i.putExtra("-o", o);
         i.setAction(Recorder.RECORD_ACTION);
@@ -68,7 +68,7 @@ public class RecordingTest {
     @Test public void doARecordingWithRates() throws Exception {
         i.putExtra("-i", "accelerometer");
         i.putExtra("-r", 100.);
-        i.putExtra("-d", 5.0);
+        i.putExtra("-d", 15.0);
         String result = callForResult(i);
         Assert.assertNotNull("timeout before completion", result);
 
@@ -82,7 +82,7 @@ public class RecordingTest {
                 "mag",
                 "rot"
         });
-        i.putExtra("-d", 6.0f);
+        i.putExtra("-d", 36.0f);
         i.putExtra("-r", 40);
 
         String x = Build.MODEL;
@@ -137,7 +137,7 @@ public class RecordingTest {
                 Intent cancel = new Intent(Recorder.CANCEL_ACTION);
                 c.sendBroadcast(cancel);
             }
-        }, 55500);
+        }, 15500);
 
         String result = callForResult(i);
         Assert.assertNotNull("timed out", result);
@@ -196,7 +196,7 @@ public class RecordingTest {
                 lock.countDown();
             }
         }, new IntentFilter(action));
-        c.startService(i);
+        c.sendBroadcast(i);
         return lock.await(ms, TimeUnit.MILLISECONDS) ? result[0] : null;
     }
 }
