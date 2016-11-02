@@ -53,7 +53,7 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
         String[] sensors = getStringOrArray(intent, Recorder.RECORDER_INPUT);
         double[] rates = getIntFloatOrDoubleArray(intent, Recorder.RECORDER_RATE, 50.);
         String[] formats = getStringOrArray(intent, Recorder.RECORDER_FORMAT);
-        double duration = intent.getDoubleExtra(Recorder.RECORDER_DURATION, -1.);
+        double duration = getDoubleOrFloat(intent, Recorder.RECORDER_DURATION, -1.f);
         Intent call = new Intent();
 
         call.setAction(intent.getAction());
@@ -92,6 +92,11 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
         call.putExtra(Recorder.RECORDER_DURATION, duration);
 
         return call;
+    }
+
+    private static double getDoubleOrFloat(Intent i, String key, float v) {
+        double omg = i.getDoubleExtra(key, -1);
+        return omg == -1 ? i.getFloatExtra(key, v) : omg;
     }
 
     public static String[] getStringOrArray(Intent i, String extra) {
