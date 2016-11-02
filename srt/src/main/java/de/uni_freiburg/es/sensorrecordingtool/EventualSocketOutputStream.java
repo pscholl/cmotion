@@ -50,7 +50,7 @@ public class EventualSocketOutputStream extends OutputStream {
         if (mSock == null || !(mSock.isConnected() || mSock.isClosed())) try {
             byte[] buf;
             mSock = new Socket();
-            mSock.connect(new InetSocketAddress("localhost", mPort), 500);
+            mSock.connect(new InetSocketAddress("localhost", mPort), 1);
             buf = ((ByteArrayOutputStream) mOutS).toByteArray();
             mOutS = new BufferedOutputStream(mSock.getOutputStream());
             mOutS.write(buf);

@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
@@ -148,7 +149,7 @@ public class Recorder extends IntentService {
             String[] sensors = intent.getStringArrayExtra(RECORDER_INPUT);
             String[] formats = intent.getStringArrayExtra(RECORDER_FORMAT);
             double[] rates = intent.getDoubleArrayExtra(RECORDER_RATE);
-            final double duration = intent.getIntExtra(RECORDER_DURATION, -1);
+            final double duration = intent.getDoubleExtra(RECORDER_DURATION, -1);
 
             /** create an ffmpeg process that will demux all sensor recordings into
              * a single file on one time axis. */
@@ -171,12 +172,14 @@ public class Recorder extends IntentService {
                     .setStreamTag("name", sensors[j]);
             }
 
+            List<SensorProcess> sensorProcesses = new LinkedList<>();
             FFMpegProcess ffmpeg = fp.build(this);
 
             /** create sensorprocess for each input and wire it to the ffmpeg process */
             for (int j = 0; j < sensors.length; j++)
-                newSensorProcess(sensors[j], formats[j], rates[j], duration,
-                                 ffmpeg.getOutputStream(j));
+                sensorProcesses.add(
+                    newSensorProcess(sensors[j], formats[j], rates[j], duration,
+                                     ffmpeg.getOutputStream(j)));
 
             /** acquire a wake lock to avoid the sensor data generators to suspend */
             PowerManager.WakeLock mWl =
@@ -193,8 +196,11 @@ public class Recorder extends IntentService {
             }
 
             /** close all streams to notify each process that we're done */
-            for (int j = 0; j < sensors.length; j++)
-                ffmpeg.getOutputStream(j).close();
+            for (SensorProcess p : sensorProcesses)
+                p.terminate();
+
+            /** wait for ffmpeg to finish */
+            ffmpeg.terminate();
 
             /** release the wakelock again */
             mWl.release();

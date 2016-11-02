@@ -132,6 +132,7 @@ public class FFMpegProcess {
             try { s.close(); }
             catch (IOException e) {  }
 
+        p.destroy();
         return p.waitFor();
     }
 

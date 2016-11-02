@@ -30,7 +30,7 @@ import java.util.LinkedList;
 public class SensorProcess implements SensorEventListener {
     /** when no duration is set this constant is used for the maximum delay to report
      * on new sensor data. We chose ten minutes for no specific reason. */
-    public static final int DEFAULT_LATENCY_US = 10 * 60 * 1000 * 1000;
+    public static final int DEFAULT_LATENCY_US = 1 * 1000 * 1000;
     final Sensor mSensor;
     final double mRate;
     final OutputStream mOut;
@@ -51,8 +51,13 @@ public class SensorProcess implements SensorEventListener {
         if ( mDur-1 > 0 ) // make it one second shorter
             maxreportdelay_us = (int) (mDur-1.) * 1000 * 1000;
 
+        /** XXX flushing the sensor is not working reliably at the moment, so we
+         * completly avoid the reporting latency in favor of having the correct
+         * number of samples in the output. */
+        maxreportdelay_us = 0;
+
         mSensor = getMatchingSensor(context, sensor);
-        mSensor.registerListener(this, (int) (1 / rate * 1000 * 1000), maxreportdelay_us, format, h);
+        mSensor.registerListener(this, (int) (1. / rate * 1000 * 1000), maxreportdelay_us, format, h);
 
         mWl = ((PowerManager) context.getSystemService(Context.POWER_SERVICE))
                 .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
@@ -125,6 +130,7 @@ public class SensorProcess implements SensorEventListener {
              * between samples.
              */
             assert( mLastTimestamp < sensorEvent.timestamp );
+
             mDiff += (sensorEvent.timestamp - mLastTimestamp) * 1e-9;
 
             if (mDur > 0 && mElapsed > mDur) {
@@ -179,7 +185,7 @@ public class SensorProcess implements SensorEventListener {
 
     @Override
     public void onFlushCompleted() {
-        mWl.release();
+        if (mWl.isHeld())  mWl.release();
         mSensor.unregisterListener(this);
         try { mOut.close();}
         catch (IOException e) {}
@@ -196,5 +202,10 @@ public class SensorProcess implements SensorEventListener {
         }
 
         throw new Exception("unknown sensor: " + sensor);
+    }
+
+    public void join() {
+        while (mWl.isHeld())
+            ;
     }
 }
