@@ -22,15 +22,22 @@ public class EventualSocketOutputStream extends OutputStream {
     private OutputStream mOutS;
     private Socket mSock;
     private int mNumBytes;
-    private boolean mClosed;
+    private boolean mClosed, mWasConnected;
+    private final long mTimeout;
 
     public EventualSocketOutputStream(String host, int port) {
+      this(host, port, 0);
+    }
+
+    public EventualSocketOutputStream(String host, int port, long timeout_ms) {
         mHost = host;
         mPort = port;
+        mTimeout = timeout_ms;
         mOutS = new ByteArrayOutputStream();
         mSock = null;
         mNumBytes = 0;
         mClosed = false;
+        mWasConnected = false;
     }
 
     @Override
@@ -45,27 +52,46 @@ public class EventualSocketOutputStream extends OutputStream {
 
     @Override
     public void write(byte[] buffer) throws IOException {
+        eventuallyConnectSocketAndFlush();
         mOutS.write(buffer);
+    }
 
+    public void eventuallyConnectSocketAndFlush() {
         if (mSock == null || !(mSock.isConnected() || mSock.isClosed())) try {
             byte[] buf;
             mSock = new Socket();
-            mSock.connect(new InetSocketAddress("localhost", mPort), 1);
+            System.err.printf("waiting for port %d\n", mPort);
+            mSock.connect(new InetSocketAddress("localhost", mPort));
+            mWasConnected = true;
             buf = ((ByteArrayOutputStream) mOutS).toByteArray();
-            mOutS = new BufferedOutputStream(mSock.getOutputStream());
+            mOutS = mSock.getOutputStream();
             mOutS.write(buf);
-
-            if (mClosed)
-                mSock.close();
-        } catch (SocketTimeoutException e) {
-        } catch (ConnectException e) {
+            System.err.printf("written %d bytes on %d\n", buf.length, mPort);
+        } catch (Exception e) {
+          mSock = null;
+          System.err.printf("unable to write on %d\n", mPort);
         }
     }
 
     @Override
     public void close() throws IOException {
-        mClosed = true;
-        if (mSock != null)
+        /* try a little bit harder if the socket was never open */
+        if (!mWasConnected)
+          System.err.printf("port %d was %b %d bytes left\n", mPort, mWasConnected, ((ByteArrayOutputStream) mOutS).toByteArray().length);
+        else
+          System.err.printf("port %d was %b\n", mPort, mWasConnected);
+
+        for (long ticks = 0; !mWasConnected && (mTimeout == 0 || ticks < mTimeout); ticks += 10) {
+          eventuallyConnectSocketAndFlush();
+          try { Thread.sleep(10); }
+          catch(InterruptedException e) {}
+        }
+
+        eventuallyConnectSocketAndFlush();
+
+        if (mSock != null) {
+            mOutS.close();
             mSock.close();
+        }
     }
 }
