@@ -1,5 +1,7 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
+import java.net.Socket;
+import java.net.InetSocketAddress;
 import android.content.Context;
 import android.os.Environment;
 import android.support.test.InstrumentationRegistry;
@@ -49,7 +51,7 @@ public class FFMpegTest {
         Assert.assertTrue("return code is okay", e==1);
     }
 
-    @Test public void encodeSomeNumbersIntoSingleChannelWavpacked() throws IOException, InterruptedException, JSONException {
+    @Test public void encodeSomeNumbersIntoSingleChannelWavpacked() throws Exception {
         byte b[] = new byte[4096];
         FFMpegProcess p = new FFMpegProcess.Builder()
                 .addInputArgument("-f", "u8")
@@ -57,6 +59,8 @@ public class FFMpegTest {
                 .addOutputArgument("-f", "wv")
                 .addOutputArgument("-y", filename)
                 .build(c);
+
+        Thread.sleep(50);
 
         p.getOutputStream(0).write(b);
         p.getOutputStream(0).close();
@@ -88,6 +92,8 @@ public class FFMpegTest {
                 .addOutputArgument("-y", filename)
                 .build(c);
 
+        Thread.sleep(250);
+
         p.getOutputStream(0).write(b);
         p.getOutputStream(0).close();
 
@@ -118,7 +124,12 @@ public class FFMpegTest {
                 .build(c);
 
         p.getOutputStream(0).write(b);
+        p.getOutputStream(0).write(b);
+        p.getOutputStream(0).write(b);
+        p.getOutputStream(0).write(b);
+
         p.getOutputStream(1).write(b);
+
         p.getOutputStream(2).write(b);
         p.getOutputStream(2).write(b);
         p.getOutputStream(2).write(b);
@@ -128,10 +139,9 @@ public class FFMpegTest {
         p.getOutputStream(2).write(b);
         p.getOutputStream(2).write(b);
 
-
-        p.getOutputStream(0).close();
-        p.getOutputStream(1).close();
-        p.getOutputStream(2).close();
+        Thread.sleep(250); p.getOutputStream(0).close();
+        Thread.sleep(250); p.getOutputStream(1).close();
+        Thread.sleep(250); p.getOutputStream(2).close();
 
         int e = p.waitFor();
 
@@ -170,8 +180,8 @@ public class FFMpegTest {
         p.getOutputStream(0).write(b);
         p.getOutputStream(1).write(b);
 
-        p.getOutputStream(0).close();
-        p.getOutputStream(1).close();
+        Thread.sleep(250); p.getOutputStream(0).close();
+        Thread.sleep(250); p.getOutputStream(1).close();
 
         int e = p.waitFor();
 
@@ -199,9 +209,9 @@ public class FFMpegTest {
             .setOutput(new File(filepath, filename).toString(), "matroska")
             .build(c);
 
-        p.getOutputStream(0).write(b);
-        p.getOutputStream(1).write(b);
-        p.getOutputStream(2).write(a);
+        Thread.sleep(250); p.getOutputStream(0).write(b);
+        Thread.sleep(250); p.getOutputStream(1).write(b);
+        Thread.sleep(250); p.getOutputStream(2).write(a);
 
         int e = p.terminate();
 

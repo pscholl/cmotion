@@ -1,5 +1,6 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
+import android.content.pm.PackageManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -68,7 +69,7 @@ public class RecordingTest {
     @Test public void doARecordingWithRates() throws Exception {
         i.putExtra("-i", "accelerometer");
         i.putExtra("-r", 100.);
-        i.putExtra("-d", 15.0);
+        i.putExtra("-d", 5.0);
         String result = callForResult(i);
         Assert.assertNotNull("timeout before completion", result);
 
@@ -79,10 +80,9 @@ public class RecordingTest {
         i.putExtra(Recorder.RECORDER_INPUT, new String[]{
                 "acc",
                 "gyr",
-                "mag",
                 "rot"
         });
-        i.putExtra("-d", 36.0f);
+        i.putExtra("-d", 6.0f);
         i.putExtra("-r", 40);
 
         String x = Build.MODEL;
@@ -92,8 +92,6 @@ public class RecordingTest {
 
         assertRecording(result, "acc", 40 * (3) * 4 * 6);
         assertRecording(result, "gyr", 40 * (3) * 4 * 6);
-        if (!onChargingGradle())
-            assertRecording(result, "mag", 40 * (3) * 4 * 6);
         assertRecording(result, "rot", 40 * (5) * 4 * 6);
     }
 
@@ -101,23 +99,23 @@ public class RecordingTest {
         i.putExtra(Recorder.RECORDER_INPUT, new String[]{
                 "acc",
                 "gyr",
-                "mag",
                 "rot"
         });
-        i.putExtra("-d", 5.0);
-        i.putExtra("-r", new double[]{25.0, 50.0, 75.0, 100.0});
+        i.putExtra("-d", 10.0);
+        i.putExtra("-r", new double[]{25.0, 50.0, 100.0});
 
         String result = callForResult(i);
         Assert.assertNotNull("timeout", result);
 
-        assertRecording(result, "acc", 25 * (3) * 4 * 5);
-        assertRecording(result, "gyr", 50*(3)*4*5);
-        if (!onChargingGradle())
-            assertRecording(result, "mag", 40 * (3) * 4 * 6);
-        assertRecording(result, "rot", 100*(5)*4*5);
+        assertRecording(result, "acc", 25*3*4*5);
+        assertRecording(result, "gyr", 50*3*4*5);
+        assertRecording(result, "rot", 100*5*4*5);
     }
 
     @Test public void doLocationTest() throws Exception {
+        if (c.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH))
+          return;
+
         i.putExtra(Recorder.RECORDER_INPUT, "location");
         i.putExtra("-d", 5.0);
         String result = callForResult(i);
@@ -137,24 +135,13 @@ public class RecordingTest {
                 Intent cancel = new Intent(Recorder.CANCEL_ACTION);
                 c.sendBroadcast(cancel);
             }
-        }, 15500);
+        }, 2500);
 
         String result = callForResult(i);
         Assert.assertNotNull("timed out", result);
 
-        assertRecording(result, "acc", 50*3*4*5, true);
-    }
-
-    /* we assume that some models are residing on their magnetized charging gradle while plugged
-     * in. The magnetometer will not return any data in this case, which is why we have this corner-
-     * case.     */
-    private boolean onChargingGradle() {
-        Intent intent = c.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-        int plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
-        boolean in  = plugged == BatteryManager.BATTERY_PLUGGED_AC ||
-                      plugged == BatteryManager.BATTERY_PLUGGED_USB;
-
-        return !(in && Build.MODEL.equalsIgnoreCase("G Watch"));
+        /** we only test for two seconds because of a possible startup delay */
+        assertRecording(result, "acc", 50*3*4*2, true);
     }
 
     public void assertRecording(String f, String sensor, int size) throws Exception {
@@ -189,6 +176,7 @@ public class RecordingTest {
             throws InterruptedException {
         final CountDownLatch lock = new CountDownLatch(1);
         final String[] result = new String[] {null};
+
         c.registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -196,6 +184,7 @@ public class RecordingTest {
                 lock.countDown();
             }
         }, new IntentFilter(action));
+
         c.sendBroadcast(i);
         return lock.await(ms, TimeUnit.MILLISECONDS) ? result[0] : null;
     }
