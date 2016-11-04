@@ -60,27 +60,22 @@ public class EventualSocketOutputStream extends OutputStream {
         if (mSock == null || !(mSock.isConnected() || mSock.isClosed())) try {
             byte[] buf;
             mSock = new Socket();
-            System.err.printf("waiting for port %d\n", mPort);
+            //System.err.printf("waiting for port %d\n", mPort);
             mSock.connect(new InetSocketAddress("localhost", mPort));
             mWasConnected = true;
             buf = ((ByteArrayOutputStream) mOutS).toByteArray();
             mOutS = mSock.getOutputStream();
             mOutS.write(buf);
-            System.err.printf("written %d bytes on %d\n", buf.length, mPort);
+            //System.err.printf("written %d bytes on %d\n", buf.length, mPort);
         } catch (Exception e) {
+          //System.err.printf("unable to write on %d\n", mPort);
           mSock = null;
-          System.err.printf("unable to write on %d\n", mPort);
         }
     }
 
     @Override
     public void close() throws IOException {
         /* try a little bit harder if the socket was never open */
-        if (!mWasConnected)
-          System.err.printf("port %d was %b %d bytes left\n", mPort, mWasConnected, ((ByteArrayOutputStream) mOutS).toByteArray().length);
-        else
-          System.err.printf("port %d was %b\n", mPort, mWasConnected);
-
         for (long ticks = 0; !mWasConnected && (mTimeout == 0 || ticks < mTimeout); ticks += 10) {
           eventuallyConnectSocketAndFlush();
           try { Thread.sleep(10); }

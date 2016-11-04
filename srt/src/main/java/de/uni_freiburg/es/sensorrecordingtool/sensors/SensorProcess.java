@@ -147,14 +147,15 @@ public class SensorProcess implements SensorEventListener {
              * store it or multiple copies of the same, close when done.
              */
             while (mDiff >= 1./mRate) {
+                mOut.write(arr);
+
                 mDiff -= 1. / mRate;
                 mElapsed += 1. / mRate;
 
                 if (mDur > 0 && mElapsed > mDur+.5/mRate) {
                     terminate();
                     return;
-                } else
-                    mOut.write(arr);
+                }
             }
 
             mLastTimestamp = sensorEvent.timestamp;

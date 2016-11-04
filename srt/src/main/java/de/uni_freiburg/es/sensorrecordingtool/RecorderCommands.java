@@ -38,6 +38,10 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
             context.startService(intent);
         } catch (Exception e) {
             e.printStackTrace();
+
+            Intent i = new Intent(Recorder.ERROR_ACTION);
+            i.putExtra(Recorder.ERROR_REASON, e.getMessage());
+            context.sendBroadcast(i);
         }
     }
 

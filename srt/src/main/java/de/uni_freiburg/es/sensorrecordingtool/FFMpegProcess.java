@@ -78,7 +78,7 @@ public class FFMpegProcess {
         newargs = new LinkedList<String>();
 
         for (String arg : pb.command()) {
-            if (isinputarg) {
+            if (isinputarg && arg.contains("%port")) {
                 Integer port = getFreeTCPPort();
                 arg = arg.replaceFirst("%port", port.toString());
                 ports.add(port);
@@ -132,7 +132,6 @@ public class FFMpegProcess {
             try { s.close(); }
             catch (IOException e) {  }
 
-        p.destroy();
         return p.waitFor();
     }
 

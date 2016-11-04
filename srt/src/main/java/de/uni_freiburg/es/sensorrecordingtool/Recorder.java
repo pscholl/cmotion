@@ -187,10 +187,12 @@ public class Recorder extends IntentService {
                     .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
             mWl.acquire();
 
-            /** now wait until the recording is stopped or a timeout has occurred */
+            /** now wait until the recording is stopped or a timeout has occurred, give
+             * 1 seconds extra, as the sensorprocesses should stop themselves,
+             * but need additional time to transport the data */
             synchronized (isRecording) {
                 if (duration > 0)
-                    isRecording.wait((long) duration * 1000);
+                    isRecording.wait((long) duration * 1000 + 1000);
                 else
                     isRecording.wait();
             }
