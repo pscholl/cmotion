@@ -55,8 +55,8 @@ public class RecordingTest {
 
     @After public void teardown() {
         // not every test generates a directory.
-        //try { delete(new File(o));
-        //} catch (FileNotFoundException e) {}
+        try { delete(new File(o));
+        } catch (FileNotFoundException e) {}
     }
 
 
