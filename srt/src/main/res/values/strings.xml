@@ -1,8 +1,10 @@
 <resources>
-    <string name="app_name">Sensor Recording Tool</string>
-    <string name="cancel_text">cancel recording</string>
+    <string name="done_with_error_title">recording finished with errors</string>
     <string name="notification_title">currently recording</string>
     <string name="done_title">recording finished</string>
+
+    <string name="app_name">Sensor Recording Tool</string>
+    <string name="cancel_text">cancel recording</string>
     <string name="choose">open folder with</string>
     <string name="duration">for $s</string>
     <plurals name="notification_text">
