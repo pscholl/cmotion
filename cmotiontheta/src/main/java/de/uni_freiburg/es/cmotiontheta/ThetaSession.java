@@ -12,11 +12,13 @@ import com.squareup.okhttp.Response;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.JSONException;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.io.IOException;
 
 /**
  * Created by phil on 9/30/16.
@@ -39,7 +41,7 @@ public class ThetaSession  {
         mClient.setWriteTimeout(5, TimeUnit.SECONDS);
     }
 
-    public ThetaSession startSession() {
+    public ThetaSession startSession() throws IOException {
         try {
             JSONObject json = new JSONObject();
             json.put("name", "camera.startSession");
@@ -62,18 +64,22 @@ public class ThetaSession  {
                     .getJSONObject("results")
                     .getString("sessionId"));
 
+            System.err.printf("started Session %s", mSessionId.toString());
+
             return this;
-        } catch (Exception e) {
+        } catch (JSONException e) {
             e.printStackTrace();
             return null;
         }
     }
 
-    public ThetaSession stopCapture() {
+    public ThetaSession stopCapture() throws IOException {
         try {
             JSONObject json = new JSONObject();
             json.put("name", "camera._stopCapture");
             json.put("parameters", mSessionId);
+
+            System.err.printf("stopping Session %s", mSessionId.toString());
 
             Request r =
                 getOSCConnection(mWifi, "/osc/commands/execute")
@@ -83,13 +89,13 @@ public class ThetaSession  {
             Response rsp = mClient.newCall(r).execute();
             rsp.body().close();
             return rsp.isSuccessful() ? this : null;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+        } catch (JSONException e) {
+          e.printStackTrace();
+          return this;
         }
     }
 
-    public ThetaSession startCapture() {
+    public ThetaSession startCapture() throws IOException {
         try {
             JSONObject json = new JSONObject();
             json.put("name", "camera._startCapture");
@@ -103,7 +109,7 @@ public class ThetaSession  {
             Response rsp = mClient.newCall(r).execute();
             rsp.body().close();
             return rsp.isSuccessful() ? this : null;
-        } catch (Exception e) {
+        } catch (JSONException e) {
             e.printStackTrace();
             return null;
         }

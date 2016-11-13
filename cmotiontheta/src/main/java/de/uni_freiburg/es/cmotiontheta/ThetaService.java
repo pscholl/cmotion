@@ -62,7 +62,7 @@ public class ThetaService extends IntentService {
          *  3. OSC network not found    -> error
          *  4. no ScanResults           -> start scan */
         if (ThetaSession.isOSCNetwork(mWifi)) {
-            mSession = onConnectedToOSC();
+            mSession = retryOnConnectedToOSC(15);
             mPendingAction = null;
         }
 
@@ -74,13 +74,32 @@ public class ThetaService extends IntentService {
     }
 
     private boolean isVideoRecordingIntent(Intent intent) {
+        /* on every recording, try to start an OSC
         boolean hasVideo = false;
         for (String input : RecorderCommands.getStringOrArray(intent, Recorder.RECORDER_INPUT))
             hasVideo |= input.contains("vid");
 
         return Recorder.RECORD_ACTION.equals(intent.getAction()) && hasVideo;
+        */
+        return Recorder.RECORD_ACTION.equals(intent.getAction());
     }
 
+    protected ThetaSession retryOnConnectedToOSC(int times) {
+      for (int i=0; i<times; i++)
+        try { return onConnectedToOSC(); }
+        catch(Exception e) {
+          System.err.printf("connect to OSC failed (%d times) %s",
+              i, i<times ? ", retrying..." : ", failed");
+          e.printStackTrace();
+          sleep(200);
+      }
+      return null;
+    }
+
+    protected void sleep(int ms) {
+      try { Thread.sleep(ms); }
+      catch(Exception e) {};
+    }
 
     /** called when connected to an OSC wifi network.
      *
@@ -89,12 +108,12 @@ public class ThetaService extends IntentService {
      *
      * @return null on error or session end, a thetasession object otherwise
      */
-    protected ThetaSession onConnectedToOSC() {
+    protected ThetaSession onConnectedToOSC() throws Exception {
         if (Recorder.CANCEL_ACTION.equals(mPendingAction.getAction())) {
             if (mSession != null) {
                 mSession.stopCapture();
                 mSession.closeSession();
-                //mSession = null;
+                //mSession = null; can re-use session
             }
 
             /*
@@ -114,18 +133,10 @@ public class ThetaService extends IntentService {
                                    mSession : new ThetaSession(mWifi).startSession();
 
             JSONObject options = new JSONObject();
-            try {
-                options.put("captureMode", "_video");
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                return session  .setOptions(options)
-                                .startCapture();
-            } catch (Exception e) {
-                return null;
-            }
+            options.put("captureMode", "_video");
+            return session
+                   .setOptions(options)
+                   .startCapture();
         }
 
         return null;
