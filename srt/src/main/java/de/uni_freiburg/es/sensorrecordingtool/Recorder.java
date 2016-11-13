@@ -156,13 +156,17 @@ public class Recorder extends IntentService {
                     .addOutputArgument("-preset", "ultrafast")
                     .setLoglevel("debug");
 
+            /** create a SensorProcess for each input and wire it to ffmpeg
+             * accordingly */
             for (int j = 0; j < sensors.length; j++) {
-                if (sensors[j].contains("video")) {
+                if (SensorProcess.getMatchingSensor(this, sensors[j]) instanceof VideoSensor) {
                     VideoSensor.CameraSize size = VideoSensor.getCameraSize(formats[j]);
+
                     fp
                     .addVideo(size.width, size.height, rates[j], "rawvideo", "nv21")
                     .setStreamTag("name", "Android Default Cam");
-                } else
+                }
+                else
                     fp
                     .addAudio("f32be", rates[j], SensorProcess.getSampleSize(this, sensors[j]))
                     .setStreamTag("name", sensors[j]);
@@ -209,9 +213,9 @@ public class Recorder extends IntentService {
             status.finished(output);
 
         } catch (Exception e) {
-            status.error(e);
             e.printStackTrace();
             Log.d(TAG, "unable to start recording");
+            status.error(e);
             return;
         }
     }

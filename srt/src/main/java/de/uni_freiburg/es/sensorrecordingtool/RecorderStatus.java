@@ -1,12 +1,12 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
 import java.util.List;
@@ -19,7 +19,7 @@ import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorProcess;
  */
 public class RecorderStatus {
   public final Context c;
-  public final NotificationManager mService;
+  public final NotificationManagerCompat mService;
   public final NotificationCompat.Builder mNotification;
 
   /* action for reporting error from the recorder service */
@@ -40,7 +40,7 @@ public class RecorderStatus {
    */
   public RecorderStatus(Context context, List<SensorProcess> inputs, double duration) {
     c = context;
-    mService  = (NotificationManager) c.getSystemService(c.NOTIFICATION_SERVICE);
+    mService  = (NotificationManagerCompat) NotificationManagerCompat.from(c);
     mDuration = duration < 0 ? 0 : (int) duration * 1000;
 
     String content;
