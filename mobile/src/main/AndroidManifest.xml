@@ -21,7 +21,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".PermissionDialog"/>
+        <activity android:name=".ui.PermissionDialog"/>
 
         <service android:name=".LocalSensorService"></service>
         <service android:name=".WearSensorService"></service>

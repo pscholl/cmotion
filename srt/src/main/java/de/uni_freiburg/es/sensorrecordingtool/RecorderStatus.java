@@ -25,6 +25,7 @@ public class RecorderStatus {
   /* action for reporting error from the recorder service */
   public static final String STATUS_ACTION  = "recorder_status";
   public static final String STATUS_ELAPSED = "recorder_status_elapsed";
+  public static final String STATUS_DURATION = "recorder_status_duration";
   public static final String ERROR_ACTION  = "recorder_error";
   public static final String ERROR_REASON  = "error_reason";
   public static final String FINISH_ACTION = "recorder_done";
@@ -87,10 +88,12 @@ public class RecorderStatus {
    * then update the current notification and broadcast an intent.
    *
    * @param elapsed timespan in milli-seconds which was recorded
+   * @param duration timespan which will be recorded for
    */
-  public void recording(long elapsed) {
+  public void recording(long elapsed, long duration) {
     Intent i = new Intent(STATUS_ACTION);
     i.putExtra(STATUS_ELAPSED, elapsed);
+    i.putExtra(STATUS_DURATION, duration);
     c.sendBroadcast(i);
 
     if (mDuration <= 0)

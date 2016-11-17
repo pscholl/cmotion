@@ -33,13 +33,13 @@ public class RecordFloatingActionButton extends FloatingActionButton implements 
     }
 
     private void init() {
-        setImageResource(R.drawable.ic_fiber_manual_record_white_24dp);
+//        setImageResource(R.drawable.ic_fiber_manual_record_white_24dp);
         super.setOnClickListener(this);
     }
 
     public void setRecording(boolean recording) {
         this.mRecording = recording;
-        setImageResource(!mRecording ? R.drawable.ic_fiber_manual_record_white_24dp : R.drawable.ic_stop_white_24dp);
+//        setImageResource(!mRecording ? R.drawable.ic_fiber_manual_record_white_24dp : R.drawable.ic_stop_white_24dp);
     }
 
 

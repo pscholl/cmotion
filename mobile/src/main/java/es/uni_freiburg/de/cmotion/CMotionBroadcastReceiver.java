@@ -14,6 +14,7 @@ import android.widget.Toast;
 import java.io.File;
 
 import de.uni_freiburg.es.sensorrecordingtool.Recorder;
+import de.uni_freiburg.es.sensorrecordingtool.RecorderStatus;
 import es.uni_freiburg.de.cmotion.ui.RecordFloatingActionButton;
 import es.uni_freiburg.de.cmotion.ui.TimedProgressBar;
 
@@ -34,24 +35,27 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         switch (intent.getAction()) {
-            case Recorder.RECORD_ACTION:
+            case RecorderStatus.STATUS_ACTION:
                 try {
                     Intent parsedIntent = de.uni_freiburg.es.sensorrecordingtool.RecorderCommands.parseRecorderIntent(intent);
-                    double duration = parsedIntent.getDoubleExtra(Recorder.RECORDER_DURATION, -1);
+                    // TODO add support for elapsed time?
+                    long duration = parsedIntent.getLongExtra(RecorderStatus.STATUS_DURATION, -1);
                     mProgressBar.startAnimation((int) duration);
                     mRecFab.setRecording(true);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 break;
-            case Recorder.ERROR_ACTION:
+            case RecorderStatus.ERROR_ACTION:
                 Snackbar
-                        .make(mCoordinatorLayout, "Error: " + intent.getStringExtra(Recorder.ERROR_REASON), Snackbar.LENGTH_LONG)
+                        .make(mCoordinatorLayout, "Error: " + intent.getStringExtra(RecorderStatus.ERROR_REASON), Snackbar.LENGTH_LONG)
                         .show();
                 stopRecordingAnimations();
                 break;
-            case Recorder.FINISH_ACTION:
-                final String path = intent.getStringExtra(Recorder.FINISH_PATH);
+            case RecorderStatus.FINISH_ACTION:
+                stopRecordingAnimations();
+
+                final String path = intent.getStringExtra(RecorderStatus.FINISH_PATH);
                 Snackbar
                         .make(mCoordinatorLayout, "Written to: " + path, Snackbar.LENGTH_LONG)
                         .setAction("Open", new View.OnClickListener() {
@@ -68,10 +72,6 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
                             }
                         })
                         .show();
-                stopRecordingAnimations();
-                break;
-            case Recorder.CANCEL_ACTION:
-                stopRecordingAnimations();
                 break;
 
             default:

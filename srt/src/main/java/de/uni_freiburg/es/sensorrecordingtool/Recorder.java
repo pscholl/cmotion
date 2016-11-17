@@ -210,7 +210,7 @@ public class Recorder extends IntentService {
                  mIsRecording && (duration <= 0 ||
                          System.currentTimeMillis() - mRecordingSince < (long) duration * 1000 + 1000);
                  Thread.sleep(500))
-                status.recording(System.currentTimeMillis() - mRecordingSince);
+                status.recording(System.currentTimeMillis() - mRecordingSince, (long) duration * 1000 * 1000);
 
             /** close all streams to notify each process that we're done */
             for (SensorProcess p : sensorProcesses)
