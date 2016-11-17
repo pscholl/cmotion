@@ -1,11 +1,52 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
-    android:layout_height="match_parent" android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
-    android:paddingBottom="@dimen/activity_vertical_margin" tools:context=".CMotionActivity">
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
 
-    <TextView android:text="@string/hello_world" android:layout_width="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:clickable="true"
+
+    android:id="@+id/coordinatorLayout"
+
+    android:fitsSystemWindows="true"
+    android:focusableInTouchMode="true"
+
+    tools:context=".CMotionActivity">
+
+    <android.support.design.widget.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="@style/AppTheme.AppBarOverlay">
+
+        <android.support.v7.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            app:popupTheme="@style/AppTheme.PopupOverlay"/>
+        <es.uni_freiburg.de.cmotion.ui.TimedProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_gravity="bottom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="0dp"
+            android:indeterminate="false" />
+
+    </android.support.design.widget.AppBarLayout>
+
+
+    <include layout="@layout/content_cmotion" />
+
+    <es.uni_freiburg.de.cmotion.ui.RecordFloatingActionButton
+        android:id="@+id/fab"
+        android:onClick="onFabClick"
+        android:layout_margin="16dp"
+        app:backgroundTint="@color/dark_red"
+        android:layout_gravity="bottom|right"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
-</RelativeLayout>
+
+</android.support.design.widget.CoordinatorLayout>

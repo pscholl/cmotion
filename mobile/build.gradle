@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 'Google Inc.:Google APIs:23'
-    buildToolsVersion "23.0.1"
+    buildToolsVersion '25'
 
     defaultConfig {
         applicationId "es.uni_freiburg.de.cmotion"
@@ -25,10 +25,13 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     wearApp project(':wear')
-    compile 'com.android.support:appcompat-v7:23+'
-    androidTestCompile 'com.android.support:support-annotations:23+'
     compile project(':srt')
     compile project(':intentforwarder')
     compile project(':wearforwarder')
     compile project(':cmotiontheta')
+    compile 'com.android.support:appcompat-v7:25.+'
+    compile 'com.android.support:recyclerview-v7:25.+'
+    compile 'com.android.support:design:25.+'
+    compile 'com.android.support:support-v4:25+'
+    androidTestCompile 'com.android.support:support-annotations:25.+'
 }

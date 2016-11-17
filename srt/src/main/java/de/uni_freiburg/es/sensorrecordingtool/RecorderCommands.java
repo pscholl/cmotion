@@ -10,9 +10,6 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.TimeZone;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /** A Broadcast which distributes a recording intent to the proper Services and also makes
  * sure to stop an ongoing recording if there is any.
@@ -158,10 +155,14 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
 
     /** utility function for ISO datetime path on public storage */
     public static String getDefaultOutputPath() {
+        File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
+        return new File(path, getDefaultFileName()).toString();
+    }
+
+    public static String getDefaultFileName() {
         TimeZone tz = TimeZone.getTimeZone("UTC");
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmZ");
         df.setTimeZone(tz);
-        File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
-        return new File(path, df.format(new Date())).toString();
+        return  df.format(new Date());
     }
 }

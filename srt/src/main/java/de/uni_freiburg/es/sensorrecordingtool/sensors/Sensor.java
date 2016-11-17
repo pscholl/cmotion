@@ -3,6 +3,7 @@ package de.uni_freiburg.es.sensorrecordingtool.sensors;
 import android.content.Context;
 import android.hardware.SensorManager;
 import android.os.Handler;
+import android.util.Log;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -15,14 +16,39 @@ import java.util.List;
  * Created by phil on 3/1/16.
  */
 public abstract class Sensor {
+    private static final String TAG = "Sensor";
     protected final Context mContext;
     protected final LinkedList<ParameterizedListener> mListeners;
     protected SensorEvent mEvent;
 
+    public boolean isPrepared() {
+        return isPrepared;
+    }
+
+    public void setPrepared(boolean prepared) {
+        isPrepared = prepared;
+    }
+
+    protected boolean isPrepared = false;
+
     public Sensor(Context context, int num) {
         mContext = context;
-        mListeners = new LinkedList<ParameterizedListener>();
+        mListeners = new LinkedList<>();
         mEvent = new SensorEvent(4);
+    }
+
+    public void prepareSensor() {
+        if(isPrepared)
+            Log.w(TAG, "Sensor is already in prepared state, no need to prepare it again.");
+    }
+
+    public void setPrepared() {
+        isPrepared = true;
+        Log.e(TAG, "Sensor "+getStringType()+" prepared");
+
+    }
+
+    public void startRecording() {
     }
 
     public abstract String getStringType();
@@ -41,11 +67,13 @@ public abstract class Sensor {
 
         result.add(new LocationSensor(c));
         result.add(new VideoSensor(c));
-        //result.add(new AudioSensor(c));
+        result.add(new AudioSensor(c));
         return result;
     }
 
     protected void onNewListener() {
+        if(!isPrepared)
+            throw new IllegalStateException("sensor was not prepared");
     }
 
     protected void notifyListeners() {

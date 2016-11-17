@@ -30,23 +30,40 @@ import java.util.LinkedList;
 public class SensorProcess implements SensorEventListener {
     /** when no duration is set this constant is used for the maximum delay to report
      * on new sensor data. We chose ten minutes for no specific reason. */
-    public static final int DEFAULT_LATENCY_US = 1 * 1000 * 1000;
+    public static final int DEFAULT_LATENCY_US = 10 * 60 * 1000 * 1000;
     final Sensor mSensor;
     final double mRate;
     final OutputStream mOut;
     public final double mDur;
     private final PowerManager.WakeLock mWl;
+    private final String mFormat;
+    private final Handler mHandler;
     ByteBuffer mBuf;
     long mLastTimestamp = -1;
     public double mElapsed = 0;
     double mDiff = 0;
 
     public SensorProcess(Context context, String sensor, double rate, String format, double dur,
-                         OutputStream bf, Handler h) throws Exception  {
+                         OutputStream bf, Handler h) throws Exception {
         mRate = rate;
         mDur = dur;
         mOut = bf;
+        mFormat = format;
+        mHandler = h;
 
+        mSensor = getMatchingSensor(context, sensor);
+        mSensor.prepareSensor();
+
+        mWl = ((PowerManager) context.getSystemService(Context.POWER_SERVICE))
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
+        mWl.acquire();
+    }
+
+    public Sensor getSensor() {
+        return mSensor;
+    }
+
+    public void startRecording() {
         int maxreportdelay_us = DEFAULT_LATENCY_US;
         if ( mDur-1 > 0 ) // make it one second shorter
             maxreportdelay_us = (int) (mDur-1.) * 1000 * 1000;
@@ -54,23 +71,21 @@ public class SensorProcess implements SensorEventListener {
         /** XXX flushing the sensor is not working reliably at the moment, so we
          * completly avoid the reporting latency in favor of having the correct
          * number of samples in the output. */
-        maxreportdelay_us = 0;
+                maxreportdelay_us = 0;
 
-        mSensor = getMatchingSensor(context, sensor);
-        mSensor.registerListener(this, (int) (1. / rate * 1000 * 1000), maxreportdelay_us, format, h);
-
-        mWl = ((PowerManager) context.getSystemService(Context.POWER_SERVICE))
-                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
-        mWl.acquire();
+        if (mDur - 1 > 0) // make it one second shorter
+            maxreportdelay_us = (int) (mDur - 1.) * 1000 * 1000;
+        mSensor.registerListener(this, (int) (1 / mRate * 1000 * 1000), maxreportdelay_us, mFormat, mHandler);
     }
 
-    /** given a String tries to find a matching sensor given these rules:
-     *
-     *   1. find all sensors which string description (getStringType()) contains the *sensor*
-     *   2. choose the shortest one of that list
-     *
-     *  e.g., when "gyro" is given, choose android.sensor.type.gyroscope rather than
-     *  android.sensor.type.gyroscope_uncalibrated. Matching is case-insensitive.
+    /**
+     * given a String tries to find a matching sensor given these rules:
+     * <p>
+     * 1. find all sensors which string description (getStringType()) contains the *sensor*
+     * 2. choose the shortest one of that list
+     * <p>
+     * e.g., when "gyro" is given, choose android.sensor.type.gyroscope rather than
+     * android.sensor.type.gyroscope_uncalibrated. Matching is case-insensitive.
      *
      * @param sensor sensor name to match for
      * @return the sensor for which the description is shortest and contains the *sensor*
@@ -130,7 +145,6 @@ public class SensorProcess implements SensorEventListener {
              * between samples.
              */
             assert( mLastTimestamp < sensorEvent.timestamp );
-
             mDiff += (sensorEvent.timestamp - mLastTimestamp) * 1e-9;
 
             if (mDur > 0 && mElapsed > mDur) {
@@ -156,6 +170,9 @@ public class SensorProcess implements SensorEventListener {
                     terminate();
                     return;
                 }
+
+                if (mSensor instanceof AudioSensor) // we dont need repititon for audio
+                    break;
             }
 
             mLastTimestamp = sensorEvent.timestamp;

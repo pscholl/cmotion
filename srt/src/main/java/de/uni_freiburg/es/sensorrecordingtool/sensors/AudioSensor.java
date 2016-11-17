@@ -1,34 +1,43 @@
 package de.uni_freiburg.es.sensorrecordingtool.sensors;
 
 import android.content.Context;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.Handler;
-import android.os.ParcelFileDescriptor;
+import android.util.Log;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.ArrayList;
+import java.util.List;
 
-/** Not wokring at all.
- *
+/**
+ * Not wokring at all.
+ * <p>
  * Created by phil on 4/26/16.
  */
 public class AudioSensor extends Sensor {
     protected static final String TAG = AudioSensor.class.getName();
     public static final String SENSOR_NAME = "audio";
     protected final Context context;
-    private final MediaRecorder mRecord;
-    private Timer mTimer;
     private int mRateinMus = 0;
-    private FileInputStream mInputStream;
+
+
+    private static int mChannelConfig = AudioFormat.CHANNEL_IN_MONO;
+    private static int mAudioFormat = AudioFormat.ENCODING_PCM_16BIT;
+
+    private RecorderThread mRecorderThread;
 
     public AudioSensor(Context c) {
         super(c, 1);
         context = c;
-        mRecord = new MediaRecorder();
-        mTimer = new Timer();
     }
+
+    @Override
+    public void prepareSensor() {
+        mRecorderThread = new RecorderThread();
+        setPrepared();
+    }
+
 
     @Override
     public String getStringType() {
@@ -37,62 +46,126 @@ public class AudioSensor extends Sensor {
 
     @Override
     public void registerListener(SensorEventListener l, int rate_in_mus, int delay, String format, Handler h) {
-        //if (!PermissionDialog.camera(context))
+        //if (!PermissionDialog.microphone(context))
         //    return;
 
         if (mListeners.size() == 0) {
             mRateinMus = rate_in_mus;
-            startRecording();
+            mRecorderThread.startRecording();
         }
 
-        super.registerListener(l,rate_in_mus,delay, format, h);
+        super.registerListener(l, rate_in_mus, delay, format, h);
     }
 
-    public void startRecording() {
-        try {
-            int sampling_rate = (1000*1000) / mRateinMus;
-            ParcelFileDescriptor[] pipes = ParcelFileDescriptor.createPipe();
-            mRecord.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
-            mRecord.setOutputFormat(MediaRecorder.OutputFormat.AMR_WB);
-            mRecord.setOutputFile(pipes[1].getFileDescriptor());
-            mRecord.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
-            mRecord.setAudioChannels(1);
-            mRecord.setAudioSamplingRate(sampling_rate);
-            mInputStream = new FileInputStream(pipes[0].getFileDescriptor());
-            mTimer.cancel();
-            mTimer = new Timer();
-            mTimer.scheduleAtFixedRate(readInputStream, 500, mRateinMus/1000);
-            mEvent.rawdata = new byte[sampling_rate];
-            mRecord.prepare();
-            mRecord.start();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private TimerTask readInputStream = new TimerTask() {
-        @Override
-        public void run() {
-            try {
-                mEvent.timestamp = System.currentTimeMillis() * 1000 * 1000;
-                mInputStream.read(mEvent.rawdata, 0, mEvent.rawdata.length);
-                notifyListeners();
-            } catch (IOException e1) {
-                e1.printStackTrace();
-            }
-        }
-    };
-
-    public void stopRecording() {
-        mRecord.stop();
-        mRecord.release();
-    }
 
     @Override
     public void unregisterListener(SensorEventListener l) {
         super.unregisterListener(l);
 
         if (mListeners.size() == 0)
-            stopRecording();
+            mRecorderThread.stopRecording();
+    }
+
+
+    /*
+     * Valid Audio Sample rates
+     *
+     * @see <a
+     * href="http://en.wikipedia.org/wiki/Sampling_%28signal_processing%29"
+     * >Wikipedia</a>
+     */
+    private static final int validSampleRates[] = new int[]{8000, 11025, 16000, 22050,
+            32000, 37800, 44056, 44100, 47250, 4800, 50000, 50400, 88200,
+            96000, 176400, 192000, 352800, 2822400, 5644800};
+
+    public static int getAudioSampleRate() {
+
+    /*
+     * Selecting default audio input source for recording since
+     * AudioFormat.CHANNEL_CONFIGURATION_DEFAULT is deprecated and selecting
+     * default encoding format.
+     */
+        for (int i = 0; i < validSampleRates.length; i++) {
+            int result = AudioRecord.getMinBufferSize(validSampleRates[i],
+                    mChannelConfig,
+                    mAudioFormat);
+            if (result != AudioRecord.ERROR
+                    && result != AudioRecord.ERROR_BAD_VALUE && result > 0) {
+                // return the mininum supported audio sample rate
+                return validSampleRates[i];
+            }
+        }
+        // If none of the sample rates are supported return -1 handle it in
+        // calling method
+        return -1;
+
+    }
+
+    public static List<Integer> getSupportedAudioSampleRates() {
+        List<Integer> list = new ArrayList<>();
+    /*
+     * Selecting default audio input source for recording since
+     * AudioFormat.CHANNEL_CONFIGURATION_DEFAULT is deprecated and selecting
+     * default encoding format.
+     */
+        for (int i = 0; i < validSampleRates.length; i++) {
+            int result = AudioRecord.getMinBufferSize(validSampleRates[i],
+                    mChannelConfig,
+                    mAudioFormat);
+            if (result != AudioRecord.ERROR
+                    && result != AudioRecord.ERROR_BAD_VALUE && result > 0) {
+                // return the mininum supported audio sample rate
+                list.add (validSampleRates[i]);
+            }
+        }
+        // If none of the sample rates are supported return -1 handle it in
+        // calling method
+        return list;
+
+    }
+
+    class RecorderThread extends Thread {
+
+        //        private int sampleRate =  (1000 * 1000) / mRateinMus;
+        private AudioRecord mAudioRecorder;
+
+        private int minBufSize = AudioRecord.getMinBufferSize(getAudioSampleRate(), mChannelConfig, mAudioFormat);
+
+        private boolean status = true;
+
+
+        RecorderThread() {
+            mAudioRecorder = new AudioRecord(MediaRecorder.AudioSource.MIC, getAudioSampleRate(), mChannelConfig, mAudioFormat, minBufSize);
+        }
+
+        @Override
+        public void run() {
+            super.run();
+            mAudioRecorder.startRecording();
+
+            while (status) {
+                byte[] buffer = new byte[minBufSize];
+                if (mAudioRecorder.read(buffer, 0, buffer.length) > 0) {
+                    mEvent.timestamp = System.currentTimeMillis() * 1000 * 1000;
+                    mEvent.rawdata = buffer;
+                    // Log.e(TAG, mEvent.timestamp + ", " + Arrays.toString(mEvent.rawdata));
+                    notifyListeners();
+                } else
+                    Log.e(TAG, "skipped block");
+            }
+        }
+
+        public void startRecording() {
+            status = true;
+            this.start();
+        }
+
+        public void stopRecording() {
+            status = false;
+            mAudioRecorder.stop();
+            mAudioRecorder.release();
+        }
+
+
     }
 }

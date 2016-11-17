@@ -1,17 +1,14 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
-import android.content.pm.PackageManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 import android.test.suitebuilder.annotation.LargeTest;
-import android.test.suitebuilder.annotation.MediumTest;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -22,7 +19,6 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -55,8 +51,8 @@ public class RecordingTest {
 
     @After public void teardown() {
         // not every test generates a directory.
-        try { delete(new File(o));
-        } catch (FileNotFoundException e) {}
+        //try { delete(new File(o));
+        //} catch (FileNotFoundException e) {}
     }
 
 
@@ -112,16 +108,17 @@ public class RecordingTest {
         assertRecording(result, "rot", 100*5*4*5);
     }
 
-    @Test public void doLocationTest() throws Exception {
-        if (c.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH))
-          return;
-
-        i.putExtra(Recorder.RECORDER_INPUT, "location");
-        i.putExtra("-d", 5.0);
-        String result = callForResult(i);
-        Assert.assertNotNull("timed out", result);
-        assertRecording(result, "location", 50*(4)*4*5);
-    }
+//    @Test public void doLocationTest() throws Exception {
+//
+////        if (c.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH))
+////          return;
+//
+//        i.putExtra(Recorder.RECORDER_INPUT, "location");
+//        i.putExtra("-d", 5.0);
+//        String result = callForResult(i);
+//        Assert.assertNotNull("timed out", result);
+//        assertRecording(result, "location", 50*(4)*4*5);
+//    }
 
     @Test public void doInfiniteRecordingTest() throws Exception {
         i.putExtra("-d", -1);
@@ -165,11 +162,11 @@ public class RecordingTest {
 
 
     private String callForError(Intent i) throws InterruptedException {
-        return callForResult(i, 25000, Recorder.ERROR_ACTION, Recorder.ERROR_REASON);
+        return callForResult(i, 25000, RecorderStatus.ERROR_ACTION, RecorderStatus.ERROR_REASON);
     }
 
     private String callForResult(Intent i) throws InterruptedException {
-        return callForResult(i, 25000, Recorder.FINISH_ACTION, Recorder.FINISH_PATH);
+        return callForResult(i, 25000, RecorderStatus.FINISH_ACTION, RecorderStatus.FINISH_PATH);
     }
 
     private String callForResult(Intent i, int ms, String action, final String extra)

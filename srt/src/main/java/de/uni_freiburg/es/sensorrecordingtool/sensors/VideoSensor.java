@@ -3,7 +3,7 @@ package de.uni_freiburg.es.sensorrecordingtool.sensors;
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
-import android.hardware.*;
+import android.hardware.Camera;
 import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
@@ -104,19 +104,26 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
         return mSize;
     }
 
+
     /** can't do a recording without a preview surface, which is why a system overlay is created
      * here that it can seen from anywhere.
      */
-    public void startRecording() {
+    @Override
+    public void prepareSensor() {
         WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
         mSurface = new SurfaceView(mContext);
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
-            200, 100, 0, 300,
-            WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
-            WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
-            PixelFormat.TRANSLUCENT);
+                200, 100, 0, 300,
+                WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                PixelFormat.TRANSLUCENT);
         lp.gravity = Gravity.LEFT  | Gravity.TOP;
         wm.addView(mSurface, lp);
+        setPrepared();
+    }
+
+    @Override
+    public void startRecording() {
         mSurface.getHolder().addCallback(this);
     }
 

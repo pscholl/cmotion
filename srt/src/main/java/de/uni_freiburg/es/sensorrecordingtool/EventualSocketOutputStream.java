@@ -1,15 +1,10 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.ConnectException;
-import java.net.Inet4Address;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
-import java.nio.ByteBuffer;
 
 /** Buffer all writes until the socket is connected, then send the buffer and afterwards directly
  * communicate on the socket's outputstream.
@@ -61,7 +56,7 @@ public class EventualSocketOutputStream extends OutputStream {
             byte[] buf;
             mSock = new Socket();
             //System.err.printf("waiting for port %d\n", mPort);
-            mSock.connect(new InetSocketAddress("localhost", mPort));
+            mSock.connect(new InetSocketAddress("localhost", mPort), 50);
             mWasConnected = true;
             buf = ((ByteArrayOutputStream) mOutS).toByteArray();
             mOutS = mSock.getOutputStream();

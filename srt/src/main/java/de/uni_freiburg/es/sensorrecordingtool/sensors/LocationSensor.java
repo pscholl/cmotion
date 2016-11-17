@@ -12,7 +12,7 @@ import com.google.android.gms.location.LocationServices;
 
 /**
  * The Location API wrapped for the Sensor API.
- *
+ * <p>
  * Created by phil on 3/1/16.
  */
 public class LocationSensor extends Sensor implements GoogleApiClient.ConnectionCallbacks, LocationListener {
@@ -29,6 +29,29 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
                 .build();
         mLastLocation.setLatitude(-1);
         mLastLocation.setLongitude(-1);
+    }
+
+    @Override
+    public void prepareSensor() {
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    public void startRecording() {
+        super.startRecording();
+        int min_rate = Integer.MAX_VALUE, min_delay = Integer.MAX_VALUE;
+
+        for (ParameterizedListener pl : mListeners) {
+            min_rate = Math.min(min_rate, pl.rate);
+            min_delay = Math.min(min_delay, pl.delay);
+        }
+
+        LocationRequest req = new LocationRequest();
+        req.setInterval(min_rate);
+        req.setFastestInterval(min_rate);
+        req.setMaxWaitTime(min_delay);
+
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, req, this);
     }
 
     @Override
@@ -49,13 +72,11 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
 
     @Override
     public void registerListener(SensorEventListener l, int rate, int delay, String format, Handler h) {
-        super.registerListener(l,rate,delay, format, h);
+        super.registerListener(l, rate, delay, format, h);
 
         //if (!PermissionDialog.location(mContext))
         //    return;
 
-        if (mListeners.size() > 0)
-            mGoogleApiClient.connect();
 
         onNewListener();
     }
@@ -65,7 +86,7 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
         if (!mConnected)
             return;
 
-        int min_rate = Integer.MAX_VALUE, min_delay=Integer.MAX_VALUE;
+        int min_rate = Integer.MAX_VALUE, min_delay = Integer.MAX_VALUE;
 
         for (ParameterizedListener pl : mListeners) {
             min_rate = Math.min(min_rate, pl.rate);
@@ -77,15 +98,16 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
         req.setFastestInterval(min_rate);
         req.setMaxWaitTime(min_delay);
 
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,req,this);
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, req, this);
     }
 
     @Override
     public void onConnected(Bundle bundle) {
-        Location l =  LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        Location l = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
         mConnected = true;
+        setPrepared();
         onNewListener();
-        if (l!=null) onLocationChanged(l);
+        if (l != null) onLocationChanged(l);
     }
 
     @Override

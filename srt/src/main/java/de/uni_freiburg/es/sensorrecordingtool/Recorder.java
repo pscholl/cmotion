@@ -8,18 +8,13 @@ import android.os.HandlerThread;
 import android.os.PowerManager;
 import android.util.Log;
 
-import java.io.IOException;
 import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.nio.ByteOrder;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
+import de.uni_freiburg.es.sensorrecordingtool.sensors.AudioSensor;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.BlockSensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.VideoSensor;
@@ -30,41 +25,41 @@ import de.uni_freiburg.es.sensorrecordingtool.sensors.VideoSensor;
  * captured. This makes it also possible to start and stop recording via the adb shell. For example
  * if you would want to record the accelerometer and the orientation at 50Hz you can do so with
  * the following Intent:
- *
- *      Intent i = new Intent(Recorder.RECORD_ACTION);
- *      i.putString('-i', ['accelerometer', 'orientation']);
- *      i.putFloat('-r', 50.0);
- *      sendBroadcast(i);
- *
- *  or from the adb shell:
- *
- *      adb shell am broadcast -a senserec -e -i accelerometer
- *
- *   Supported arguments are:
- *
- *     -i [String or list of String]
- *        sensors to record, providing an unknown one will print a list on logcat
- *
- *     -r [int/float or list of int/float]
- *        recording rate of each input, or if only a single value is given the rate for all sensors
- *
- *     -o [String]
- *        output directory under /sdcard/DCIM under which the recordings are stored
- *
- *     -f [single string or list of strings]
- *        list of string specifying the sensor format for each input, null to use the default,
- *        currently only the video sensor has any specs, which is the recording size given as
- *        widthxheight, e.g. 1280x720.
- *
- *   A Broadcast Intent is sent once the recording is started or canceled. The latest recording
- *   can be canceled with the senserec_cancel broadcast action, e.g.:
- *
- *      adb shell am broadcast -a senserec_cancel
- *
- *   it is also possible to cancel a specific recording by supplying its id:
- *
- *      adb shell am broadcast -a senserec_cancel -r <id>
- *
+ * <p>
+ * Intent i = new Intent(Recorder.RECORD_ACTION);
+ * i.putString('-i', ['accelerometer', 'orientation']);
+ * i.putFloat('-r', 50.0);
+ * sendBroadcast(i);
+ * <p>
+ * or from the adb shell:
+ * <p>
+ * adb shell am broadcast -a senserec -e -i accelerometer
+ * <p>
+ * Supported arguments are:
+ * <p>
+ * -i [String or list of String]
+ * sensors to record, providing an unknown one will print a list on logcat
+ * <p>
+ * -r [int/float or list of int/float]
+ * recording rate of each input, or if only a single value is given the rate for all sensors
+ * <p>
+ * -o [String]
+ * output directory under /sdcard/DCIM under which the recordings are stored
+ * <p>
+ * -f [single string or list of strings]
+ * list of string specifying the sensor format for each input, null to use the default,
+ * currently only the video sensor has any specs, which is the recording size given as
+ * widthxheight, e.g. 1280x720.
+ * <p>
+ * A Broadcast Intent is sent once the recording is started or canceled. The latest recording
+ * can be canceled with the senserec_cancel broadcast action, e.g.:
+ * <p>
+ * adb shell am broadcast -a senserec_cancel
+ * <p>
+ * it is also possible to cancel a specific recording by supplying its id:
+ * <p>
+ * adb shell am broadcast -a senserec_cancel -r <id>
+ * <p>
  * Created by phil on 2/22/16.
  */
 public class Recorder extends IntentService {
@@ -80,7 +75,7 @@ public class Recorder extends IntentService {
 
     /* the rate at which to record, a single one will apply to all input. If multiple sensors are
      * given, multiple rates can be applied to each input. Default rate is 50Hz */
-    public static final String RECORDER_RATE  = "-r";
+    public static final String RECORDER_RATE = "-r";
 
     /* the duration of the recording, given in seconds, default is 10 seconds. */
     public static final String RECORDER_DURATION = "-d";
@@ -94,7 +89,7 @@ public class Recorder extends IntentService {
     /* the main action for recording */
     public static final String RECORD_ACTION = ForwardedUtils.RECORD_ACTION;
 
-       /* for handing over the cancel action from a notification */
+    /* for handing over the cancel action from a notification */
     public static final String CANCEL_ACTION = "senserec_cancel";
 
     /* whether we are currently recording */
@@ -124,16 +119,16 @@ public class Recorder extends IntentService {
     }
 
 
-    /** just start a single recording until the flag is toggled or the duration has been hit.
+    /**
+     * just start a single recording until the flag is toggled or the duration has been hit.
      *
      * @param intent recording specification
      */
     @Override
     protected void onHandleIntent(Intent intent) {
-        if (!RECORD_ACTION.equals(intent.getAction()))
-        {
+        if (!RECORD_ACTION.equals(intent.getAction())) {
             Log.d(TAG, String.format(
-            "not a %s action, not doing anything", RECORD_ACTION));
+                    "not a %s action, not doing anything", RECORD_ACTION));
             return;
         }
 
@@ -166,6 +161,13 @@ public class Recorder extends IntentService {
                     .addVideo(size.width, size.height, rates[j], "rawvideo", "nv21")
                     .setStreamTag("name", "Android Default Cam");
                 }
+
+                else if (sensors[j].contains("audio")) {
+                    Log.i(TAG, "Endianess " + ByteOrder.nativeOrder());
+                    fp
+                   .addAudio(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "s16le" : "s16be", AudioSensor.getAudioSampleRate(), 1) // TODO native endian!
+                   .setStreamTag("name", sensors[j]);
+                }
                 else
                     fp
                     .addAudio("f32be", rates[j], SensorProcess.getSampleSize(this, sensors[j]))
@@ -177,8 +179,8 @@ public class Recorder extends IntentService {
 
             /** create sensorprocess for each input and wire it to the ffmpeg process */
             for (int j = 0; j < sensors.length; j++)
-                sensorProcesses.add( newSensorProcess(
-                    sensors[j], formats[j], rates[j], duration, ffmpeg.getOutputStream(j)));
+                sensorProcesses.add(newSensorProcess(
+                        sensors[j], formats[j], rates[j], duration, ffmpeg.getOutputStream(j)));
 
             /** notify the system that a new recording was started */
             status = new RecorderStatus(getApplicationContext(), sensorProcesses, duration);
@@ -186,18 +188,29 @@ public class Recorder extends IntentService {
             /** acquire a wake lock to avoid the sensor data generators to suspend */
             PowerManager.WakeLock mWl =
                     ((PowerManager) getSystemService(POWER_SERVICE))
-                    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
+                            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
             mWl.acquire();
+
+            boolean ready = true;
+            do {
+                for (SensorProcess process : sensorProcesses)
+                    if (!process.getSensor().isPrepared())
+                        ready = false;
+            } while (!ready);
+
+            for (SensorProcess process : sensorProcesses)
+                process.startRecording();
+
 
             /** now wait until the recording is stopped or a timeout has occurred, give
              * 1 seconds extra, as the sensorprocesses should stop themselves,
              * but need additional time to transport the data */
             for (mRecordingSince = System.currentTimeMillis(),
-                 mIsRecording = true;
-                 mIsRecording && ( duration <= 0 ||
-                 System.currentTimeMillis() - mRecordingSince < (long) duration * 1000 + 1000 );
+                         mIsRecording = true;
+                 mIsRecording && (duration <= 0 ||
+                         System.currentTimeMillis() - mRecordingSince < (long) duration * 1000 + 1000);
                  Thread.sleep(500))
-              status.recording( System.currentTimeMillis() - mRecordingSince );
+                status.recording(System.currentTimeMillis() - mRecordingSince);
 
             /** close all streams to notify each process that we're done */
             for (SensorProcess p : sensorProcesses)

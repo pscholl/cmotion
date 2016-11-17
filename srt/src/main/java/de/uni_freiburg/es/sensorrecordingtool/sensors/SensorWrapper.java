@@ -21,9 +21,19 @@ public class SensorWrapper extends Sensor {
         super(c,0);
         mSensorMgr = (SensorManager) c.getSystemService(Context.SENSOR_SERVICE);
         mSensor = s;
-        mSensorWrapper = new HashMap<SensorEventListener, SensorEventListenerWrapper>();
+        mSensorWrapper = new HashMap<>();
     }
 
+
+    @Override
+    public void prepareSensor() {
+        setPrepared();
+    }
+
+    @Override
+    public void startRecording() {
+
+    }
 
     @Override
     public String getStringType() {

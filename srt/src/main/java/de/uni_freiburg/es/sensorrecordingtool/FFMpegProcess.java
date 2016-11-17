@@ -3,13 +3,13 @@ package de.uni_freiburg.es.sensorrecordingtool;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Environment;
+import android.util.Log;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Locale;
@@ -280,10 +280,12 @@ public class FFMpegProcess {
             if (output == null)
                 throw new Exception("output must be non-null");
             if (format == null)
-                throw new Exception("fomrat must be non-null");
+                throw new Exception("format must be non-null");
             this.output = new File(output).exists() && !output.startsWith("file:") ?
                           "file:"+output : output;
             this.output_fmt = format;
+
+            Log.e("OUT", output + output_fmt);
             return this;
         }
 
