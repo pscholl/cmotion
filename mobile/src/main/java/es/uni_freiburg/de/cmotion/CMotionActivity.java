@@ -79,6 +79,7 @@ public class CMotionActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         registerReceiver(mReceiver, INTENTFILTER);
+
     }
 
     @Override

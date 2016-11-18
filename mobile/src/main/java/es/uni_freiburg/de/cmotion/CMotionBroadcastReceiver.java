@@ -14,6 +14,7 @@ import android.widget.Toast;
 
 import java.io.File;
 
+import de.uni_freiburg.es.sensorrecordingtool.Recorder;
 import de.uni_freiburg.es.sensorrecordingtool.RecorderStatus;
 import es.uni_freiburg.de.cmotion.ui.RecordFloatingActionButton;
 import es.uni_freiburg.de.cmotion.ui.TimedProgressBar;
