@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.PowerManager;
+import android.os.Vibrator;
 import android.util.Log;
 
 import java.io.OutputStream;
@@ -101,9 +102,10 @@ public class Recorder extends IntentService {
     public static boolean mIsRecording = false;
     public static long mRecordingSince = -1;
 
-    private final long DEFAULT_STEADY_TIME = 3000;
+    public static final long DEFAULT_STEADY_TIME = 3000;
 
     public static int SEMAPHORE = 0;
+    public static boolean isMaster;
 
     public Recorder() {
         super(Recorder.class.getName());
@@ -141,7 +143,7 @@ public class Recorder extends IntentService {
             return;
         }
 
-        boolean isMaster = !isIntentForwarded(intent);
+        isMaster = !isIntentForwarded(intent);
         Log.e("MASTER????", isMaster+"");
 
         if(isMaster) {
@@ -218,11 +220,12 @@ public class Recorder extends IntentService {
                 Log.e(TAG, "all nodes are ready");
                 status.steady(System.currentTimeMillis()+ DEFAULT_STEADY_TIME);
                 Thread.sleep(DEFAULT_STEADY_TIME);
-
             } else {
                 status.ready(sensors);
-                while(SEMAPHORE > 0) Thread.sleep(500); // wait till steady and our time has come ;)
+                while(SEMAPHORE > 0) Thread.sleep(1); // wait till steady and our time has come ;)
             }
+
+            ((Vibrator) getApplicationContext().getSystemService(VIBRATOR_SERVICE)).vibrate(100);
 
             for (SensorProcess process : sensorProcesses)
                 process.startRecording();
