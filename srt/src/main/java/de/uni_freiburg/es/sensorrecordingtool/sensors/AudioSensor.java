@@ -89,8 +89,7 @@ public class AudioSensor extends Sensor {
             int result = AudioRecord.getMinBufferSize(validSampleRates[i],
                     mChannelConfig,
                     mAudioFormat);
-            if (result != AudioRecord.ERROR
-                    && result != AudioRecord.ERROR_BAD_VALUE && result > 0) {
+            if (result > 0) {
                 // return the mininum supported audio sample rate
                 return validSampleRates[i];
             }
@@ -112,8 +111,7 @@ public class AudioSensor extends Sensor {
             int result = AudioRecord.getMinBufferSize(validSampleRates[i],
                     mChannelConfig,
                     mAudioFormat);
-            if (result != AudioRecord.ERROR
-                    && result != AudioRecord.ERROR_BAD_VALUE && result > 0) {
+            if (result > 0) {
                 // return the mininum supported audio sample rate
                 list.add (validSampleRates[i]);
             }
@@ -144,7 +142,7 @@ public class AudioSensor extends Sensor {
             mAudioRecorder.startRecording();
 
             while (status) {
-                byte[] buffer = new byte[minBufSize];
+                byte[] buffer = new byte[minBufSize]; // TODO use short[] and only half of the buffer
                 if (mAudioRecorder.read(buffer, 0, buffer.length) > 0) {
                     mEvent.timestamp = System.currentTimeMillis() * 1000 * 1000;
                     mEvent.rawdata = buffer;
