@@ -224,17 +224,17 @@ public class Recorder extends IntentService {
                 ready &= process.getSensor().isPrepared();
 
 
-            // if(isMaster) { // wait for everyone to send prepared
-            //     while(mIsRecording && SEMAPHORE > 0) Thread.sleep(500); // wait till everyone's ready
-            //     Log.e(TAG, "all nodes are ready");
-            //     status.steady(System.currentTimeMillis()+ DEFAULT_STEADY_TIME);
-            //     Thread.sleep(DEFAULT_STEADY_TIME);
-            // } else {
-            //     status.ready(sensors);
-            //     while(mIsRecording && SEMAPHORE > 0) Thread.sleep(1); // wait till steady and our time has come ;)
-            // }
+             if(isMaster) { // wait for everyone to send prepared
+                 while(mIsRecording && SEMAPHORE > 0) Thread.sleep(500); // wait till everyone's ready
+                 Log.e(TAG, "all nodes are ready");
+                 status.steady(System.currentTimeMillis()+ DEFAULT_STEADY_TIME);
+                 Thread.sleep(DEFAULT_STEADY_TIME);
+             } else {
+                 status.ready(sensors);
+                 while(mIsRecording && SEMAPHORE > 0) Thread.sleep(1); // wait till steady and our time has come ;)
+             }
 
-            // if (!mIsRecording) return;
+             if (!mIsRecording) return;
 
             ((Vibrator) getApplicationContext().getSystemService(VIBRATOR_SERVICE)).vibrate(100);
 
