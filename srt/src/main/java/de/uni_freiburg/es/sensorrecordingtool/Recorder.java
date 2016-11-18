@@ -90,12 +90,20 @@ public class Recorder extends IntentService {
     /* the main action for recording */
     public static final String RECORD_ACTION = ForwardedUtils.RECORD_ACTION;
 
+    public static final String READY_ACTION  = ForwardedUtils.READY_ACTION;
+    public static final String STEADY_ACTION  = ForwardedUtils.STEADY_ACTION;
+
+
     /* for handing over the cancel action from a notification */
     public static final String CANCEL_ACTION = "senserec_cancel";
 
     /* whether we are currently recording */
     public static boolean mIsRecording = false;
     public static long mRecordingSince = -1;
+
+    private final long DEFAULT_STEADY_TIME = 3000;
+
+    public static int SEMAPHORE = 0;
 
     public Recorder() {
         super(Recorder.class.getName());
@@ -131,6 +139,15 @@ public class Recorder extends IntentService {
             Log.d(TAG, String.format(
                     "not a %s action, not doing anything", RECORD_ACTION));
             return;
+        }
+
+        boolean isMaster = !isIntentForwarded(intent);
+        Log.e("MASTER????", isMaster+"");
+
+        if(isMaster) {
+            SEMAPHORE = 1; // TODO use autodiscovery
+        } else {
+            SEMAPHORE = 1; // use semaphore for steady command
         }
 
         RecorderStatus status = null;
@@ -196,6 +213,17 @@ public class Recorder extends IntentService {
                         ready = false;
             } while (!ready);
 
+            if(isMaster) { // wait for everyone to send prepared
+                while(SEMAPHORE > 0) Thread.sleep(500); // wait till everyone's ready
+                Log.e(TAG, "all nodes are ready");
+                status.steady(System.currentTimeMillis()+ DEFAULT_STEADY_TIME);
+                Thread.sleep(DEFAULT_STEADY_TIME);
+
+            } else {
+                status.ready(sensors);
+                while(SEMAPHORE > 0) Thread.sleep(500); // wait till steady and our time has come ;)
+            }
+
             for (SensorProcess process : sensorProcesses)
                 process.startRecording();
 
@@ -229,6 +257,10 @@ public class Recorder extends IntentService {
             status.error(e);
             return;
         }
+    }
+
+    private boolean isIntentForwarded(Intent intent) {
+        return intent.getExtras().keySet().contains("forwarded");
     }
 
     public static void stopCurrentRecording() {
