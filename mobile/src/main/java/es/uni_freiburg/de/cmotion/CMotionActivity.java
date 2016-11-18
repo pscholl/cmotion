@@ -75,8 +75,12 @@ public class CMotionActivity extends AppCompatActivity {
         startService(new Intent(this, LocalSensorService.class));
         startService(new Intent(this, WearSensorService.class));
         startService(new Intent(this, IntentForwarderService.class));
-        registerReceiver(mReceiver, INTENTFILTER);
+    }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        registerReceiver(mReceiver, INTENTFILTER);
     }
 
     @Override

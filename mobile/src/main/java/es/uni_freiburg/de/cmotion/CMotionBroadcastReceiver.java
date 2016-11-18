@@ -13,7 +13,6 @@ import android.widget.Toast;
 
 import java.io.File;
 
-import de.uni_freiburg.es.sensorrecordingtool.Recorder;
 import de.uni_freiburg.es.sensorrecordingtool.RecorderStatus;
 import es.uni_freiburg.de.cmotion.ui.RecordFloatingActionButton;
 import es.uni_freiburg.de.cmotion.ui.TimedProgressBar;
@@ -36,15 +35,15 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         switch (intent.getAction()) {
             case RecorderStatus.STATUS_ACTION:
-                try {
-                    Intent parsedIntent = de.uni_freiburg.es.sensorrecordingtool.RecorderCommands.parseRecorderIntent(intent);
+//                try {
+                    //Intent parsedIntent = de.uni_freiburg.es.sensorrecordingtool.RecorderCommands.parseRecorderIntent(intent);
                     // TODO add support for elapsed time?
-                    long duration = parsedIntent.getLongExtra(RecorderStatus.STATUS_DURATION, -1);
-                    mProgressBar.startAnimation((int) duration);
+                    long duration = intent.getLongExtra(RecorderStatus.STATUS_DURATION, -1);
+                    mProgressBar.startAnimation((int) duration); // TODO Long <-> INT
                     mRecFab.setRecording(true);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
                 break;
             case RecorderStatus.ERROR_ACTION:
                 Snackbar
