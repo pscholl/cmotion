@@ -16,6 +16,7 @@ import java.util.List;
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.AudioSensor;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.BlockSensorProcess;
+import de.uni_freiburg.es.sensorrecordingtool.sensors.NonBlockSensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.VideoSensor;
 
@@ -109,11 +110,11 @@ public class Recorder extends IntentService {
         HandlerThread h = new HandlerThread("sensorprocess " + sensor);
         h.start();
 
-        if (sensor.contains("video"))
+        if (sensor.contains("video") || sensor.contains("audio"))
             return new BlockSensorProcess(c, sensor, rate, format, dur, os,
                     new Handler(h.getLooper()));
         else
-            return new SensorProcess(c, sensor, rate, format, dur, os,
+            return new NonBlockSensorProcess(c, sensor, rate, format, dur, os,
                     new Handler(h.getLooper()));
 
     }
@@ -158,20 +159,17 @@ public class Recorder extends IntentService {
                     VideoSensor.CameraSize size = VideoSensor.getCameraSize(formats[j]);
 
                     fp
-                    .addVideo(size.width, size.height, rates[j], "rawvideo", "nv21")
-                    .setStreamTag("name", "Android Default Cam");
-                }
-
-                else if (sensors[j].contains("audio")) {
+                            .addVideo(size.width, size.height, rates[j], "rawvideo", "nv21")
+                            .setStreamTag("name", "Android Default Cam");
+                } else if (sensors[j].contains("audio")) {
                     Log.i(TAG, "Endianess " + ByteOrder.nativeOrder());
                     fp
-                   .addAudio(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "s16le" : "s16be", AudioSensor.getAudioSampleRate(), 1) // TODO native endian!
-                   .setStreamTag("name", sensors[j]);
-                }
-                else
+                            .addAudio(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "s16le" : "s16be", AudioSensor.getAudioSampleRate(), 1) // TODO native endian!
+                            .setStreamTag("name", sensors[j]);
+                } else
                     fp
-                    .addAudio("f32be", rates[j], SensorProcess.getSampleSize(this, sensors[j]))
-                    .setStreamTag("name", sensors[j]);
+                            .addAudio("f32be", rates[j], SensorProcess.getSampleSize(this, sensors[j]))
+                            .setStreamTag("name", sensors[j]);
             }
 
             List<SensorProcess> sensorProcesses = new LinkedList<>();
@@ -234,6 +232,6 @@ public class Recorder extends IntentService {
     }
 
     public static void stopCurrentRecording() {
-      mIsRecording = false;
+        mIsRecording = false;
     }
 }

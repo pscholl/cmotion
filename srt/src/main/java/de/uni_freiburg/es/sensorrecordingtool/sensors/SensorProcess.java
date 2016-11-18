@@ -27,7 +27,7 @@ import java.util.LinkedList;
  *  bf     - a bufferedwriter, where data gets written to in binary format.
  *
  */
-public class SensorProcess implements SensorEventListener {
+public abstract class SensorProcess implements SensorEventListener {
     /** when no duration is set this constant is used for the maximum delay to report
      * on new sensor data. We chose ten minutes for no specific reason. */
     public static final int DEFAULT_LATENCY_US = 10 * 60 * 1000 * 1000;
@@ -182,17 +182,7 @@ public class SensorProcess implements SensorEventListener {
         }
     }
 
-    public byte[] transfer(SensorEvent sensorEvent) {
-        if (mBuf == null)
-            mBuf = ByteBuffer.allocate(sensorEvent.values.length * 4);
-        else
-            mBuf.clear();
-
-        for (float v : sensorEvent.values)
-            mBuf.putFloat(v);
-
-        return mBuf.array();
-    }
+    public abstract byte[] transfer(SensorEvent sensorEvent);
 
     public void terminate() {
         if (mDur < mElapsed || mDur < 0)
