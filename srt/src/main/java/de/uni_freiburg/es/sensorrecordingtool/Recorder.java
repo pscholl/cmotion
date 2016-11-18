@@ -109,7 +109,7 @@ public class Recorder extends IntentService {
         HandlerThread h = new HandlerThread("sensorprocess " + sensor);
         h.start();
 
-        if (sensor.contains("video"))
+        if (sensor.contains("video") || sensor.contains("audio"))
             return new BlockSensorProcess(c, sensor, rate, format, dur, os,
                     new Handler(h.getLooper()));
         else
