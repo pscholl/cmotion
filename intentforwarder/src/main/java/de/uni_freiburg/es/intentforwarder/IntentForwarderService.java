@@ -10,7 +10,6 @@ import android.os.IBinder;
 import android.os.ParcelUuid;
 import android.util.Log;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
@@ -54,6 +53,9 @@ public class IntentForwarderService extends Service {
             return super.onStartCommand(intent, flags, startId);
 
         if (intent.getAction() != null) {
+
+            intent.putExtra("forwarded", true); // flag it as forwarded intent
+
             /** got a broadcast action, let's forward to all bound nodes */
             BluetoothAdapter a = BluetoothAdapter.getDefaultAdapter();
             JSONObject extras = ForwardedUtils.toJson(intent);

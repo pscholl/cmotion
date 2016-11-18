@@ -26,6 +26,13 @@
             </intent-filter>
         </receiver>
 
+        <receiver android:name=".ReadyReceiver" android:enabled="true">
+            <intent-filter>
+                <action android:name="senserec_ready"/>
+                <action android:name="senserec_steady"/>
+            </intent-filter>
+        </receiver>
+
         <service android:name=".Recorder">
         </service>
     </application>

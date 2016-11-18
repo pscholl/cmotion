@@ -43,6 +43,8 @@ public class WearForwarderService extends WearableListenerService
             intent.getAction().contains("BOOT"))
             return Service.START_NOT_STICKY;
 
+        intent.putExtra("forwarded", true); // flag it as forwarded intent
+
         /**
          * add up all intent into a queue, and whenever we have a connection to the google
          * API client, we start sending out the Q until it is empty again.

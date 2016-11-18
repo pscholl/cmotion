@@ -16,6 +16,8 @@ public class ForwardedUtils {
     public static final String RECORD_ACTION = "senserec";
     private static final String JSON_KEY_ACTION = "action";
     private static final String JSON_KEY_EXTRAS = "extras";
+    public static final String READY_ACTION = "senserec_ready";
+    public static final String STEADY_ACTION = "senserec_steady";
 
     public static Intent fromJson(byte[] arr) throws JSONException {
         JSONObject o = new JSONObject(new String(arr));
