@@ -1,5 +1,6 @@
 package es.uni_freiburg.de.cmotion;
 
+import android.view.View;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
@@ -35,15 +36,8 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         switch (intent.getAction()) {
             case RecorderStatus.STATUS_ACTION:
-//                try {
-                    //Intent parsedIntent = de.uni_freiburg.es.sensorrecordingtool.RecorderCommands.parseRecorderIntent(intent);
-                    // TODO add support for elapsed time?
-                    long duration = intent.getLongExtra(RecorderStatus.STATUS_DURATION, -1);
-                    mProgressBar.startAnimation((int) duration); // TODO Long <-> INT
-                    mRecFab.setRecording(true);
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
+                long duration = intent.getLongExtra(RecorderStatus.STATUS_DURATION, -1);
+                startRecordingAnimations(duration);
                 break;
             case RecorderStatus.ERROR_ACTION:
                 Snackbar
@@ -75,6 +69,11 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
 
             default:
         }
+    }
+
+    private void startRecordingAnimations(long duration) {
+        mProgressBar.startAnimation((int) duration); // TODO Long <-> INT
+        mRecFab.setRecording(true);
     }
 
     private void stopRecordingAnimations() {
