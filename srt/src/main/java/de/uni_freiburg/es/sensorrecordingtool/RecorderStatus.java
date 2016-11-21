@@ -53,7 +53,7 @@ public class RecorderStatus {
     mNotification = new NotificationCompat.Builder(c)
       .setContentTitle( c.getString(R.string.notification_title) )
       .setContentText( content )
-      .setSmallIcon( R.drawable.recording )
+      .setSmallIcon( R.drawable.ic_fiber_manual_record_white_24dp )
       .setLocalOnly( true )
       .setProgress(mDuration, 0, mDuration == 0)
       .setOngoing(true)
