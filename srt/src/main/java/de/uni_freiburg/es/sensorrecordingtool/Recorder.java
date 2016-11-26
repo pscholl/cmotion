@@ -208,12 +208,10 @@ public class Recorder extends IntentService {
                             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
             mWl.acquire();
 
-            boolean ready = true;
-            do {
-                for (SensorProcess process : sensorProcesses)
-                    if (!process.getSensor().isPrepared())
-                        ready = false;
-            } while (!ready);
+            /** wait for all local sensors */
+            for(boolean ready=false; !ready; ready=true)
+              for (SensorProcess process : sensorProcesses)
+                ready &= process.getSensor().isPrepared();
 
             if(isMaster) { // wait for everyone to send prepared
                 while(SEMAPHORE > 0) Thread.sleep(500); // wait till everyone's ready
