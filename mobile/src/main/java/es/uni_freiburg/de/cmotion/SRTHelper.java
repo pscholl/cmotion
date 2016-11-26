@@ -28,15 +28,20 @@ public class SRTHelper {
 
     public static List<SensorModel> getAvailableSensors(Context context) {
         ArrayList<SensorModel> availableSensors = new ArrayList<>();
-        SensorManager mgr = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
-        for (android.hardware.Sensor s : mgr.getSensorList(android.hardware.Sensor.TYPE_ALL))
-            availableSensors.add(new SensorModel(s.getName()));
+        // SensorManager mgr = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+        // for (android.hardware.Sensor s : mgr.getSensorList(android.hardware.Sensor.TYPE_ALL))
+        //     availableSensors.add(new SensorModel(s.getName()));
 
         SensorModel audio = new SensorModel("Audio");
         audio.setSamplingRate(AudioSensor.getAudioSampleRate()); // Audio won't work with 50ms
         availableSensors.add(audio);
         availableSensors.add(new SensorModel("Location"));
         availableSensors.add(new SensorModel("Video"));
+        availableSensors.add(new SensorModel("accelerometer"));
+        availableSensors.add(new SensorModel("gyroscope"));
+        availableSensors.add(new SensorModel("magnetometer"));
+        availableSensors.add(new SensorModel("pressure"));
+        availableSensors.add(new SensorModel("Rotation Vector"));
 
         Collections.sort(availableSensors); // Sort alphabetically
         return availableSensors;
