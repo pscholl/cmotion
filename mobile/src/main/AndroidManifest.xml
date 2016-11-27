@@ -29,6 +29,7 @@
         <receiver android:name=".RecorderCommands">
             <intent-filter>
                 <action android:name="senserec"/>
+                <action android:name="senserec_showui" />
                 <action android:name="senserec_cancel"/>
             </intent-filter>
         </receiver>

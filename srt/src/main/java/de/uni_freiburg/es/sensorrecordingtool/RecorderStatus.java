@@ -2,6 +2,7 @@ package de.uni_freiburg.es.sensorrecordingtool;
 
 import android.content.Context;
 import android.content.Intent;
+import android.app.PendingIntent;
 import android.os.Build;
 import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
@@ -35,8 +36,8 @@ public class RecorderStatus {
     public static final String START_TIME = "recording_starttime";
 
     /* store the duration to handle the progressbar */
-    public final int mDuration;
     public final int NOTIFICATION_ID = 123;
+    public final int mDuration;
 
     /**
      * creates a new Notification and updates it for the user. Every other update
@@ -55,12 +56,16 @@ public class RecorderStatus {
                 inputs.size(),
                 inputs.size());
 
+        PendingIntent pi = PendingIntent.getBroadcast(context, 0,
+                           new Intent(Recorder.SHOWUI_ACTION), 0);
+
         mNotification = new NotificationCompat.Builder(c)
                 .setContentTitle(c.getString(R.string.notification_title))
                 .setContentText(content)
                 .setSmallIcon(R.drawable.ic_fiber_manual_record_white_24dp)
                 .setLocalOnly(true)
                 .setProgress(mDuration, 0, mDuration == 0)
+                .setContentIntent(pi)
                 .setOngoing(true)
         ;
 

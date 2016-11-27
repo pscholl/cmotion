@@ -90,10 +90,9 @@ public class Recorder extends IntentService {
 
     /* the main action for recording */
     public static final String RECORD_ACTION = ForwardedUtils.RECORD_ACTION;
-
     public static final String READY_ACTION  = ForwardedUtils.READY_ACTION;
-    public static final String STEADY_ACTION  = ForwardedUtils.STEADY_ACTION;
-
+    public static final String STEADY_ACTION = ForwardedUtils.STEADY_ACTION;
+    public static final String SHOWUI_ACTION = "senserec_showui";
 
     /* for handing over the cancel action from a notification */
     public static final String CANCEL_ACTION = "senserec_cancel";
