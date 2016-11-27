@@ -88,7 +88,7 @@ public class ThetaService extends IntentService {
       for (int i=0; i<times; i++)
         try { return onConnectedToOSC(); }
         catch(Exception e) {
-          System.err.printf("connect to OSC failed (%d times) %s",
+          System.err.printf("%s: connect to OSC failed (%d times) %s\n", TAG,
               i, i<times ? ", retrying..." : ", failed");
           e.printStackTrace();
           sleep(200);
@@ -116,14 +116,10 @@ public class ThetaService extends IntentService {
                 //mSession = null; can re-use session
             }
 
-            /*
             if (mSavedWifiConf != null) {
-                mWifi.disconnect();
-                mWifi.enableNetwork(mSavedWifiConf.networkId, true);
-                mWifi.reconnect();
+                connectTo(mSavedWifiConf.networkId);
                 mSavedWifiConf = null;
             }
-            */
 
             return null;
         }
@@ -164,11 +160,7 @@ public class ThetaService extends IntentService {
         }
 
         mSavedWifiConf = getConf(mWifi.getConnectionInfo().getSSID());
-
-        mWifi.disconnect();
-        mWifi.enableNetwork(getConf(cam.SSID).networkId, true);
-        mWifi.reconnect();
-
+        connectTo( getConf(cam.SSID).networkId );
         return mPendingAction;
     }
 
@@ -182,5 +174,13 @@ public class ThetaService extends IntentService {
                 return c;
 
         return null;
+    }
+
+    private void connectTo(int nid) {
+        try {
+          mWifi.disconnect(); Thread.sleep(200);
+          mWifi.enableNetwork(nid, true); Thread.sleep(200);
+          mWifi.reconnect(); Thread.sleep(200);
+        } catch (Exception e) {}
     }
 }
