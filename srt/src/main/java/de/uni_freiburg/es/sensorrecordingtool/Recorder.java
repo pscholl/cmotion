@@ -107,6 +107,14 @@ public class Recorder extends IntentService {
     public static int SEMAPHORE = 0;
     public static boolean isMaster;
 
+    /* members when a recording is ongoing, stored here for cleanup from
+     * onDestroy */
+    private List<SensorProcess> sensorProcesses;
+    private PowerManager.WakeLock mWl;
+    private RecorderStatus status;
+    private FFMpegProcess ffmpeg;
+    private String output;
+
     public Recorder() {
         super(Recorder.class.getName());
     }
@@ -152,11 +160,10 @@ public class Recorder extends IntentService {
             SEMAPHORE = 1; // use semaphore for steady command
         }
 
-        RecorderStatus status = null;
         try {
             intent = RecorderCommands.parseRecorderIntent(intent);
 
-            String output = intent.getStringExtra(RECORDER_OUTPUT);
+            output = intent.getStringExtra(RECORDER_OUTPUT);
             String[] sensors = intent.getStringArrayExtra(RECORDER_INPUT);
             String[] formats = intent.getStringArrayExtra(RECORDER_FORMAT);
             double[] rates = intent.getDoubleArrayExtra(RECORDER_RATE);
@@ -191,27 +198,32 @@ public class Recorder extends IntentService {
                             .setStreamTag("name", sensors[j]);
             }
 
-            List<SensorProcess> sensorProcesses = new LinkedList<>();
-            FFMpegProcess ffmpeg = fp.build(this);
+            sensorProcesses = new LinkedList<>();
+            ffmpeg = fp.build(this);
 
             /** create sensorprocess for each input and wire it to the ffmpeg process */
             for (int j = 0; j < sensors.length; j++)
                 sensorProcesses.add(newSensorProcess(
                         sensors[j], formats[j], rates[j], duration, ffmpeg.getOutputStream(j)));
 
-            /** notify the system that a new recording was started */
+            /** notify the system that a new recording was started, and make
+             * sure that the service does not get called when an activity is
+             * destroyed by using the startForeground method. If not doing so,
+             * the service is also killed when an accompanying Activity is
+             * destroyed (wtf). */
             status = new RecorderStatus(getApplicationContext(), sensorProcesses, duration);
+            startForeground(status.NOTIFICATION_ID, status.mNotification.build());
 
             /** acquire a wake lock to avoid the sensor data generators to suspend */
-            PowerManager.WakeLock mWl =
-                    ((PowerManager) getSystemService(POWER_SERVICE))
-                            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
+            mWl = ((PowerManager) getSystemService(POWER_SERVICE))
+                  .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
             mWl.acquire();
 
             /** wait for all local sensors */
             for(boolean ready=false; !ready; ready=true)
               for (SensorProcess process : sensorProcesses)
                 ready &= process.getSensor().isPrepared();
+
 
             // if(isMaster) { // wait for everyone to send prepared
             //     while(mIsRecording && SEMAPHORE > 0) Thread.sleep(500); // wait till everyone's ready
@@ -240,19 +252,8 @@ public class Recorder extends IntentService {
                  Thread.sleep(500))
                 status.recording(System.currentTimeMillis() - mRecordingSince, (long) duration * 1000 * 1000);
 
-            /** close all streams to notify each process that we're done */
-            for (SensorProcess p : sensorProcesses)
-                p.terminate();
-
-            /** wait for ffmpeg to finish */
-            ffmpeg.terminate();
-
-            /** release the wakelock again */
-            mWl.release();
-
-            /** notify the system that a sensor recording is finished */
-            status.finished(output);
-
+            /** close down the ffmpeg process and all sensorprocesses */
+            onDestroy();
         } catch (Exception e) {
             e.printStackTrace();
             Log.d(TAG, "unable to start recording");
@@ -267,5 +268,31 @@ public class Recorder extends IntentService {
 
     public static void stopCurrentRecording() {
         mIsRecording = false;
+    }
+
+    public void onDestroy() {
+       if (sensorProcesses == null)
+           return;
+
+       /** close all streams to notify each process that we're done */
+       for (SensorProcess p : sensorProcesses)
+           p.terminate();
+
+       /** wait for ffmpeg to finish */
+       try { ffmpeg.terminate(); }
+       catch (InterruptedException e) {};
+
+       /** release the wakelock again */
+       mWl.release();
+
+       /** notify the system that a sensor recording is finished, stopForeground
+        * to remove the service-bound notification and display the finished one */
+       stopForeground(true);
+       status.finished(output);
+
+       sensorProcesses = null;
+       ffmpeg = null;
+       status = null;
+       mWl = null;
     }
 }

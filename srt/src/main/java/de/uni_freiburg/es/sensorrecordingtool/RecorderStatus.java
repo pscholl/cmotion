@@ -36,6 +36,7 @@ public class RecorderStatus {
 
     /* store the duration to handle the progressbar */
     public final int mDuration;
+    public final int NOTIFICATION_ID = 123;
 
     /**
      * creates a new Notification and updates it for the user. Every other update
@@ -64,7 +65,7 @@ public class RecorderStatus {
         ;
 
         if (!isRunningOnGlass())
-            mService.notify(123, mNotification.build());
+            mService.notify(NOTIFICATION_ID, mNotification.build());
     }
 
 
@@ -86,7 +87,7 @@ public class RecorderStatus {
         ;
 
         if (!isRunningOnGlass())
-            mService.notify(123, mNotification.build());
+            mService.notify(NOTIFICATION_ID, mNotification.build());
     }
 
     /**
@@ -110,7 +111,7 @@ public class RecorderStatus {
         ;
 
         if (!isRunningOnGlass())
-            mService.notify(123, mNotification.build());
+            mService.notify(NOTIFICATION_ID, mNotification.build());
     }
 
     /**
@@ -131,7 +132,7 @@ public class RecorderStatus {
         ;
 
         if (!isRunningOnGlass())
-            mService.notify(123, mNotification.build());
+            mService.notify(NOTIFICATION_ID, mNotification.build());
 
     }
 
