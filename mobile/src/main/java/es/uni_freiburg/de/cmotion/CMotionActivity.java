@@ -31,7 +31,6 @@ public class CMotionActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_cmotion);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
         mRecFab = (RecordFloatingActionButton) findViewById(R.id.fab);
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler);
@@ -72,9 +71,8 @@ public class CMotionActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        startService(new Intent(this, LocalSensorService.class));
-        startService(new Intent(this, WearSensorService.class));
-        startService(new Intent(this, IntentForwarderService.class));
+        //startService(new Intent(this, LocalSensorService.class));
+        //startService(new Intent(this, WearSensorService.class));
     }
 
     @Override
