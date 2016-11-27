@@ -9,6 +9,7 @@ import android.preference.PreferenceManager;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.io.File;
 
 import de.uni_freiburg.es.sensorrecordingtool.*;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.AudioSensor;
@@ -32,16 +33,16 @@ public class SRTHelper {
         // for (android.hardware.Sensor s : mgr.getSensorList(android.hardware.Sensor.TYPE_ALL))
         //     availableSensors.add(new SensorModel(s.getName()));
 
-        SensorModel audio = new SensorModel("Audio");
+        SensorModel audio = new SensorModel("Audio", true);
         audio.setSamplingRate(AudioSensor.getAudioSampleRate()); // Audio won't work with 50ms
         availableSensors.add(audio);
         availableSensors.add(new SensorModel("Location"));
         availableSensors.add(new SensorModel("Video"));
-        availableSensors.add(new SensorModel("accelerometer"));
-        availableSensors.add(new SensorModel("gyroscope"));
-        availableSensors.add(new SensorModel("magnetometer"));
+        availableSensors.add(new SensorModel("accelerometer", true));
+        availableSensors.add(new SensorModel("gyroscope", true));
+        availableSensors.add(new SensorModel("mag", true));
         availableSensors.add(new SensorModel("pressure"));
-        availableSensors.add(new SensorModel("Rotation Vector"));
+        availableSensors.add(new SensorModel("Rotation Vector", true));
 
         Collections.sort(availableSensors); // Sort alphabetically
         return availableSensors;
@@ -59,12 +60,15 @@ public class SRTHelper {
             i++;
         }
 
-        String outputDir = PreferenceManager
-                .getDefaultSharedPreferences(context).getString(SettingsActivity.PREF_KEY_OUTPUTDIR, Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString());
+        File target = new File( PreferenceManager
+                .getDefaultSharedPreferences(context)
+                .getString(SettingsActivity.PREF_KEY_OUTPUTDIR, null) );
+        target = target!=null ? target :
+                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
 
         intent.putExtra(Recorder.RECORDER_INPUT, sensors); // sensors
         intent.putExtra(Recorder.RECORDER_RATE, rates); // rates
-        intent.putExtra(Recorder.RECORDER_OUTPUT, outputDir + de.uni_freiburg.es.sensorrecordingtool.RecorderCommands.getDefaultFileName()); // output
+        intent.putExtra(Recorder.RECORDER_OUTPUT, new File(target, de.uni_freiburg.es.sensorrecordingtool.RecorderCommands.getDefaultFileName()).toString());
         intent.putExtra(Recorder.RECORDER_DURATION, sRecordingDurationSec * 1d); // duration as doubles
         context.sendBroadcast(intent);
     }

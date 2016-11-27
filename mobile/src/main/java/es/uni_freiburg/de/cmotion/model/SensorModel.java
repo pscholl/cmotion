@@ -8,7 +8,12 @@ public class SensorModel implements Comparable<SensorModel>{
     private int mSamplingRate = 50; // TODO use constant
 
     public SensorModel(String name) {
-        this.mName = name;
+        this(name, false);
+    }
+
+    public SensorModel(String name, boolean enabled) {
+        mName = name;
+        mEnabled = enabled;
     }
 
     public String getName() {
