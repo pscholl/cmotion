@@ -29,6 +29,7 @@ public class PermissionDialog extends Activity
                 new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
                         Manifest.permission.READ_EXTERNAL_STORAGE,
                         Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.RECORD_AUDIO,
                         Manifest.permission.CAMERA},
                 PERMISSION_REQUEST);
     }
@@ -75,7 +76,12 @@ public class PermissionDialog extends Activity
                 == PackageManager.PERMISSION_GRANTED;
     }
 
+    public static boolean audio(Context c) {
+        return ContextCompat.checkSelfPermission(c, Manifest.permission.RECORD_AUDIO)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
     public static boolean needToAskForPermission(Context context) {
-        return !externalStorage(context); // is optional: || !location(context) || !camera(context))
+        return !externalStorage(context) || !location(context) || !camera(context) || !audio(context);
     }
 }
