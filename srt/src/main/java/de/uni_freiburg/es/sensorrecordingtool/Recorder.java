@@ -213,21 +213,22 @@ public class Recorder extends IntentService {
               for (SensorProcess process : sensorProcesses)
                 ready &= process.getSensor().isPrepared();
 
-            if(isMaster) { // wait for everyone to send prepared
-                while(SEMAPHORE > 0) Thread.sleep(500); // wait till everyone's ready
-                Log.e(TAG, "all nodes are ready");
-                status.steady(System.currentTimeMillis()+ DEFAULT_STEADY_TIME);
-                Thread.sleep(DEFAULT_STEADY_TIME);
-            } else {
-                status.ready(sensors);
-                while(SEMAPHORE > 0) Thread.sleep(1); // wait till steady and our time has come ;)
-            }
+            // if(isMaster) { // wait for everyone to send prepared
+            //     while(mIsRecording && SEMAPHORE > 0) Thread.sleep(500); // wait till everyone's ready
+            //     Log.e(TAG, "all nodes are ready");
+            //     status.steady(System.currentTimeMillis()+ DEFAULT_STEADY_TIME);
+            //     Thread.sleep(DEFAULT_STEADY_TIME);
+            // } else {
+            //     status.ready(sensors);
+            //     while(mIsRecording && SEMAPHORE > 0) Thread.sleep(1); // wait till steady and our time has come ;)
+            // }
+
+            // if (!mIsRecording) return;
 
             ((Vibrator) getApplicationContext().getSystemService(VIBRATOR_SERVICE)).vibrate(100);
 
             for (SensorProcess process : sensorProcesses)
                 process.startRecording();
-
 
             /** now wait until the recording is stopped or a timeout has occurred, give
              * 1 seconds extra, as the sensorprocesses should stop themselves,

@@ -12,10 +12,12 @@ public class ReadyReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (intent.getAction().equals(Recorder.READY_ACTION) && Recorder.isMaster) {
+        String action = intent.getAction();
+
+        if (Recorder.READY_ACTION.equals(action) && Recorder.isMaster) {
             Log.e(TAG, String.format("node %s[%s] is ready", intent.getStringExtra(RecorderStatus.ANDROID_ID), intent.getStringExtra(RecorderStatus.PLATFORM)));
             Recorder.SEMAPHORE--;
-        } else if (intent.getAction().equals(Recorder.STEADY_ACTION) && !Recorder.isMaster) {
+        } else if (Recorder.STEADY_ACTION.equals(action) && !Recorder.isMaster) {
             long startTime = (long) intent.getDoubleExtra(RecorderStatus.START_TIME, -1);
             Log.e(TAG, "Steady, starting recording at " + startTime);
             long diff = Math.min(startTime - System.currentTimeMillis(), Recorder.DEFAULT_STEADY_TIME); // Due to clock drift
