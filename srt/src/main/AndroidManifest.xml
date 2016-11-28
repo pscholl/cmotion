@@ -24,11 +24,6 @@
             <intent-filter>
                 <action android:name="senserec" />
                 <action android:name="senserec_cancel" />
-            </intent-filter>
-        </receiver>
-
-        <receiver android:name=".ReadyReceiver" android:enabled="true">
-            <intent-filter>
                 <action android:name="senserec_ready" />
                 <action android:name="senserec_steady" />
             </intent-filter>
