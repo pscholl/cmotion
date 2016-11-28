@@ -2,17 +2,13 @@ package es.uni_freiburg.de.cmotion;
 
 import android.content.Context;
 import android.content.Intent;
-import android.hardware.SensorManager;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.io.File;
 
-import de.uni_freiburg.es.sensorrecordingtool.*;
-import de.uni_freiburg.es.sensorrecordingtool.sensors.AudioSensor;
+import de.uni_freiburg.es.sensorrecordingtool.Recorder;
 import es.uni_freiburg.de.cmotion.model.SensorModel;
 import es.uni_freiburg.de.cmotion.ui.DigitEditDialog;
 
@@ -27,26 +23,26 @@ public class SRTHelper {
         }
     };
 
-    public static List<SensorModel> getAvailableSensors(Context context) {
-        ArrayList<SensorModel> availableSensors = new ArrayList<>();
-        // SensorManager mgr = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
-        // for (android.hardware.Sensor s : mgr.getSensorList(android.hardware.Sensor.TYPE_ALL))
-        //     availableSensors.add(new SensorModel(s.getName()));
-
-        SensorModel audio = new SensorModel("Audio", true);
-        audio.setSamplingRate(AudioSensor.getAudioSampleRate()); // Audio won't work with 50ms
-        availableSensors.add(audio);
-        availableSensors.add(new SensorModel("Location"));
-        availableSensors.add(new SensorModel("Video"));
-        availableSensors.add(new SensorModel("accelerometer", true));
-        availableSensors.add(new SensorModel("gyroscope", true));
-        availableSensors.add(new SensorModel("mag", true));
-        availableSensors.add(new SensorModel("pressure"));
-        availableSensors.add(new SensorModel("Rotation Vector", true));
-
-        Collections.sort(availableSensors); // Sort alphabetically
-        return availableSensors;
-    }
+//    public static List<SensorModel> getAvailableSensors(Context context) {
+//        ArrayList<SensorModel> availableSensors = new ArrayList<>();
+//        // SensorManager mgr = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+//        // for (android.hardware.Sensor s : mgr.getSensorList(android.hardware.Sensor.TYPE_ALL))
+//        //     availableSensors.add(new SensorModel(s.getName()));
+//
+//        SensorModel audio = new SensorModel("Audio", true);
+//        audio.setSamplingRate(AudioSensor.getAudioSampleRate()); // Audio won't work with 50ms
+//        availableSensors.add(audio);
+//        availableSensors.add(new SensorModel("Location"));
+//        availableSensors.add(new SensorModel("Video"));
+//        availableSensors.add(new SensorModel("accelerometer", true));
+//        availableSensors.add(new SensorModel("gyroscope", true));
+//        availableSensors.add(new SensorModel("mag", true));
+//        availableSensors.add(new SensorModel("pressure"));
+//        availableSensors.add(new SensorModel("Rotation Vector", true));
+//
+//        Collections.sort(availableSensors); // Sort alphabetically
+//        return availableSensors;
+//    }
 
     public static void sendRecordIntent(Context context, List<SensorModel> selectedList) {
         Intent intent = new Intent(Recorder.RECORD_ACTION);

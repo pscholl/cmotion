@@ -66,9 +66,9 @@ public class RecordingTest {
         i.putExtra("-i", "accelerometer");
         i.putExtra("-r", 100.);
         i.putExtra("-d", 5.0);
+
         String result = callForResult(i);
         Assert.assertNotNull("timeout before completion", result);
-
         assertRecording(result, "accelerometer", 100 * (3) * 4 * 5);
     }
 
@@ -132,13 +132,13 @@ public class RecordingTest {
                 Intent cancel = new Intent(Recorder.CANCEL_ACTION);
                 c.sendBroadcast(cancel);
             }
-        }, 2500);
+        }, Recorder.DEFAULT_STEADY_TIME + 2500);
 
         String result = callForResult(i);
         Assert.assertNotNull("timed out", result);
 
         /** we only test for two seconds because of a possible startup delay */
-        assertRecording(result, "acc", 50*3*4*2, true);
+        assertRecording(result, "acc", (50*3*4*2), true);
     }
 
     public void assertRecording(String f, String sensor, int size) throws Exception {

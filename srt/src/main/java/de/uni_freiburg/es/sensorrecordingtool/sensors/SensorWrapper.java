@@ -42,7 +42,7 @@ public class SensorWrapper extends Sensor {
 
     @Override
     public String getStringType() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             return mSensor.getStringType();
         } else {
             String mStringType;

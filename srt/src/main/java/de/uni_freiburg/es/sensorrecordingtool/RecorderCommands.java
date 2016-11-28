@@ -52,8 +52,8 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
 
             try {
                 Intent call = parseRecorderIntent(intent);
-                intent.setClass(context, Recorder.class);
-                context.startService(intent); // TODO: shoudlnt that be "call" ???
+                call.setClass(context, Recorder.class);
+                context.startService(call);
             } catch (Exception e) {
                 e.printStackTrace();
 

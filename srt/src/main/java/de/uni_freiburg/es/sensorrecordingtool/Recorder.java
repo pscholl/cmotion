@@ -163,7 +163,7 @@ public class Recorder extends IntentService {
 //        if(isMaster) {
 //            SEMAPHORE = mAutoDiscovery.getConnectedNodes();
 //        } else {
-        SEMAPHORE = 1; // use semaphore for steady command
+        SEMAPHORE = 0; // use semaphore for steady command
 //        }
 
         try {
