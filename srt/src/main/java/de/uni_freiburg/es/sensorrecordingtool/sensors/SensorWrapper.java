@@ -36,8 +36,98 @@ public class SensorWrapper extends Sensor {
     }
 
     @Override
-    public String getStringType() {
+    public String getStringName() {
         return mSensor.getName();
+    }
+
+    @Override
+    public String getStringType() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
+            return mSensor.getStringType();
+        } else {
+            String mStringType;
+            
+            switch (mSensor.getType()) {
+                case android.hardware.Sensor.TYPE_ACCELEROMETER:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_ACCELEROMETER;
+                    break;
+                case android.hardware.Sensor.TYPE_AMBIENT_TEMPERATURE:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_AMBIENT_TEMPERATURE;
+                    break;
+                case android.hardware.Sensor.TYPE_GAME_ROTATION_VECTOR:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_GAME_ROTATION_VECTOR;
+                    break;
+                case android.hardware.Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_GEOMAGNETIC_ROTATION_VECTOR;
+                    break;
+//                case android.hardware.Sensor.TYPE_GLANCE_GESTURE:
+//                    mStringType =  android.hardware.Sensor.STRING_TYPE_GLANCE_GESTURE;
+//                    break;
+                case android.hardware.Sensor.TYPE_GRAVITY:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_GRAVITY;
+                    break;
+                case android.hardware.Sensor.TYPE_GYROSCOPE:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_GYROSCOPE;
+                    break;
+                case android.hardware.Sensor.TYPE_GYROSCOPE_UNCALIBRATED:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_GYROSCOPE_UNCALIBRATED;
+                    break;
+                case android.hardware.Sensor.TYPE_HEART_RATE:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_HEART_RATE;
+                    break;
+                case android.hardware.Sensor.TYPE_LIGHT:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_LIGHT;
+                    break;
+                case android.hardware.Sensor.TYPE_LINEAR_ACCELERATION:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_LINEAR_ACCELERATION;
+                    break;
+                case android.hardware.Sensor.TYPE_MAGNETIC_FIELD:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_MAGNETIC_FIELD;
+                    break;
+                case android.hardware.Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_MAGNETIC_FIELD_UNCALIBRATED;
+                    break;
+//                case android.hardware.Sensor.TYPE_PICK_UP_GESTURE:
+//                    mStringType =  android.hardware.Sensor.STRING_TYPE_PICK_UP_GESTURE;
+//                    break;
+                case android.hardware.Sensor.TYPE_PRESSURE:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_PRESSURE;
+                    break;
+                case android.hardware.Sensor.TYPE_PROXIMITY:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_PROXIMITY;
+                    break;
+                case android.hardware.Sensor.TYPE_RELATIVE_HUMIDITY:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_RELATIVE_HUMIDITY;
+                    break;
+                case android.hardware.Sensor.TYPE_ROTATION_VECTOR:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_ROTATION_VECTOR;
+                    break;
+                case android.hardware.Sensor.TYPE_SIGNIFICANT_MOTION:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_SIGNIFICANT_MOTION;
+                    break;
+                case android.hardware.Sensor.TYPE_STEP_COUNTER:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_STEP_COUNTER;
+                    break;
+                case android.hardware.Sensor.TYPE_STEP_DETECTOR:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_STEP_DETECTOR;
+                    break;
+//                case android.hardware.Sensor.TYPE_TILT_DETECTOR:
+//                    mStringType =  android.hardware.Sensor.STRING_TYPE_TILT_DETECTOR;
+//                    break;
+//                case android.hardware.Sensor.TYPE_WAKE_GESTURE:
+//                    mStringType =  android.hardware.Sensor.STRING_TYPE_WAKE_GESTURE;
+//                    break;
+                case android.hardware.Sensor.TYPE_ORIENTATION:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_ORIENTATION;
+                    break;
+                case android.hardware.Sensor.TYPE_TEMPERATURE:
+                    mStringType =  android.hardware.Sensor.STRING_TYPE_TEMPERATURE;
+                    break;
+                default:
+                    mStringType = "unknown";
+            }
+            return mStringType;
+        }
     }
 
     @Override

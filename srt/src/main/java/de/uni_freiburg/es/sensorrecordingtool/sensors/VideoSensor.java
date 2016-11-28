@@ -12,14 +12,14 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.WindowManager;
 
-/** Grabs frames at the specified videorate and returns them in raw format at maximum
+/**
+ * Grabs frames at the specified videorate and returns them in raw format at maximum
  * resolution as sensorevents.
- *
+ * <p>
  * Created by phil on 4/26/16.
  */
 public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
     protected static final String TAG = VideoSensor.class.getName();
-    public static final String SENSOR_NAME = "video";
     protected final Context context;
     private Camera mCamera;
     private int mRateInMilliHz = 0;
@@ -32,8 +32,13 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
     }
 
     @Override
+    public String getStringName() {
+        return "Video";
+    }
+
+    @Override
     public String getStringType() {
-        return SENSOR_NAME;
+        return "android.hardware.video";
     }
 
     @Override
@@ -51,8 +56,8 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
             mCamera.setParameters(params);
 
             int bytesPerBuffer = (int) Math.ceil(
-                ImageFormat.getBitsPerPixel(params.getPreviewFormat()) / 8.
-                * mSize.width * mSize.height);
+                    ImageFormat.getBitsPerPixel(params.getPreviewFormat()) / 8.
+                            * mSize.width * mSize.height);
 
             mCamera.addCallbackBuffer(new byte[bytesPerBuffer]);
             mCamera.addCallbackBuffer(new byte[bytesPerBuffer]);
@@ -61,9 +66,12 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
             startRecording();
         }
 
-        super.registerListener(l,rate_in_mus,delay, format, h);
+        super.registerListener(l, rate_in_mus, delay, format, h);
     }
-    /** Determine whethe the code is runnong on Google Glass
+
+    /**
+     * Determine whethe the code is runnong on Google Glass
+     *
      * @return True if and only if Manufacturer is Google and Model begins with Glass
      */
     public static boolean isRunningOnGlass() {
@@ -74,7 +82,7 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
         CameraSize mSize = null;
 
         if (isRunningOnGlass()) { // camera impl is flawed
-            return new CameraSize(320,240);
+            return new CameraSize(320, 240);
         }
 
         try {
@@ -90,22 +98,23 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
 
             String[] wh = format.split("x");
             int w = Integer.parseInt(wh[0]),
-                h = Integer.parseInt(wh[1]);
+                    h = Integer.parseInt(wh[1]);
 
             mSize.width = w;
             mSize.height = h;
-        } catch(NullPointerException e) {
+        } catch (NullPointerException e) {
             Log.d(TAG, "camera not available");
-        } catch(Exception e) {
+        } catch (Exception e) {
             Log.d(TAG, String.format(
                     "unable to parse format '%s', using default resolution %dx%d",
-                    (format!=null?format:""), mSize.width, mSize.height));
+                    (format != null ? format : ""), mSize.width, mSize.height));
         }
         return mSize;
     }
 
 
-    /** can't do a recording without a preview surface, which is why a system overlay is created
+    /**
+     * can't do a recording without a preview surface, which is why a system overlay is created
      * here that it can seen from anywhere.
      */
     @Override
@@ -117,7 +126,7 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
                 WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
                 WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
                 PixelFormat.TRANSLUCENT);
-        lp.gravity = Gravity.LEFT  | Gravity.TOP;
+        lp.gravity = Gravity.LEFT | Gravity.TOP;
         wm.addView(mSurface, lp);
         setPrepared();
     }
@@ -158,7 +167,8 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
             try {
                 WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
                 wm.removeView(mSurface);
-            } catch(Exception e) {}
+            } catch (Exception e) {
+            }
         }
     }
 
@@ -166,7 +176,7 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
         Camera.Parameters p = null;
         try {
-            if (mCamera==null)
+            if (mCamera == null)
                 mCamera = Camera.open();
             p = mCamera.getParameters();
             p.setPreviewFpsRange(mRateInMilliHz, mRateInMilliHz);
@@ -179,7 +189,7 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
             mCamera.setPreviewCallbackWithBuffer(preview);
             mCamera.startPreview();
 
-        } catch(Exception e) {
+        } catch (Exception e) {
             stopRecording();
 
             if (mCamera != null) {
@@ -195,7 +205,8 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
     }
 
     @Override
-    public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) { }
+    public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+    }
 
     @Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {

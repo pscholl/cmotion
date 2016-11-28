@@ -13,7 +13,6 @@ import es.uni_freiburg.de.cmotion.R;
 public class RecordFloatingActionButton extends FloatingActionButton implements View.OnClickListener {
 
 
-
     private boolean mRecording = false;
     private OnClickListener mListener;
 
@@ -56,6 +55,7 @@ public class RecordFloatingActionButton extends FloatingActionButton implements 
     public void onClick(View v) {
 //        mRecording = !mRecording;
 //        setImageResource(!mRecording ? R.drawable.ic_fiber_manual_record_white_24dp : R.drawable.ic_stop_white_24dp);
-        mListener.onClick(v);
+        if (mListener != null)
+            mListener.onClick(v);
     }
 }

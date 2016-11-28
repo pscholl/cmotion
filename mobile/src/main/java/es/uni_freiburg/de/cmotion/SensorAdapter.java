@@ -78,6 +78,9 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
     public void onBindViewHolder(final ViewHolder holder, final int position) {
         final SensorModel model = mCollection.get(position);
         holder.nameTextView.setText(model.getName());
+        holder.nameTextView.append("\n");
+        holder.nameTextView.append(model.getAvailablePlatforms().toString());
+
         holder.checkBox.setChecked(model.isEnabled());
         holder.samplingRateButton.setText(model.getSamplingRate()+" Hz");
 

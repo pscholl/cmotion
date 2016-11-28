@@ -55,6 +55,11 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     }
 
     @Override
+    public String getStringName() {
+        return "Location";
+    }
+
+    @Override
     public String getStringType() {
         return "android.hardware.sensor.Location";
     }

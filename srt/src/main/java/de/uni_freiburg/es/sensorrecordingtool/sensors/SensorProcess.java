@@ -81,7 +81,7 @@ public abstract class SensorProcess implements SensorEventListener {
     /**
      * given a String tries to find a matching sensor given these rules:
      * <p>
-     * 1. find all sensors which string description (getStringType()) contains the *sensor*
+     * 1. find all sensors which string description (getStringName()) contains the *sensor*
      * 2. choose the shortest one of that list
      * <p>
      * e.g., when "gyro" is given, choose android.sensor.type.gyroscope rather than
@@ -95,13 +95,13 @@ public abstract class SensorProcess implements SensorEventListener {
         LinkedList<Sensor> candidates = new LinkedList<Sensor>();
 
         for (Sensor s : Sensor.getAvailableSensors(context))
-            if (s.getStringType().toLowerCase().contains(sensor.toLowerCase()))
+            if (s.getStringName().toLowerCase().contains(sensor.toLowerCase()))
                 candidates.add(s);
 
         if (candidates.size() == 0) {
             StringBuilder b = new StringBuilder();
             for (Sensor s : Sensor.getAvailableSensors(context)) {
-                b.append(s.getStringType());
+                b.append(s.getStringName());
                 b.append("\n");
             }
             throw new Exception("no matches for " + sensor + " found."+
@@ -111,17 +111,17 @@ public abstract class SensorProcess implements SensorEventListener {
         int minimum = Integer.MAX_VALUE;
 
         for (Sensor s : candidates)
-            minimum = Math.min(minimum, s.getStringType().length());
+            minimum = Math.min(minimum, s.getStringName().length());
 
         Iterator<Sensor> it = candidates.iterator();
         while(it.hasNext())
-            if (it.next().getStringType().length() != minimum)
+            if (it.next().getStringName().length() != minimum)
                 it.remove();
 
         if (candidates.size() != 1) {
             StringBuilder b = new StringBuilder();
             for (Sensor s : candidates) {
-                b.append(s.getStringType());
+                b.append(s.getStringName());
                 b.append(", ");
             }
             throw new Exception("too many sensor candidates for " + sensor +

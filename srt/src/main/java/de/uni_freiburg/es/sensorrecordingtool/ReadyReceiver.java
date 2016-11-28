@@ -30,7 +30,8 @@ public class ReadyReceiver extends BroadcastReceiver {
                 }, diff);
             else // time was either not set or connection took longer then the wait period was // TODO add error?
                 Recorder.SEMAPHORE--;
-        } else
-            Log.e(TAG, "unknown intent: " + intent.getAction());
+        }
+// else
+//            Log.e(TAG, "unknown intent: " + intent.getAction());
     }
 }

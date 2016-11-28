@@ -1,6 +1,5 @@
 package es.uni_freiburg.de.cmotion;
 
-import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -58,9 +57,9 @@ public class UDPTransport extends Thread {
                     try {
                         socket = new DatagramSocket();
                         packet = new DatagramPacket(new byte[]{}, 0, mAdress, mPort);
-                        e.printStackTrace();
+//                        e.printStackTrace(); // TODO
                     } catch (SocketException e1) {
-                        e1.printStackTrace();
+//                        e1.printStackTrace(); // TODO
                     }
                 }
             }

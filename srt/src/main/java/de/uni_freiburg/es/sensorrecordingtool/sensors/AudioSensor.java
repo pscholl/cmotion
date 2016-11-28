@@ -17,7 +17,6 @@ import java.util.List;
  */
 public class AudioSensor extends Sensor {
     protected static final String TAG = AudioSensor.class.getName();
-    public static final String SENSOR_NAME = "audio";
     protected final Context context;
     private int mRateinMus = 0;
 
@@ -40,8 +39,13 @@ public class AudioSensor extends Sensor {
 
 
     @Override
+    public String getStringName() {
+        return "Audio";
+    }
+
+    @Override
     public String getStringType() {
-        return SENSOR_NAME;
+        return "android.hardware.audio";
     }
 
     @Override
@@ -113,7 +117,7 @@ public class AudioSensor extends Sensor {
                     mAudioFormat);
             if (result > 0) {
                 // return the mininum supported audio sample rate
-                list.add (validSampleRates[i]);
+                list.add(validSampleRates[i]);
             }
         }
         // If none of the sample rates are supported return -1 handle it in
