@@ -45,7 +45,7 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
                 }, diff);
             else // time was either not set or connection took longer then the wait period was // TODO add error?
                 Recorder.SEMAPHORE--;
-        } else if (!Recorder.RECORD_ACTION.equals(intent.getAction())) {
+        } else if (Recorder.RECORD_ACTION.equals(intent.getAction())) {
 
             /** stop any recording per default, whether this is a cancel or start request */
             Recorder.stopCurrentRecording();
