@@ -3,6 +3,8 @@ package de.uni_freiburg.es.sensorrecordingtool;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Environment;
+import android.os.Handler;
+import android.util.Log;
 
 import java.io.File;
 import java.text.DateFormat;
@@ -11,38 +13,59 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.TimeZone;
 
-/** A Broadcast which distributes a recording intent to the proper Services and also makes
+/**
+ * A Broadcast which distributes a recording intent to the proper Services and also makes
  * sure to stop an ongoing recording if there is any.
- *
+ * <p>
  * Created by phil on 2/29/16.
  */
 public class RecorderCommands extends android.content.BroadcastReceiver {
+    private static final String TAG = RecorderCommands.class.getSimpleName();
+
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent == null)
             return;
 
-        /** stop any recording per default, whether this is a cancel or start request */
-        Recorder.stopCurrentRecording();
+        if (intent.getAction().equals(Recorder.READY_ACTION) && Recorder.isMaster) {
+            Log.e(TAG, String.format("node %s[%s] is ready", intent.getStringExtra(RecorderStatus.ANDROID_ID), intent.getStringExtra(RecorderStatus.PLATFORM)));
+            Recorder.SEMAPHORE--;
+        } else if (intent.getAction().equals(Recorder.STEADY_ACTION) && !Recorder.isMaster) {
+            long startTime = (long) intent.getDoubleExtra(RecorderStatus.START_TIME, -1);
+            Log.e(TAG, "Steady, starting recording at " + startTime);
+            long diff = Math.min(startTime - System.currentTimeMillis(), Recorder.DEFAULT_STEADY_TIME); // Due to clock drift
+            Log.e(TAG, "Waiting for " + diff + "ms");
 
-        /** parse the intent and forward only if a new recording is to be started. */
-        if (!Recorder.RECORD_ACTION.equals(intent.getAction()))
-            return;
+            if (diff > 0)
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        Recorder.SEMAPHORE--;
+                    }
+                }, diff);
+            else // time was either not set or connection took longer then the wait period was // TODO add error?
+                Recorder.SEMAPHORE--;
+        } else if (!Recorder.RECORD_ACTION.equals(intent.getAction())) {
 
-        try {
-            Intent call = parseRecorderIntent(intent);
-            intent.setClass(context, Recorder.class);
-            context.startService(intent);
-        } catch (Exception e) {
-            e.printStackTrace();
+            /** stop any recording per default, whether this is a cancel or start request */
+            Recorder.stopCurrentRecording();
 
-            Intent i = new Intent(RecorderStatus.ERROR_ACTION);
-            i.putExtra(RecorderStatus.ERROR_REASON, e.getMessage());
-            context.sendBroadcast(i);
+            try {
+                Intent call = parseRecorderIntent(intent);
+                intent.setClass(context, Recorder.class);
+                context.startService(intent); // TODO: shoudlnt that be "call" ???
+            } catch (Exception e) {
+                e.printStackTrace();
+
+                Intent i = new Intent(RecorderStatus.ERROR_ACTION);
+                i.putExtra(RecorderStatus.ERROR_REASON, e.getMessage());
+                context.sendBroadcast(i);
+            }
         }
     }
 
-    /** parse a human-generated intent into one that the recording process requires. This means
+    /**
+     * parse a human-generated intent into one that the recording process requires. This means
      * that some options of the Recorder can take a single value or a list of values. This function
      * will expand them accordingly and throw an Exception if the input is not usable.
      *
@@ -59,7 +82,7 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
 
         call.setAction(intent.getAction());
 
-        output = output==null ? getDefaultOutputPath() : output;
+        output = output == null ? getDefaultOutputPath() : output;
 
         if (sensors.length <= 0)
             throw new Exception("no input supplied");
@@ -69,7 +92,7 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
         if (formats.length != sensors.length) {
             String[] fmts = new String[sensors.length];
             Arrays.fill(fmts, null);
-            for (int j=0; j<formats.length; j++)
+            for (int j = 0; j < formats.length; j++)
                 fmts[j] = formats[j];
             formats = fmts;
         }
@@ -105,9 +128,9 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
         if (arr != null)
             return arr;
         else if (i.getStringExtra(extra) != null)
-            return new String[] { i.getStringExtra(extra) };
+            return new String[]{i.getStringExtra(extra)};
         else
-            return new String[] { };
+            return new String[]{};
     }
 
     public static double[] getIntFloatOrDoubleArray(Intent i, String extra, double def) {
@@ -120,19 +143,19 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
 
         if (farr != null) {
             double out[] = new double[farr.length];
-            for (int j=0; j<out.length; j++)
+            for (int j = 0; j < out.length; j++)
                 out[j] = farr[j];
             return out;
         }
 
         if (iarr != null) {
             double out[] = new double[iarr.length];
-            for (int j=0; j<out.length; j++)
+            for (int j = 0; j < out.length; j++)
                 out[j] = iarr[j];
             return out;
         }
 
-        return new double[]{getIntFloatOrDouble(i,extra,def)};
+        return new double[]{getIntFloatOrDouble(i, extra, def)};
     }
 
     public static double getIntFloatOrDouble(Intent i, String extra, double def) {
@@ -153,7 +176,9 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
     }
 
 
-    /** utility function for ISO datetime path on public storage */
+    /**
+     * utility function for ISO datetime path on public storage
+     */
     public static String getDefaultOutputPath() {
         File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
         return new File(path, getDefaultFileName()).toString();
@@ -163,6 +188,6 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
         TimeZone tz = TimeZone.getTimeZone("UTC");
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmZ");
         df.setTimeZone(tz);
-        return  df.format(new Date());
+        return df.format(new Date());
     }
 }
