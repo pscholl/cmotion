@@ -44,13 +44,14 @@ public abstract class Sensor {
 
     public void setPrepared() {
         isPrepared = true;
-        Log.e(TAG, "Sensor "+getStringType()+" prepared");
+        Log.e(TAG, "Sensor "+ getStringName()+" prepared");
 
     }
 
     public void startRecording() {
     }
 
+    public abstract String getStringName();
     public abstract String getStringType();
 
     public void flush(SensorEventListener l) {

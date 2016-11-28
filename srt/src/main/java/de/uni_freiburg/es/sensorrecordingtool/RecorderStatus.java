@@ -18,6 +18,7 @@ import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorProcess;
  * The former via Broadcast intents, the latter via Notifications.
  */
 public class RecorderStatus {
+    private static final String TAG = RecorderStatus.class.getSimpleName();
     public final Context c;
     public final NotificationManagerCompat mService;
     public final NotificationCompat.Builder mNotification;
@@ -152,9 +153,9 @@ public class RecorderStatus {
         i.putExtra(SENSORS, sensors);
         i.putExtra(ANDROID_ID, Settings.Secure.getString(c.getContentResolver(),
                 Settings.Secure.ANDROID_ID));
-        i.putExtra(PLATFORM, Build.HOST);
+        i.putExtra(PLATFORM, Build.BOARD);
         c.sendBroadcast(i);
-        Log.e("READY", "sending ready");
+        Log.e(TAG, "sending ready");
     }
 
     /**
@@ -166,7 +167,7 @@ public class RecorderStatus {
         Intent i = new Intent(Recorder.STEADY_ACTION);
         i.putExtra(START_TIME, startTime*1d);
         c.sendBroadcast(i);
-        Log.e("READY", "sending ready");
+        Log.e(TAG, "sending steady");
     }
 
     /**

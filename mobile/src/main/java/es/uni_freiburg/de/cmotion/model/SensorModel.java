@@ -1,11 +1,15 @@
 package es.uni_freiburg.de.cmotion.model;
 
 
+import java.util.ArrayList;
+
 public class SensorModel implements Comparable<SensorModel>{
 
     private String mName;
     private boolean mEnabled;
     private int mSamplingRate = 50; // TODO use constant
+
+    private ArrayList<String> mAvailableOnPlatforms = new ArrayList<>();
 
     public SensorModel(String name) {
         this(name, false);
@@ -43,5 +47,13 @@ public class SensorModel implements Comparable<SensorModel>{
 
     public int getSamplingRate() {
         return mSamplingRate;
+    }
+
+    public ArrayList<String> getAvailablePlatforms() {
+        return mAvailableOnPlatforms;
+    }
+
+    public void addAvailablePlatform(String availableOnPlatform) {
+        this.mAvailableOnPlatforms.add(availableOnPlatform);
     }
 }

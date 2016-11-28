@@ -15,6 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
+import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.AutoDiscovery;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.AudioSensor;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.BlockSensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.NonBlockSensorProcess;
@@ -90,8 +91,12 @@ public class Recorder extends IntentService {
 
     /* the main action for recording */
     public static final String RECORD_ACTION = ForwardedUtils.RECORD_ACTION;
-    public static final String READY_ACTION  = ForwardedUtils.READY_ACTION;
+
+    public static final String READY_ACTION = ForwardedUtils.READY_ACTION;
     public static final String STEADY_ACTION = ForwardedUtils.STEADY_ACTION;
+    public static final String DISCOVERY_ACTION = "senserec_discovery";
+    public static final String DISCOVERY_RESPONSE_ACTION = "senserec_discovery_response";
+
     public static final String SHOWUI_ACTION = "senserec_showui";
 
     /* for handing over the cancel action from a notification */
@@ -105,6 +110,8 @@ public class Recorder extends IntentService {
 
     public static int SEMAPHORE = 0;
     public static boolean isMaster;
+
+    private AutoDiscovery mAutoDiscovery;
 
     /* members when a recording is ongoing, stored here for cleanup from
      * onDestroy */
@@ -151,13 +158,13 @@ public class Recorder extends IntentService {
         }
 
         isMaster = !isIntentForwarded(intent);
-        Log.e("MASTER????", isMaster+"");
+        Log.e("MASTER????", isMaster + "");
 
-        if(isMaster) {
-            SEMAPHORE = 1; // TODO use autodiscovery
-        } else {
-            SEMAPHORE = 1; // use semaphore for steady command
-        }
+//        if(isMaster) {
+//            SEMAPHORE = mAutoDiscovery.getConnectedNodes();
+//        } else {
+        SEMAPHORE = 1; // use semaphore for steady command
+//        }
 
         try {
             intent = RecorderCommands.parseRecorderIntent(intent);
@@ -224,17 +231,21 @@ public class Recorder extends IntentService {
                 ready &= process.getSensor().isPrepared();
 
 
-             if(isMaster) { // wait for everyone to send prepared
-                 while(mIsRecording && SEMAPHORE > 0) Thread.sleep(500); // wait till everyone's ready
-                 Log.e(TAG, "all nodes are ready");
-                 status.steady(System.currentTimeMillis()+ DEFAULT_STEADY_TIME);
-                 Thread.sleep(DEFAULT_STEADY_TIME);
-             } else {
-                 status.ready(sensors);
-                 while(mIsRecording && SEMAPHORE > 0) Thread.sleep(1); // wait till steady and our time has come ;)
-             }
+            if (isMaster) { // wait for everyone to send prepared
+                while (SEMAPHORE > 0 && mIsRecording)
+                    Thread.sleep(500); // wait till everyone's ready
+                Log.e(TAG, "all nodes are ready");
+                if (mIsRecording) {
+                    status.steady(System.currentTimeMillis() + DEFAULT_STEADY_TIME);
+                    Thread.sleep(DEFAULT_STEADY_TIME);
+                }
+            } else {
+                status.ready(sensors);
+                while (SEMAPHORE > 0 && mIsRecording)
+                    Thread.sleep(100); // wait till steady and our time has come ;)
+            }
 
-             if (!mIsRecording) return;
+            Log.e(TAG, "RECORDING");
 
             ((Vibrator) getApplicationContext().getSystemService(VIBRATOR_SERVICE)).vibrate(100);
 
@@ -244,8 +255,7 @@ public class Recorder extends IntentService {
             /** now wait until the recording is stopped or a timeout has occurred, give
              * 1 seconds extra, as the sensorprocesses should stop themselves,
              * but need additional time to transport the data */
-            for (mRecordingSince = System.currentTimeMillis(),
-                         mIsRecording = true;
+            for (mRecordingSince = System.currentTimeMillis();
                  mIsRecording && (duration <= 0 ||
                          System.currentTimeMillis() - mRecordingSince < (long) duration * 1000 + 1000);
                  Thread.sleep(500))
@@ -266,7 +276,7 @@ public class Recorder extends IntentService {
     }
 
     public static void stopCurrentRecording() {
-        mIsRecording = false;
+        mIsRecording = false; SEMAPHORE = Integer.MIN_VALUE;
     }
 
     public void onDestroy() {

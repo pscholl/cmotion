@@ -24,6 +24,8 @@
                 <action android:name="senserec_cancel"/>
                 <action android:name="senserec_ready"/>
                 <action android:name="senserec_steady"/>
+                <action android:name="senserec_discovery"/>
+                <!--<action android:name="senserec_discovery_response"/>-->
             </intent-filter>
         </receiver>
     </application>
