@@ -31,7 +31,8 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
     };
 
     public SensorAdapter(Context context, List<SensorModel> data) {
-        this.context = context; setData(data);
+        this.context = context;
+        setData(data);
     }
 
     public void setData(List<SensorModel> data) {
@@ -40,7 +41,6 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
     }
 
     /**
-     *
      * @return All selected SensorModels or an empty list. NullSafe!.
      */
     public List<SensorModel> getSelectedItems() {
@@ -54,7 +54,6 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
     }
 
     /**
-     *
      * @return Amount of selected items or 0. NullSafe!
      */
     public int getSelectedItemsSize() {
@@ -81,13 +80,11 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
         holder.nameTextView.append("\n");
         holder.nameTextView.append(model.getAvailablePlatforms().toString());
 
-        holder.checkBox.setChecked(model.isEnabled());
-        holder.samplingRateButton.setText(model.getSamplingRate()+" Hz");
-
+        holder.samplingRateButton.setText(model.getSamplingRate() + " Hz");
         holder.samplingRateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                DigitEditDialog.build(context, "Enter Sampling Rate", model.getSamplingRate()+"", position, mEditTextListener).show();
+                DigitEditDialog.build(context, "Enter Sampling Rate", model.getSamplingRate() + "", position, mEditTextListener).show();
             }
         });
 
@@ -96,7 +93,8 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
         holder.checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                model.setEnabled(isChecked);
+                if (buttonView.isPressed()) // recycler view automatically unchecks destroyed items -> check for user
+                    mCollection.get(position).setEnabled(isChecked);
             }
         });
     }

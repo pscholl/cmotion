@@ -61,6 +61,9 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
                 i.putExtra(RecorderStatus.ERROR_REASON, e.getMessage());
                 context.sendBroadcast(i);
             }
+        } else if (Recorder.CANCEL_ACTION.equals(intent.getAction())) {
+
+            Recorder.stopCurrentRecording();
         }
     }
 

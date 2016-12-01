@@ -196,7 +196,7 @@ public class Recorder extends IntentService {
                 } else if (sensors[j].contains("audio")) {
                     Log.i(TAG, "Endianess " + ByteOrder.nativeOrder());
                     fp
-                            .addAudio(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "s16le" : "s16be", AudioSensor.getAudioSampleRate(), 1) // TODO native endian!
+                            .addAudio(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "s16le" : "s16be", AudioSensor.getAudioSampleRate(), 1) // native endian!
                             .setStreamTag("name", sensors[j]);
                 } else
                     fp
@@ -230,6 +230,8 @@ public class Recorder extends IntentService {
               for (SensorProcess process : sensorProcesses)
                 ready &= process.getSensor().isPrepared();
 
+
+            mIsRecording = true;
 
             if (isMaster) { // wait for everyone to send prepared
                 while (SEMAPHORE > 0 && mIsRecording)

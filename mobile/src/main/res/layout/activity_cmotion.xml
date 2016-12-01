@@ -49,25 +49,25 @@
         android:onClick="onFabClick"
         app:backgroundTint="@color/dark_red" />
 
-  <LinearLayout
-      android:orientation="horizontal"
-      android:layout_gravity="bottom|left"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content">
-      <Button
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
+  <!--<LinearLayout-->
+      <!--android:orientation="horizontal"-->
+      <!--android:layout_gravity="bottom|left"-->
+      <!--android:layout_width="wrap_content"-->
+      <!--android:layout_height="wrap_content">-->
+      <!--<Button-->
+          <!--android:layout_width="wrap_content"-->
+          <!--android:layout_height="wrap_content"-->
 
-          android:onClick="dbeStart"
-          android:text="Start" />
+          <!--android:onClick="dbeStart"-->
+          <!--android:text="Start" />-->
 
-      <Button
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
+      <!--<Button-->
+          <!--android:layout_width="wrap_content"-->
+          <!--android:layout_height="wrap_content"-->
 
-          android:onClick="dbeStop"
-          android:text="Stop" />
-  </LinearLayout>
+          <!--android:onClick="dbeStop"-->
+          <!--android:text="Stop" />-->
+  <!--</LinearLayout>-->
 
 
 </android.support.design.widget.CoordinatorLayout>

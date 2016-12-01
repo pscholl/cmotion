@@ -5,8 +5,8 @@ import android.content.Intent;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 
-import java.util.List;
 import java.io.File;
+import java.util.List;
 
 import de.uni_freiburg.es.sensorrecordingtool.Recorder;
 import es.uni_freiburg.de.cmotion.model.SensorModel;
@@ -58,9 +58,7 @@ public class SRTHelper {
 
         File target = new File( PreferenceManager
                 .getDefaultSharedPreferences(context)
-                .getString(SettingsActivity.PREF_KEY_OUTPUTDIR, null) );
-        target = target!=null ? target :
-                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
+                .getString(SettingsActivity.PREF_KEY_OUTPUTDIR, Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString()) );
 
         intent.putExtra(Recorder.RECORDER_INPUT, sensors); // sensors
         intent.putExtra(Recorder.RECORDER_RATE, rates); // rates
