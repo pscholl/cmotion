@@ -31,7 +31,7 @@ import de.uni_freiburg.es.sensorrecordingtool.sensors.VideoSensor;
  */
 @RunWith(AndroidJUnit4.class)
 @MediumTest
-public class VideoTest {
+public class VideoTest extends BroadcastingTest {
     private Context c;
     private Intent i;
     private String o;

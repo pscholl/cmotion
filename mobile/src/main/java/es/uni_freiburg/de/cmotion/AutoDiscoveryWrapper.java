@@ -2,11 +2,14 @@ package es.uni_freiburg.de.cmotion;
 
 
 import android.content.Context;
+import android.preference.PreferenceManager;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.AutoDiscovery;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.OnNodeSensorsDiscoveredListener;
@@ -16,6 +19,7 @@ import es.uni_freiburg.de.cmotion.model.SensorModel;
 public class AutoDiscoveryWrapper {
 
     private final SensorAdapter mAdapter;
+    private final Context mContext;
     private AutoDiscovery mAutoDiscovery;
 
     private OnNodeSensorsDiscoveredListener mOnNodeSensorsDiscoveredListener = new OnNodeSensorsDiscoveredListener() {
@@ -28,7 +32,7 @@ public class AutoDiscoveryWrapper {
     public AutoDiscoveryWrapper(Context context, SensorAdapter adapter) {
 
         mAdapter = adapter;
-
+        mContext = context;
         mAutoDiscovery = new AutoDiscovery(context);
         mAutoDiscovery.setListener(mOnNodeSensorsDiscoveredListener);
 //        mAutoDiscovery.discover();
@@ -36,6 +40,7 @@ public class AutoDiscoveryWrapper {
 
     private List<SensorModel> convert(HashMap<String, List<String>> map) {
 
+        Set<String> persistedSensors = PreferenceManager.getDefaultSharedPreferences(mContext).getStringSet("checked", new HashSet<String>());
         HashMap<String, SensorModel> sensorMap = new HashMap<>();
 
         for (String key : map.keySet()) {
@@ -48,6 +53,9 @@ public class AutoDiscoveryWrapper {
 
                 if (value.toLowerCase().contains("audio")) // modify predefined sample rate for audio
                     sensorModel.setSamplingRate(AudioSensor.getAudioSampleRate());
+
+                if(persistedSensors.contains(sensorModel.getName()))
+                    sensorModel.setEnabled(true);
 
                 if (!sensorMap.containsKey(sensorModel.getName()))
                     sensorMap.put(sensorModel.getName(), sensorModel);

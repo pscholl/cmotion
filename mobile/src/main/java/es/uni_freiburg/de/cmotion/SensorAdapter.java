@@ -93,8 +93,9 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
         holder.checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (buttonView.isPressed()) // recycler view automatically unchecks destroyed items -> check for user
+                if (buttonView.isPressed()) {// recycler view automatically unchecks destroyed items -> check for user
                     mCollection.get(position).setEnabled(isChecked);
+                }
             }
         });
     }

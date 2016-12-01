@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
  */
 @RunWith(AndroidJUnit4.class)
 @LargeTest
-public class RecordingTest {
+public class RecordingTest extends BroadcastingTest {
     private Context c;
     private Intent i;
     private String o;

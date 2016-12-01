@@ -1,7 +1,5 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
-import java.net.Socket;
-import java.net.InetSocketAddress;
 import android.content.Context;
 import android.os.Environment;
 import android.support.test.InstrumentationRegistry;
@@ -10,7 +8,6 @@ import android.test.suitebuilder.annotation.MediumTest;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,7 +22,7 @@ import java.util.Random;
  */
 @RunWith(AndroidJUnit4.class)
 @MediumTest
-public class FFMpegTest {
+public class FFMpegTest extends BroadcastingTest {
     Context c;
     private String filename;
     private File filepath;

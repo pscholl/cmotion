@@ -1,17 +1,15 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
-import android.support.test.InstrumentationRegistry;
+import android.net.LocalServerSocket;
+import android.net.LocalSocket;
+import android.net.LocalSocketAddress;
 import android.support.test.runner.AndroidJUnit4;
 import android.test.suitebuilder.annotation.LargeTest;
-import android.net.LocalSocket;
-import android.net.LocalServerSocket;
-import android.net.LocalSocketAddress;
 
-import org.junit.Test;
 import org.junit.Assert;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -22,7 +20,7 @@ import java.net.Socket;
  */
 @RunWith(AndroidJUnit4.class)
 @LargeTest
-public class FuckingSockets {
+public class FuckingSockets extends BroadcastingTest {
     @Test
     public void testSocket() throws IOException {
         Thread t = new Thread(new Runnable() {

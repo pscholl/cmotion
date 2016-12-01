@@ -2,8 +2,10 @@ package es.uni_freiburg.de.cmotion;
 
 import android.content.BroadcastReceiver;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -12,11 +14,12 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.WindowManager;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-import de.uni_freiburg.es.intentforwarder.IntentForwarderService;
 import es.uni_freiburg.de.cmotion.model.SensorModel;
 import es.uni_freiburg.de.cmotion.ui.DigitEditDialog;
 import es.uni_freiburg.de.cmotion.ui.RecordFloatingActionButton;
@@ -94,6 +97,7 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
 
     @Override
     protected void onPause() {
+        persistCheckedSensors();
         stopService(new Intent(this, LocalSensorService.class));
         stopService(new Intent(this, WearSensorService.class));
         unregisterReceiver(mReceiver);
@@ -120,6 +124,17 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
     protected void onDestroy() {
         super.onDestroy();
         mAutoDiscovery.close();
+    }
+
+    private void persistCheckedSensors() {
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+
+        List<SensorModel> selected = mRecyclerViewAdapter.getSelectedItems();
+        Set<String> sensors = new HashSet<>();
+        for (SensorModel model : selected)
+            sensors.add(model.getName());
+
+        pref.edit().putStringSet("checked", sensors).commit();
     }
 
     @Override
