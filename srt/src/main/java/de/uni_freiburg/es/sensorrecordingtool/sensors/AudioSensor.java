@@ -33,7 +33,6 @@ public class AudioSensor extends Sensor {
 
     @Override
     public void prepareSensor() {
-        mRecorderThread = new RecorderThread();
         setPrepared();
     }
 
@@ -55,6 +54,8 @@ public class AudioSensor extends Sensor {
 
         if (mListeners.size() == 0) {
             mRateinMus = rate_in_mus;
+            if(mRecorderThread == null)
+                mRecorderThread = new RecorderThread();
             mRecorderThread.startRecording();
         }
 
@@ -128,16 +129,16 @@ public class AudioSensor extends Sensor {
 
     class RecorderThread extends Thread {
 
-        //        private int sampleRate =  (1000 * 1000) / mRateinMus;
+        private int sampleRate =  (int) ((1000 * 1000f) / mRateinMus);
         private AudioRecord mAudioRecorder;
 
-        private int minBufSize = AudioRecord.getMinBufferSize(getAudioSampleRate(), mChannelConfig, mAudioFormat);
+        private int minBufSize = AudioRecord.getMinBufferSize(sampleRate, mChannelConfig, mAudioFormat);
 
         private boolean status = true;
 
 
         RecorderThread() {
-            mAudioRecorder = new AudioRecord(MediaRecorder.AudioSource.MIC, getAudioSampleRate(), mChannelConfig, mAudioFormat, minBufSize);
+            mAudioRecorder = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate, mChannelConfig, mAudioFormat, minBufSize);
         }
 
         @Override

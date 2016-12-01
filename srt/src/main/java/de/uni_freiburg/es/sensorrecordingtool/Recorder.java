@@ -16,7 +16,6 @@ import java.util.List;
 
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.AutoDiscovery;
-import de.uni_freiburg.es.sensorrecordingtool.sensors.AudioSensor;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.BlockSensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.NonBlockSensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorProcess;
@@ -196,7 +195,7 @@ public class Recorder extends IntentService {
                 } else if (sensors[j].contains("audio")) {
                     Log.i(TAG, "Endianess " + ByteOrder.nativeOrder());
                     fp
-                            .addAudio(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "s16le" : "s16be", AudioSensor.getAudioSampleRate(), 1) // native endian!
+                            .addAudio(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "s16le" : "s16be", rates[j], 1) // native endian!
                             .setStreamTag("name", sensors[j]);
                 } else
                     fp
