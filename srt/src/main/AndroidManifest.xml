@@ -37,6 +37,7 @@
 
 
         <service android:name=".Recorder"></service>
+        <activity android:name=".PermissionHelperActivity" />
     </application>
 
 </manifest>

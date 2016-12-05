@@ -20,10 +20,12 @@ import java.util.TimeZone;
  * Created by phil on 2/29/16.
  */
 public class RecorderCommands extends android.content.BroadcastReceiver {
+
     private static final String TAG = RecorderCommands.class.getSimpleName();
 
+
     @Override
-    public void onReceive(Context context, Intent intent) {
+    public void onReceive(final Context context, final Intent intent) {
         if (intent == null)
             return;
 
@@ -46,24 +48,38 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
             else // time was either not set or connection took longer then the wait period was // TODO add error?
                 Recorder.SEMAPHORE--;
         } else if (Recorder.RECORD_ACTION.equals(intent.getAction())) {
-
-            /** stop any recording per default, whether this is a cancel or start request */
             Recorder.stopCurrentRecording();
 
-            try {
-                Intent call = parseRecorderIntent(intent);
-                call.setClass(context, Recorder.class);
-                context.startService(call);
-            } catch (Exception e) {
-                e.printStackTrace();
+            new PermissionHelperActivity().runWithPermissions(context, new PermissionRunnable() {
+                @Override
+                public void run() {
+                    parseIntentOrFail(context, intent);
+                }
+            }, new PermissionRunnable() {
+                @Override
+                public void run() {
+                    Intent i = new Intent(RecorderStatus.ERROR_ACTION);
+                    i.putExtra(RecorderStatus.ERROR_REASON, "Following permissions not granted: " + notGrantedResults.toString());
+                    context.sendBroadcast(i);
+                }
+            });
 
-                Intent i = new Intent(RecorderStatus.ERROR_ACTION);
-                i.putExtra(RecorderStatus.ERROR_REASON, e.getMessage());
-                context.sendBroadcast(i);
-            }
         } else if (Recorder.CANCEL_ACTION.equals(intent.getAction())) {
-
             Recorder.stopCurrentRecording();
+        }
+    }
+
+    private void parseIntentOrFail(Context context, Intent intent) {
+
+        try {
+            Intent call = parseRecorderIntent(intent);
+            call.setClass(context, Recorder.class);
+            context.startService(call);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Intent i = new Intent(RecorderStatus.ERROR_ACTION);
+            i.putExtra(RecorderStatus.ERROR_REASON, e.getMessage());
+            context.sendBroadcast(i);
         }
     }
 
