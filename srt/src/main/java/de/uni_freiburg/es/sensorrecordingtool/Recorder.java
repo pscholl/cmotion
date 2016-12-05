@@ -156,14 +156,17 @@ public class Recorder extends IntentService {
             return;
         }
 
+        mIsRecording = true;
+
         isMaster = !isIntentForwarded(intent);
         Log.e("MASTER????", isMaster + "");
 
-//        if(isMaster) {
+        if (isMaster) {
 //            SEMAPHORE = mAutoDiscovery.getConnectedNodes();
-//        } else {
-        SEMAPHORE = 0; // use semaphore for steady command
-//        }
+            SEMAPHORE = 1;
+        } else {
+            SEMAPHORE = 1; // use semaphore for steady command MUST ALWAYS BE 1 fo slaves!!!!
+        }
 
         try {
             intent = RecorderCommands.parseRecorderIntent(intent);
@@ -221,16 +224,14 @@ public class Recorder extends IntentService {
 
             /** acquire a wake lock to avoid the sensor data generators to suspend */
             mWl = ((PowerManager) getSystemService(POWER_SERVICE))
-                  .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
+                    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
             mWl.acquire();
 
             /** wait for all local sensors */
-            for(boolean ready=false; !ready; ready=true)
-              for (SensorProcess process : sensorProcesses)
-                ready &= process.getSensor().isPrepared();
+            for (boolean ready = false; !ready; ready = true)
+                for (SensorProcess process : sensorProcesses)
+                    ready &= process.getSensor().isPrepared();
 
-
-            mIsRecording = true;
 
             if (isMaster) { // wait for everyone to send prepared
                 while (SEMAPHORE > 0 && mIsRecording)
@@ -240,7 +241,7 @@ public class Recorder extends IntentService {
                     status.steady(System.currentTimeMillis() + DEFAULT_STEADY_TIME);
                     Thread.sleep(DEFAULT_STEADY_TIME);
                 }
-            } else {
+            } else { // we are a slave and thus have to wait till our semaphore is counted down (=0)
                 status.ready(sensors);
                 while (SEMAPHORE > 0 && mIsRecording)
                     Thread.sleep(100); // wait till steady and our time has come ;)
@@ -253,6 +254,8 @@ public class Recorder extends IntentService {
             for (SensorProcess process : sensorProcesses)
                 process.startRecording();
 
+            long time = System.currentTimeMillis();
+
             /** now wait until the recording is stopped or a timeout has occurred, give
              * 1 seconds extra, as the sensorprocesses should stop themselves,
              * but need additional time to transport the data */
@@ -262,13 +265,16 @@ public class Recorder extends IntentService {
                  Thread.sleep(500))
                 status.recording(System.currentTimeMillis() - mRecordingSince, (long) duration * 1000 * 1000);
 
+            time = System.currentTimeMillis() - time;
+
+            Log.e(TAG, time + "ms recording stopped");
+
             /** close down the ffmpeg process and all sensorprocesses */
             onDestroy();
         } catch (Exception e) {
             e.printStackTrace();
             Log.d(TAG, "unable to start recording");
             status.error(e);
-            return;
         }
     }
 
@@ -277,32 +283,37 @@ public class Recorder extends IntentService {
     }
 
     public static void stopCurrentRecording() {
-        mIsRecording = false; SEMAPHORE = Integer.MIN_VALUE;
+        mIsRecording = false;
+        SEMAPHORE = Integer.MIN_VALUE;
     }
 
     public void onDestroy() {
-       if (sensorProcesses == null)
-           return;
+        mIsRecording = false;
 
-       /** close all streams to notify each process that we're done */
-       for (SensorProcess p : sensorProcesses)
-           p.terminate();
+        if (sensorProcesses == null)
+            return;
 
-       /** wait for ffmpeg to finish */
-       try { ffmpeg.terminate(); }
-       catch (InterruptedException e) {};
+        /** close all streams to notify each process that we're done */
+        for (SensorProcess p : sensorProcesses)
+            p.terminate();
 
-       /** release the wakelock again */
-       mWl.release();
+        /** wait for ffmpeg to finish */
+        try {
+            ffmpeg.terminate();
+        } catch (InterruptedException e) {
+        }
 
-       /** notify the system that a sensor recording is finished, stopForeground
-        * to remove the service-bound notification and display the finished one */
-       stopForeground(true);
-       status.finished(output);
+        /** release the wakelock again */
+        mWl.release();
 
-       sensorProcesses = null;
-       ffmpeg = null;
-       status = null;
-       mWl = null;
+        /** notify the system that a sensor recording is finished, stopForeground
+         * to remove the service-bound notification and display the finished one */
+        stopForeground(true);
+        status.finished(output);
+
+        sensorProcesses = null;
+        ffmpeg = null;
+        status = null;
+        mWl = null;
     }
 }

@@ -16,17 +16,19 @@ import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
 
 import org.json.JSONException;
+
 import java.util.LinkedList;
 
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
 
-/** A Service which is responsible for forwarding recording Intents to the Services running on
+/**
+ * A Service which is responsible for forwarding recording Intents to the Services running on
  * the Wear Device.
- *
+ * <p>
  * Created by phil on 2/24/16.
  */
 public class WearForwarderService extends WearableListenerService
-    implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+        implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
     private static final String WEAR_FORWARD_PATH = "/senserec_wear";
     private static final String TAG = WearForwarderService.class.getName();
     private GoogleApiClient mGoogleApiClient;
@@ -39,8 +41,8 @@ public class WearForwarderService extends WearableListenerService
          * only forward the ones that have not yet been forwarded.
          */
         if (intent == null ||
-            intent.getAction() == null ||
-            intent.getAction().contains("BOOT"))
+                intent.getAction() == null ||
+                intent.getAction().contains("BOOT"))
             return Service.START_NOT_STICKY;
 
         intent.putExtra("forwarded", true); // flag it as forwarded intent
@@ -89,7 +91,7 @@ public class WearForwarderService extends WearableListenerService
 
         if (mQ.size() <= 0) return;
 
-        Intent tofw = mQ.peekFirst();
+        Intent tofw = mQ.pollLast();
         tofw.putExtra(WearForwarder.EXTRA_DOWEARFORWARD, false);
 
         final byte[] msg = ForwardedUtils.toJson(tofw).toString().getBytes();
@@ -98,37 +100,39 @@ public class WearForwarderService extends WearableListenerService
          * define a callback for the ack of sending the message.
          */
         final ResultCallback<MessageApi.SendMessageResult> txack =
-        new ResultCallback<MessageApi.SendMessageResult>() {
-            private Intent currentmsg = mQ.peekFirst();
+                new CustomResultCallBack(tofw) {
 
-            @Override
-            public void onResult(MessageApi.SendMessageResult result) {
-                if (result.getRequestId() == MessageApi.UNKNOWN_REQUEST_ID) {
-                    Log.d(TAG, "messaging failed " + result.getStatus());
-                    return; // TODO messaging failed.
-                }
-                Log.d(TAG, "message sent " + result.getStatus());
-                mQ.remove(currentmsg); // message sent succesfully, remove from the Q
-            }
-        };
+                    @Override
+                    public void onResult(MessageApi.SendMessageResult result) {
+                        if (result.getRequestId() == MessageApi.UNKNOWN_REQUEST_ID) {
+                            Log.d(TAG, "messaging failed " + result.getStatus());
+                            mQ.add(this.currentmsg);
+                            return; // TODO messaging failed.
+                        }
+                        Log.d(TAG, "message sent " + result.getStatus());
+
+                        if(mQ.size() > 0)
+                            forwardNextIntent();
+                    }
+                };
 
         /*
          * define a callback for getting a list of all nodes currently connected:
          *  forward the intent to all connected nodes
          */
         final ResultCallback<NodeApi.GetConnectedNodesResult> tx =
-        new ResultCallback<NodeApi.GetConnectedNodesResult>() {
-            @Override
-            public void onResult(NodeApi.GetConnectedNodesResult result) {
-                for (com.google.android.gms.wearable.Node n : result.getNodes()) {
-                    PendingResult<MessageApi.SendMessageResult> msgresult =
-                    Wearable.MessageApi.sendMessage(mGoogleApiClient,
-                            n.getId(), WEAR_FORWARD_PATH, msg);
-                    Log.d(TAG, "send message to " + n.getId());
-                    msgresult.setResultCallback(txack);
-                }
-            }
-        };
+                new ResultCallback<NodeApi.GetConnectedNodesResult>() {
+                    @Override
+                    public void onResult(NodeApi.GetConnectedNodesResult result) {
+                        for (com.google.android.gms.wearable.Node n : result.getNodes()) {
+                            PendingResult<MessageApi.SendMessageResult> msgresult =
+                                    Wearable.MessageApi.sendMessage(mGoogleApiClient,
+                                            n.getId(), WEAR_FORWARD_PATH, msg);
+                            Log.d(TAG, "send message to " + n.getId());
+                            msgresult.setResultCallback(txack);
+                        }
+                    }
+                };
 
         /*
          * now finally, get all connected nodes and do something.
@@ -137,13 +141,28 @@ public class WearForwarderService extends WearableListenerService
     }
 
     @Override
-    public void onConnected(Bundle bundle) { forwardNextIntent(); }
+    public void onConnected(Bundle bundle) {
+        Log.e(TAG, "Connected");
+        forwardNextIntent();
+    }
 
     @Override
-    public void onConnectionSuspended(int i) { }
+    public void onConnectionSuspended(int i) {
+        Log.e(TAG, "Suspended, reason: " + i);
+    }
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
-        System.err.println(connectionResult.describeContents());
+        Log.e(TAG, "Connection Failed, reason: " + connectionResult.describeContents());
     }
+
+    abstract class CustomResultCallBack implements ResultCallback<MessageApi.SendMessageResult> {
+
+        protected Intent currentmsg;
+
+        CustomResultCallBack(Intent currentmsg) {
+            this.currentmsg = currentmsg;
+        }
+
+    };
 }

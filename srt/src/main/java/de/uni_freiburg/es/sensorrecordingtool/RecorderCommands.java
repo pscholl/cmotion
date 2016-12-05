@@ -73,6 +73,8 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
 
         try {
             Intent call = parseRecorderIntent(intent);
+            if(intent.hasExtra("forwarded"))
+                call.putExtra("forwarded", true);
             call.setClass(context, Recorder.class);
             context.startService(call);
         } catch (Exception e) {

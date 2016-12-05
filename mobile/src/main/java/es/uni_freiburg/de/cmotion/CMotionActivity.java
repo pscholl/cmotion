@@ -54,7 +54,6 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
         mAutoDiscovery.refresh();
 
         registerReceiver(mReceiver, INTENTFILTER);
-
     }
 
 

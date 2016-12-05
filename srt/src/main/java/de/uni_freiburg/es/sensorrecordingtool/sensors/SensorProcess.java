@@ -72,9 +72,6 @@ public abstract class SensorProcess implements SensorEventListener {
          * completly avoid the reporting latency in favor of having the correct
          * number of samples in the output. */
                 maxreportdelay_us = 0;
-
-        if (mDur - 1 > 0) // make it one second shorter
-            maxreportdelay_us = (int) (mDur - 1.) * 1000 * 1000;
         mSensor.registerListener(this, (int) (1 / mRate * 1000 * 1000), maxreportdelay_us, mFormat, mHandler);
     }
 
@@ -133,6 +130,9 @@ public abstract class SensorProcess implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
+
+
+
         if (mLastTimestamp == -1) {
             mLastTimestamp = sensorEvent.timestamp;
             return;
@@ -162,7 +162,6 @@ public abstract class SensorProcess implements SensorEventListener {
              */
             while (mDiff >= 1./mRate) {
                 mOut.write(arr);
-
                 mDiff -= 1. / mRate;
                 mElapsed += 1. / mRate;
 
