@@ -2,6 +2,7 @@ package es.uni_freiburg.de.cmotion;
 
 import android.content.BroadcastReceiver;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
@@ -28,7 +29,7 @@ import es.uni_freiburg.de.cmotion.ui.RecordFloatingActionButton;
 public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener {
 
 
-    private static final android.content.IntentFilter INTENTFILTER = new RecordingIntentFilter();
+    private static final IntentFilter INTENTFILTER = new RecordingIntentFilter();
     private RecyclerView mRecyclerView;
     private RecordFloatingActionButton mRecFab;
     private SensorAdapter mRecyclerViewAdapter;
@@ -51,6 +52,9 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipeContainer);
         mSwipeRefreshLayout.setOnRefreshListener(this);
         mAutoDiscovery.refresh();
+
+        registerReceiver(mReceiver, INTENTFILTER);
+
     }
 
 
@@ -91,8 +95,6 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
     @Override
     protected void onResume() {
         super.onResume();
-        registerReceiver(mReceiver, INTENTFILTER);
-
     }
 
     @Override
@@ -100,7 +102,6 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
         persistCheckedSensors();
         stopService(new Intent(this, LocalSensorService.class));
         stopService(new Intent(this, WearSensorService.class));
-        unregisterReceiver(mReceiver);
         super.onPause();
     }
 
@@ -123,6 +124,7 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        unregisterReceiver(mReceiver);
         mAutoDiscovery.close();
     }
 

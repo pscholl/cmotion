@@ -59,7 +59,7 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
                 @Override
                 public void run() {
                     Intent i = new Intent(RecorderStatus.ERROR_ACTION);
-                    i.putExtra(RecorderStatus.ERROR_REASON, "Following permissions not granted: " + notGrantedResults.toString());
+                    i.putExtra(RecorderStatus.ERROR_REASON, "Following permissions not granted: " + Arrays.toString(notGrantedResults));
                     context.sendBroadcast(i);
                 }
             });

@@ -1,20 +1,20 @@
 package es.uni_freiburg.de.cmotion;
 
-import android.view.View;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
 
-import de.uni_freiburg.es.sensorrecordingtool.Recorder;
 import de.uni_freiburg.es.sensorrecordingtool.RecorderStatus;
 import es.uni_freiburg.de.cmotion.ui.RecordFloatingActionButton;
 import es.uni_freiburg.de.cmotion.ui.TimedProgressBar;
@@ -41,9 +41,22 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
                 startRecordingAnimations(duration);
                 break;
             case RecorderStatus.ERROR_ACTION:
-                Snackbar
-                        .make(mCoordinatorLayout, "Error: " + intent.getStringExtra(RecorderStatus.ERROR_REASON), Snackbar.LENGTH_LONG)
-                        .show();
+                Snackbar snackbar = Snackbar
+                        .make(mCoordinatorLayout, "Error: " + intent.getStringExtra(RecorderStatus.ERROR_REASON), Snackbar.LENGTH_INDEFINITE);
+
+                /**
+                 * The following code is to "hack" the textview inside the SnackBar in order to show
+                 * more lines, this may not work for future API, since it is not an official way.
+                 * Thus null checks are mandatory.
+                 */
+                View snackbarView = snackbar.getView();
+                if (snackbar != null && snackbarView.findViewById(android.support.design.R.id.snackbar_text) != null) {
+                    TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+                    textView.setTextColor(Color.RED);
+                    textView.setMaxLines(10);
+                }
+
+                snackbar.show();
                 stopRecordingAnimations();
                 break;
             case RecorderStatus.FINISH_ACTION:
@@ -55,20 +68,24 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
                         .setAction("Open", new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
-                                Intent newIntent = new Intent(Intent.ACTION_VIEW);
-                                newIntent.setDataAndType(Uri.fromFile(new File(path)), "video/x-matroska");
-                                newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                try {
-                                    mActivity.startActivity(newIntent);
-                                } catch (ActivityNotFoundException e) {
-                                    Toast.makeText(mActivity, "No handler for this type of file.", Toast.LENGTH_LONG).show();
-                                }
+                                openFileIfPossible(path);
                             }
                         })
                         .show();
                 break;
 
             default:
+        }
+    }
+
+    private void openFileIfPossible(String path) {
+        Intent newIntent = new Intent(Intent.ACTION_VIEW);
+        newIntent.setDataAndType(Uri.fromFile(new File(path)), "video/x-matroska");
+        newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            mActivity.startActivity(newIntent);
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(mActivity, "No handler for this type of file.", Toast.LENGTH_LONG).show();
         }
     }
 
