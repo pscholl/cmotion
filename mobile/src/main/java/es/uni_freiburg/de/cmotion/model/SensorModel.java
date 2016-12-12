@@ -54,6 +54,7 @@ public class SensorModel implements Comparable<SensorModel>{
     }
 
     public void addAvailablePlatform(String availableOnPlatform) {
-        this.mAvailableOnPlatforms.add(availableOnPlatform);
+        if(!mAvailableOnPlatforms.contains(availableOnPlatform))
+            this.mAvailableOnPlatforms.add(availableOnPlatform);
     }
 }

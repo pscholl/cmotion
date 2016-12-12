@@ -28,52 +28,68 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
     public void onReceive(final Context context, final Intent intent) {
         if (intent == null)
             return;
-
         if (intent.getAction().equals(Recorder.READY_ACTION) && Recorder.isMaster) {
-            Log.e(TAG, String.format("node %s[%s] is ready", intent.getStringExtra(RecorderStatus.ANDROID_ID), intent.getStringExtra(RecorderStatus.PLATFORM)));
-            Recorder.SEMAPHORE--;
+            receivedReady(intent);
         } else if (intent.getAction().equals(Recorder.STEADY_ACTION) && !Recorder.isMaster) {
-            long startTime = (long) intent.getDoubleExtra(RecorderStatus.START_TIME, -1);
-            Log.e(TAG, "Steady, starting recording at " + startTime);
-            long diff = Math.min(startTime - System.currentTimeMillis(), Recorder.DEFAULT_STEADY_TIME); // Due to clock drift
-            Log.e(TAG, "Waiting for " + diff + "ms");
-
-            if (diff > 0)
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        Recorder.SEMAPHORE--;
-                    }
-                }, diff);
-            else // time was either not set or connection took longer then the wait period was // TODO add error?
-                Recorder.SEMAPHORE--;
+            receivedSteady(intent);
         } else if (Recorder.RECORD_ACTION.equals(intent.getAction())) {
-            Recorder.stopCurrentRecording();
-
-            new PermissionHelperActivity().runWithPermissions(context, new PermissionRunnable() {
-                @Override
-                public void run() {
-                    parseIntentOrFail(context, intent);
-                }
-            }, new PermissionRunnable() {
-                @Override
-                public void run() {
-                    Intent i = new Intent(RecorderStatus.ERROR_ACTION);
-                    i.putExtra(RecorderStatus.ERROR_REASON, "Following permissions not granted: " + Arrays.toString(notGrantedResults));
-                    context.sendBroadcast(i);
-                }
-            });
-
+            receivedRecord(context, intent);
         } else if (Recorder.CANCEL_ACTION.equals(intent.getAction())) {
             Recorder.stopCurrentRecording();
         }
+    }
+
+    private void receivedRecord(final Context context, final Intent intent) {
+        Recorder.stopCurrentRecording();
+
+        new PermissionHelperActivity().runWithPermissions(context, new PermissionRunnable() {
+            @Override
+            public void run() {
+                parseIntentOrFail(context, intent);
+            }
+        }, new PermissionRunnable() {
+            @Override
+            public void run() {
+                Intent i = new Intent(RecorderStatus.ERROR_ACTION);
+                i.putExtra(RecorderStatus.ERROR_REASON, "Following permissions not granted: " + Arrays.toString(notGrantedResults));
+                context.sendBroadcast(i);
+            }
+        });
+    }
+
+    private void receivedSteady(Intent intent) {
+        long startTime = (long) intent.getDoubleExtra(RecorderStatus.START_TIME, -1);
+        Log.e(TAG, "Steady, starting recording at " + startTime);
+
+        long correctTime = System.currentTimeMillis() + Recorder.DRIFT;
+        long diff = startTime - correctTime; // Due to clock drift
+        Log.e(TAG, "Waiting for " + diff + "ms");
+
+        if (diff > 0)
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    Recorder.SEMAPHORE.countDown();
+                }
+            }, diff);
+        else // time was either not set or connection took longer then the wait period was // TODO add error?
+            Recorder.SEMAPHORE.countDown();
+    }
+
+    private void receivedReady(Intent intent) {
+        Log.e(TAG, String.format("node %s[%s] is ready with DRIFT=%s, Semaphore at %d",
+                intent.getStringExtra(RecorderStatus.ANDROID_ID),
+                intent.getStringExtra(RecorderStatus.PLATFORM),
+                intent.getDoubleExtra(RecorderStatus.DRIFT, 0) + " ms",
+                Recorder.SEMAPHORE.getCount()));
+        Recorder.SEMAPHORE.countDown();
     }
 
     private void parseIntentOrFail(Context context, Intent intent) {
 
         try {
             Intent call = parseRecorderIntent(intent);
-            if(intent.hasExtra("forwarded"))
+            if (intent.hasExtra("forwarded"))
                 call.putExtra("forwarded", true);
             call.setClass(context, Recorder.class);
             context.startService(call);

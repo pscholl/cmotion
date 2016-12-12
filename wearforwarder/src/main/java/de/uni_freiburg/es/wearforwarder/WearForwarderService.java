@@ -111,8 +111,7 @@ public class WearForwarderService extends WearableListenerService
                         }
                         Log.d(TAG, "message sent " + result.getStatus());
 
-                        if(mQ.size() > 0)
-                            forwardNextIntent();
+
                     }
                 };
 
@@ -138,6 +137,9 @@ public class WearForwarderService extends WearableListenerService
          * now finally, get all connected nodes and do something.
          */
         Wearable.NodeApi.getConnectedNodes(mGoogleApiClient).setResultCallback(tx);
+
+        if(mQ.size() > 0)
+            forwardNextIntent();
     }
 
     @Override

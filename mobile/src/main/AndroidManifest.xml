@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="es.uni_freiburg.de.cmotion" >
+    package="es.uni_freiburg.de.cmotion">
 
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:allowBackup="true"
         android:icon="@drawable/logo"
         android:label="@string/app_name"
-        android:theme="@style/AppTheme" >
+        android:theme="@style/AppTheme">
 
         <activity
             android:name=".CMotionActivity"
-            android:label="@string/app_name" >
+            android:configChanges="orientation|keyboardHidden|screenSize|keyboard"
+            android:label="@string/app_name">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -21,16 +22,18 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".ui.PermissionDialog"/>
+        <activity
+            android:name=".ui.PermissionDialog"
+            android:configChanges="orientation|screenSize" />
 
         <service android:name=".LocalSensorService"></service>
         <service android:name=".WearSensorService"></service>
 
         <receiver android:name=".RecorderCommands">
             <intent-filter>
-                <action android:name="senserec"/>
+                <action android:name="senserec" />
                 <action android:name="senserec_showui" />
-                <action android:name="senserec_cancel"/>
+                <action android:name="senserec_cancel" />
             </intent-filter>
         </receiver>
 

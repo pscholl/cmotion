@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.Handler;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -24,11 +23,10 @@ public class AutoDiscovery {
 
     private static final String TAG = "AutoDiscovery";
     private static final long DISCOVERY_TIMEOUT = 50000;
+    private static AutoDiscovery sInstance;
     private final Context mContext;
 
     private HashMap<String, List<String>> mDiscoveredMap = new HashMap<>();
-    private Handler mTimingHandler = new Handler();
-
     private OnNodeSensorsDiscoveredListener mListener;
 
     /**
@@ -67,7 +65,13 @@ public class AutoDiscovery {
     }
 
 
-    public AutoDiscovery(Context context) {
+    public static AutoDiscovery getInstance(Context context) {
+        if(sInstance == null)
+            sInstance = new AutoDiscovery(context);
+        return sInstance;
+    }
+
+    private AutoDiscovery(Context context) {
         mContext = context;
         mContext.registerReceiver(mMasterReceiver, new IntentFilter(Recorder.DISCOVERY_RESPONSE_ACTION));
     }
@@ -111,6 +115,6 @@ public class AutoDiscovery {
     }
 
     public int getConnectedNodes() {
-        return 1; // TODO
+        return mDiscoveredMap.keySet().size();
     }
 }

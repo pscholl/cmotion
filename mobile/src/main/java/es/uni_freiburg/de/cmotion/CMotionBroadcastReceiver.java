@@ -37,8 +37,9 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         switch (intent.getAction()) {
             case RecorderStatus.STATUS_ACTION:
+                long elapsed = intent.getLongExtra(RecorderStatus.STATUS_ELAPSED, -1);
                 long duration = intent.getLongExtra(RecorderStatus.STATUS_DURATION, -1);
-                startRecordingAnimations(duration);
+                startRecordingAnimations(elapsed, duration);
                 break;
             case RecorderStatus.ERROR_ACTION:
                 Snackbar snackbar = Snackbar
@@ -89,13 +90,21 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
         }
     }
 
-    private void startRecordingAnimations(long duration) {
-        mProgressBar.startAnimation((int) duration); // TODO Long <-> INT
+    private void startRecordingAnimations(long elapsed, long duration) {
+        mRecFab.setFreeze(false);
+        if (duration < 0)
+            mProgressBar.startAnimation(-1);
+        else {
+            mProgressBar.stopAnimation();
+            mProgressBar.setMax(100);
+            mProgressBar.setProgress((int) ((elapsed / (double) duration) * mProgressBar.getMax()));
+        }
         mRecFab.setRecording(true);
     }
 
     private void stopRecordingAnimations() {
         mProgressBar.stopAnimation();
+        mRecFab.setFreeze(false);
         mRecFab.setRecording(false);
     }
 

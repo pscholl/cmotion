@@ -57,6 +57,7 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
     }
 
 
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -108,8 +109,11 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
     public void onFabClick(View view) {
         if (mRecFab.isRecording())
             SRTHelper.sendCancelIntent(this);
-        else
+        else {
+            persistCheckedSensors();
+            mRecFab.setFreeze(true);
             SRTHelper.sendRecordIntent(this, mRecyclerViewAdapter.getSelectedItems());
+        }
     }
 
     public void dbeStart(View view) {

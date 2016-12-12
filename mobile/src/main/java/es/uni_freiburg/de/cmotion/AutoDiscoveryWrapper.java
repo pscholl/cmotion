@@ -33,7 +33,7 @@ public class AutoDiscoveryWrapper {
 
         mAdapter = adapter;
         mContext = context;
-        mAutoDiscovery = new AutoDiscovery(context);
+        mAutoDiscovery = AutoDiscovery.getInstance(context);
         mAutoDiscovery.setListener(mOnNodeSensorsDiscoveredListener);
 //        mAutoDiscovery.discover();
     }

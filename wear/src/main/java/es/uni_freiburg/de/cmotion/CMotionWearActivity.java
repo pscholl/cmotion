@@ -1,8 +1,6 @@
 package es.uni_freiburg.de.cmotion;
 
 import android.app.Activity;
-import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -51,6 +49,7 @@ public class CMotionWearActivity extends Activity implements GoogleApiClient.Con
         mMediumText = (TextView) findViewById(R.id.medtext);
         mStarttime = System.currentTimeMillis();
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
     }
 
     @Override

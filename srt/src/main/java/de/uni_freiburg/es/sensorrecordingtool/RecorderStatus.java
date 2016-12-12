@@ -1,8 +1,8 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.app.PendingIntent;
 import android.os.Build;
 import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
@@ -35,6 +35,7 @@ public class RecorderStatus {
     public static final String ANDROID_ID = "recording_aid";
     public static final String PLATFORM = "recording_platform";
     public static final String START_TIME = "recording_starttime";
+    public static final String DRIFT = "recording_drift";
 
     /* store the duration to handle the progressbar */
     public final int NOTIFICATION_ID = 123;
@@ -58,7 +59,7 @@ public class RecorderStatus {
                 inputs.size());
 
         PendingIntent pi = PendingIntent.getBroadcast(context, 0,
-                           new Intent(Recorder.SHOWUI_ACTION), 0);
+                new Intent(Recorder.SHOWUI_ACTION), 0);
 
         mNotification = new NotificationCompat.Builder(c)
                 .setContentTitle(c.getString(R.string.notification_title))
@@ -69,6 +70,12 @@ public class RecorderStatus {
                 .setContentIntent(pi)
                 .setOngoing(true)
         ;
+
+
+        Intent intent = new Intent();
+        intent.setAction("senserec_cancel");
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(c, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        mNotification.addAction(R.drawable.ic_stop_white_24dp, c.getString(android.R.string.cancel), pendingIntent);
 
         if (!isRunningOnGlass())
             mService.notify(NOTIFICATION_ID, mNotification.build());
@@ -85,6 +92,8 @@ public class RecorderStatus {
         Intent i = new Intent(FINISH_ACTION);
         i.putExtra(FINISH_PATH, output);
         c.sendBroadcast(i);
+
+        mNotification.mActions.clear(); // remove cancel button
 
         mNotification
                 .setContentTitle(c.getString(R.string.done_title))
@@ -112,6 +121,7 @@ public class RecorderStatus {
         if (mDuration <= 0)
             return;
 
+
         mNotification
                 .setProgress(mDuration, (int) elapsed, false)
         ;
@@ -130,6 +140,8 @@ public class RecorderStatus {
         Intent i = new Intent(ERROR_ACTION);
         i.putExtra(ERROR_REASON, exception.getMessage());
         c.sendBroadcast(i);
+
+        mNotification.mActions.clear(); // remove cancel button
 
         mNotification
                 .setContentTitle(c.getString(R.string.done_with_error_title))
@@ -154,6 +166,7 @@ public class RecorderStatus {
         i.putExtra(ANDROID_ID, Settings.Secure.getString(c.getContentResolver(),
                 Settings.Secure.ANDROID_ID));
         i.putExtra(PLATFORM, Build.BOARD);
+        i.putExtra(DRIFT, Recorder.DRIFT);
         c.sendBroadcast(i);
         Log.e(TAG, "sending ready");
     }
@@ -165,7 +178,7 @@ public class RecorderStatus {
      */
     public void steady(long startTime) {
         Intent i = new Intent(Recorder.STEADY_ACTION);
-        i.putExtra(START_TIME, startTime*1d);
+        i.putExtra(START_TIME, startTime * 1d);
         c.sendBroadcast(i);
         Log.e(TAG, "sending steady");
     }

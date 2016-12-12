@@ -13,9 +13,12 @@ import java.io.OutputStream;
 import java.nio.ByteOrder;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.AutoDiscovery;
+import de.uni_freiburg.es.sensorrecordingtool.clock.TimeSync;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.BlockSensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.NonBlockSensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorProcess;
@@ -107,7 +110,7 @@ public class Recorder extends IntentService {
 
     public static final long DEFAULT_STEADY_TIME = 3000;
 
-    public static int SEMAPHORE = 0;
+    public static CountDownLatch SEMAPHORE = new CountDownLatch(1);
     public static boolean isMaster;
 
     private AutoDiscovery mAutoDiscovery;
@@ -119,6 +122,7 @@ public class Recorder extends IntentService {
     private RecorderStatus status;
     private FFMpegProcess ffmpeg;
     private String output;
+    public static long DRIFT;
 
     public Recorder() {
         super(Recorder.class.getName());
@@ -159,16 +163,30 @@ public class Recorder extends IntentService {
         mIsRecording = true;
 
         isMaster = !isIntentForwarded(intent);
-        Log.e("MASTER????", isMaster + "");
+        Log.e(TAG, "We are " + (isMaster ? "Master" : "Slave"));
 
-        if (isMaster) {
-//            SEMAPHORE = mAutoDiscovery.getConnectedNodes();
-            SEMAPHORE = 1;
-        } else {
-            SEMAPHORE = 1; // use semaphore for steady command MUST ALWAYS BE 1 fo slaves!!!!
-        }
 
         try {
+
+            if (isMaster) {
+                SEMAPHORE = new CountDownLatch(1);
+//                SEMAPHORE = new CountDownLatch(Integer.MAX_VALUE);
+//                mAutoDiscovery = AutoDiscovery.getInstance(this);
+//                if (mAutoDiscovery.getConnectedNodes() <= 1 || true) {
+//                    Log.e(TAG, "Running discovery to find nodes");
+//                    mAutoDiscovery.discover();
+//                    Thread.sleep(5000);
+//                    Log.e(TAG, String.format("We have at least %s nodes (including us)", mAutoDiscovery.getConnectedNodes()));
+//                } // TODO this discovery may cause ready intents to be not considered
+//
+//                int readyNodes = Integer.MAX_VALUE - (int) (SEMAPHORE.getCount());
+//                if (readyNodes > 0)
+//                    Log.e(TAG, readyNodes + " nodes are already ready");
+//                SEMAPHORE = new CountDownLatch(Math.max(0, mAutoDiscovery.getConnectedNodes() - readyNodes - 1)); // do not init Latch with negative number
+//                Log.e(TAG, "Latch at " + SEMAPHORE.getCount());
+
+            } else
+                SEMAPHORE = new CountDownLatch(1);
             intent = RecorderCommands.parseRecorderIntent(intent);
 
             output = intent.getStringExtra(RECORDER_OUTPUT);
@@ -232,19 +250,19 @@ public class Recorder extends IntentService {
                 for (SensorProcess process : sensorProcesses)
                     ready &= process.getSensor().isPrepared();
 
+            DRIFT = TimeSync.getInstance().getDrift(); // TODO fetch error
+            Log.e(TAG, String.format("Clock drift: %s ms - valid computation: %s", DRIFT, TimeSync.getInstance().isDriftCalculated()));
 
             if (isMaster) { // wait for everyone to send prepared
-                while (SEMAPHORE > 0 && mIsRecording)
-                    Thread.sleep(500); // wait till everyone's ready
-                Log.e(TAG, "all nodes are ready");
-                if (mIsRecording) {
-                    status.steady(System.currentTimeMillis() + DEFAULT_STEADY_TIME);
-                    Thread.sleep(DEFAULT_STEADY_TIME);
-                }
+                SEMAPHORE.await(); // Wait but no longer then 10 seconds
+                Log.e(TAG, "all nodes are ready - sending steady");
+                long correctTime = System.currentTimeMillis() + Recorder.DRIFT;
+                status.steady(correctTime + DEFAULT_STEADY_TIME);
+                new CountDownLatch(1).await(DEFAULT_STEADY_TIME, TimeUnit.MILLISECONDS);
+
             } else { // we are a slave and thus have to wait till our semaphore is counted down (=0)
                 status.ready(sensors);
-                while (SEMAPHORE > 0 && mIsRecording)
-                    Thread.sleep(100); // wait till steady and our time has come ;)
+                SEMAPHORE.await();
             }
 
             Log.e(TAG, "RECORDING");
@@ -263,19 +281,22 @@ public class Recorder extends IntentService {
                  mIsRecording && (duration <= 0 ||
                          System.currentTimeMillis() - mRecordingSince < (long) duration * 1000 + 1000);
                  Thread.sleep(500))
-                status.recording(System.currentTimeMillis() - mRecordingSince, (long) duration * 1000 * 1000);
+                status.recording((System.currentTimeMillis() - mRecordingSince) * 1000, (long) duration * 1000 * 1000);
 
             time = System.currentTimeMillis() - time;
 
             Log.e(TAG, time + "ms recording stopped");
 
-            /** close down the ffmpeg process and all sensorprocesses */
-            onDestroy();
+        } catch (InterruptedException ie) {
+            Log.e(TAG, "recording aborted during semaphore phase");
         } catch (Exception e) {
             e.printStackTrace();
             Log.d(TAG, "unable to start recording");
             status.error(e);
         }
+        /** close down the ffmpeg process and all sensorprocesses */
+        onDestroy();
+
     }
 
     private boolean isIntentForwarded(Intent intent) {
@@ -284,7 +305,15 @@ public class Recorder extends IntentService {
 
     public static void stopCurrentRecording() {
         mIsRecording = false;
-        SEMAPHORE = Integer.MIN_VALUE;
+        Log.e(TAG, "interrupting ... ");
+
+        for (Thread t : Thread.getAllStackTraces().keySet()) {
+            if (t.getName().contains(Recorder.class.getCanonicalName())) {
+                t.interrupt();
+                Log.e(TAG, t.getName() +" interrupted!");
+                return;
+            }
+        }
     }
 
     public void onDestroy() {

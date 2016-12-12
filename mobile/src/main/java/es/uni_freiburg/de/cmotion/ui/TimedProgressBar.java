@@ -12,6 +12,8 @@ import android.widget.ProgressBar;
  */
 public class TimedProgressBar extends ProgressBar {
 
+    private boolean isAnimating = false;
+
     private static final long TIMESTEP = 100; // time in ms
     private Handler animateHandler = new Handler();
 
@@ -42,6 +44,7 @@ public class TimedProgressBar extends ProgressBar {
      * Stops the animation and resets the Progressbar. Also renders it invisible.
      */
     public void stopAnimation() {
+        isAnimating = false;
         animateHandler.removeCallbacksAndMessages(null);
         setIndeterminate(false);
         setProgress(0);
@@ -54,6 +57,8 @@ public class TimedProgressBar extends ProgressBar {
      * @param seconds
      */
     public void startAnimation(int seconds) {
+
+        isAnimating = true;
 
         if (seconds == -1) {
             setIndeterminate(true);
@@ -82,5 +87,9 @@ public class TimedProgressBar extends ProgressBar {
             }
         }, TIMESTEP);
 
+    }
+
+    public boolean isAnimating() {
+        return isAnimating;
     }
 }
