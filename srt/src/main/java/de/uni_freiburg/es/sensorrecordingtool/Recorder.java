@@ -220,20 +220,6 @@ public class Recorder extends InfiniteIntentService {
                 process.startRecording();
             mRecordingSince = System.currentTimeMillis();
 
-
-//            /** now wait until the recording is stopped or a timeout has occurred, give
-//             //             * 1 seconds extra, as the sensorprocesses should stop themselves,
-//             //             * but need additional time to transport the data */
-//            for (mRecordingSince = System.currentTimeMillis();
-//                 mIsRecording && (duration <= 0 ||
-//                         System.currentTimeMillis() - mRecordingSince < (long) duration * 1000 + 1000);
-//                 Thread.sleep(500))
-//                status.recording((System.currentTimeMillis() - mRecordingSince) * 1000, (long) duration * 1000 * 1000);
-//
-//            mRecordingSince = System.currentTimeMillis() - mRecordingSince;
-//
-//            Log.e(TAG, mRecordingSince + "ms recording stopped");
-
             waitUntilEnd();
 
         } catch (InterruptedException ie) {
