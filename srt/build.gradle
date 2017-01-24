@@ -1,13 +1,12 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 'android-23'
-    buildToolsVersion '25'
+    compileSdkVersion 'android-25'
+    buildToolsVersion project.properties.BuildToolsVersion
 
     defaultConfig {
-        compileSdkVersion 23
         minSdkVersion 19
-        targetSdkVersion 23
+        targetSdkVersion 25
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -31,9 +30,9 @@ dependencies {
     androidTestCompile 'com.android.support.test:runner:0.5+'
     androidTestCompile 'com.android.support.test:rules:0.5+'
     compile project(path: ':intentforwarder')
-    compile 'com.android.support:support-v4:23+'
-    compile 'com.android.support:appcompat-v7:23+'
     compile 'commons-net:commons-net:3.3'
-    compile 'com.android.support:support-annotations:25.0.0'
     compile 'org.jetbrains:annotations-java5:15.0'
+    compile 'com.android.support:support-annotations:25+'
+    compile 'com.android.support:support-v4:25+'
+    compile 'com.android.support:appcompat-v7:25+'
 }
