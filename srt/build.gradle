@@ -34,4 +34,6 @@ dependencies {
     compile 'com.android.support:support-v4:23+'
     compile 'com.android.support:appcompat-v7:23+'
     compile 'commons-net:commons-net:3.3'
+    compile 'com.android.support:support-annotations:25.0.0'
+    compile 'org.jetbrains:annotations-java5:15.0'
 }

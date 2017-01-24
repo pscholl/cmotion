@@ -14,6 +14,8 @@
                 <action android:name="senserec_steady"/>
                 <action android:name="senserec_discovery"/>
                 <action android:name="senserec_discovery_response"/>
+                <action android:name="recorder_status"/>
+                <action android:name="recorder_ask_status"/>
             </intent-filter>
         </receiver>
 

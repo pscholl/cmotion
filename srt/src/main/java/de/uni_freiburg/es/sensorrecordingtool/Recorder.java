@@ -1,6 +1,5 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
-import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
@@ -19,8 +18,10 @@ import java.util.concurrent.TimeUnit;
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.AutoDiscovery;
 import de.uni_freiburg.es.sensorrecordingtool.clock.TimeSync;
+import de.uni_freiburg.es.sensorrecordingtool.sensors.AudioSensor;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.BlockSensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.NonBlockSensorProcess;
+import de.uni_freiburg.es.sensorrecordingtool.sensors.Sensor;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.VideoSensor;
 
@@ -67,7 +68,7 @@ import de.uni_freiburg.es.sensorrecordingtool.sensors.VideoSensor;
  * <p>
  * Created by phil on 2/22/16.
  */
-public class Recorder extends IntentService {
+public class Recorder extends InfiniteIntentService {
     static final String TAG = Recorder.class.getName();
 
     /* designate the sensor you want to record, can either be a single String or a list thereof,
@@ -123,6 +124,7 @@ public class Recorder extends IntentService {
     private FFMpegProcess ffmpeg;
     private String output;
     public static long DRIFT;
+    private double duration;
 
     public Recorder() {
         super(Recorder.class.getName());
@@ -165,67 +167,21 @@ public class Recorder extends IntentService {
         isMaster = !isIntentForwarded(intent);
         Log.e(TAG, "We are " + (isMaster ? "Master" : "Slave"));
 
+        boolean error = false;
 
         try {
 
-            if (isMaster) {
-                SEMAPHORE = new CountDownLatch(1);
-//                SEMAPHORE = new CountDownLatch(Integer.MAX_VALUE);
-//                mAutoDiscovery = AutoDiscovery.getInstance(this);
-//                if (mAutoDiscovery.getConnectedNodes() <= 1 || true) {
-//                    Log.e(TAG, "Running discovery to find nodes");
-//                    mAutoDiscovery.discover();
-//                    Thread.sleep(5000);
-//                    Log.e(TAG, String.format("We have at least %s nodes (including us)", mAutoDiscovery.getConnectedNodes()));
-//                } // TODO this discovery may cause ready intents to be not considered
-//
-//                int readyNodes = Integer.MAX_VALUE - (int) (SEMAPHORE.getCount());
-//                if (readyNodes > 0)
-//                    Log.e(TAG, readyNodes + " nodes are already ready");
-//                SEMAPHORE = new CountDownLatch(Math.max(0, mAutoDiscovery.getConnectedNodes() - readyNodes - 1)); // do not init Latch with negative number
-//                Log.e(TAG, "Latch at " + SEMAPHORE.getCount());
-
-            } else
-                SEMAPHORE = new CountDownLatch(1);
-            intent = RecorderCommands.parseRecorderIntent(intent);
-
+            intent = RecorderCommands.parseRecorderIntent(this, intent);
             output = intent.getStringExtra(RECORDER_OUTPUT);
             String[] sensors = intent.getStringArrayExtra(RECORDER_INPUT);
             String[] formats = intent.getStringArrayExtra(RECORDER_FORMAT);
             double[] rates = intent.getDoubleArrayExtra(RECORDER_RATE);
-            final double duration = intent.getDoubleExtra(RECORDER_DURATION, -1);
+            duration = intent.getDoubleExtra(RECORDER_DURATION, -1);
 
-            /** create an ffmpeg process that will demux all sensor recordings into
-             * a single file on one time axis. */
-            FFMpegProcess.Builder fp = new FFMpegProcess.Builder();
-            fp.setOutput(output, "matroska")
-                    .setCodec("a", "wavpack")
-                    .setCodec("v", "libx264")
-                    .addOutputArgument("-preset", "ultrafast")
-                    .setLoglevel("debug");
+            initSynchronization(isMaster);
 
-            /** create a SensorProcess for each input and wire it to ffmpeg
-             * accordingly */
-            for (int j = 0; j < sensors.length; j++) {
-                if (SensorProcess.getMatchingSensor(this, sensors[j]) instanceof VideoSensor) {
-                    VideoSensor.CameraSize size = VideoSensor.getCameraSize(formats[j]);
-
-                    fp
-                            .addVideo(size.width, size.height, rates[j], "rawvideo", "nv21")
-                            .setStreamTag("name", "Android Default Cam");
-                } else if (sensors[j].contains("audio")) {
-                    Log.i(TAG, "Endianess " + ByteOrder.nativeOrder());
-                    fp
-                            .addAudio(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "s16le" : "s16be", rates[j], 1) // native endian!
-                            .setStreamTag("name", sensors[j]);
-                } else
-                    fp
-                            .addAudio("f32be", rates[j], SensorProcess.getSampleSize(this, sensors[j]))
-                            .setStreamTag("name", sensors[j]);
-            }
-
+            ffmpeg = buildFFMPEG(this, sensors, formats, rates);
             sensorProcesses = new LinkedList<>();
-            ffmpeg = fp.build(this);
 
             /** create sensorprocess for each input and wire it to the ffmpeg process */
             for (int j = 0; j < sensors.length; j++)
@@ -246,24 +202,15 @@ public class Recorder extends IntentService {
             mWl.acquire();
 
             /** wait for all local sensors */
-            for (boolean ready = false; !ready; ready = true)
+            for (boolean ready = false; !ready; ready = true) {
                 for (SensorProcess process : sensorProcesses)
                     ready &= process.getSensor().isPrepared();
+            }
 
             DRIFT = TimeSync.getInstance().getDrift(); // TODO fetch error
             Log.e(TAG, String.format("Clock drift: %s ms - valid computation: %s", DRIFT, TimeSync.getInstance().isDriftCalculated()));
 
-            if (isMaster) { // wait for everyone to send prepared
-                SEMAPHORE.await(); // Wait but no longer then 10 seconds
-                Log.e(TAG, "all nodes are ready - sending steady");
-                long correctTime = System.currentTimeMillis() + Recorder.DRIFT;
-                status.steady(correctTime + DEFAULT_STEADY_TIME);
-                new CountDownLatch(1).await(DEFAULT_STEADY_TIME, TimeUnit.MILLISECONDS);
-
-            } else { // we are a slave and thus have to wait till our semaphore is counted down (=0)
-                status.ready(sensors);
-                SEMAPHORE.await();
-            }
+            readySteady(isMaster, sensors, DRIFT, TimeSync.getInstance().isDriftCalculated());
 
             Log.e(TAG, "RECORDING");
 
@@ -271,32 +218,126 @@ public class Recorder extends IntentService {
 
             for (SensorProcess process : sensorProcesses)
                 process.startRecording();
+            mRecordingSince = System.currentTimeMillis();
 
-            long time = System.currentTimeMillis();
 
-            /** now wait until the recording is stopped or a timeout has occurred, give
-             * 1 seconds extra, as the sensorprocesses should stop themselves,
-             * but need additional time to transport the data */
-            for (mRecordingSince = System.currentTimeMillis();
-                 mIsRecording && (duration <= 0 ||
-                         System.currentTimeMillis() - mRecordingSince < (long) duration * 1000 + 1000);
-                 Thread.sleep(500))
-                status.recording((System.currentTimeMillis() - mRecordingSince) * 1000, (long) duration * 1000 * 1000);
+//            /** now wait until the recording is stopped or a timeout has occurred, give
+//             //             * 1 seconds extra, as the sensorprocesses should stop themselves,
+//             //             * but need additional time to transport the data */
+//            for (mRecordingSince = System.currentTimeMillis();
+//                 mIsRecording && (duration <= 0 ||
+//                         System.currentTimeMillis() - mRecordingSince < (long) duration * 1000 + 1000);
+//                 Thread.sleep(500))
+//                status.recording((System.currentTimeMillis() - mRecordingSince) * 1000, (long) duration * 1000 * 1000);
+//
+//            mRecordingSince = System.currentTimeMillis() - mRecordingSince;
+//
+//            Log.e(TAG, mRecordingSince + "ms recording stopped");
 
-            time = System.currentTimeMillis() - time;
-
-            Log.e(TAG, time + "ms recording stopped");
+            waitUntilEnd();
 
         } catch (InterruptedException ie) {
+            error = true;
             Log.e(TAG, "recording aborted during semaphore phase");
         } catch (Exception e) {
+            error = true;
             e.printStackTrace();
             Log.d(TAG, "unable to start recording");
-            status.error(e);
+            if(status != null)
+                status.error(e);
         }
+        if (error)
         /** close down the ffmpeg process and all sensorprocesses */
-        onDestroy();
+            stopSelf();
 
+
+    }
+
+    private Handler handler = new Handler();
+
+    private void waitUntilEnd() {
+        if (mIsRecording && (duration <= 0 ||
+                System.currentTimeMillis() - mRecordingSince < (long) duration * 1000 + 1000)) {
+            status.recording((System.currentTimeMillis() - mRecordingSince) * 1000, (long) duration * 1000 * 1000);
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    waitUntilEnd();
+                }
+            }, 500);
+        } else
+            stopSelf();
+
+    }
+
+    private void readySteady(boolean isMaster, String[] sensors, long drift, boolean driftSet) throws InterruptedException {
+        status.ready(sensors, drift, driftSet);
+        SEMAPHORE.await();
+
+        if (isMaster) { // wait for everyone to send prepared
+            Log.e(TAG, "all nodes are ready - sending steady");
+            long correctTime = System.currentTimeMillis() + Recorder.DRIFT;
+            status.steady(correctTime + DEFAULT_STEADY_TIME);
+            new CountDownLatch(1).await(DEFAULT_STEADY_TIME, TimeUnit.MILLISECONDS);
+
+        }
+    }
+
+    private void initSynchronization(boolean isMaster) throws InterruptedException {
+        if (isMaster) {
+                SEMAPHORE = new CountDownLatch(Integer.MAX_VALUE);
+                mAutoDiscovery = AutoDiscovery.getInstance(this);
+                if (mAutoDiscovery.getConnectedNodes() <= 1 || true) {
+                    Log.e(TAG, "Running discovery to find nodes");
+                    mAutoDiscovery.discover();
+                    Thread.sleep(5000);
+                    Log.e(TAG, String.format("We have at least %s nodes (including us)", mAutoDiscovery.getConnectedNodes()));
+                }
+
+                int readyNodes = Integer.MAX_VALUE - (int) (SEMAPHORE.getCount());
+                if (readyNodes > 0)
+                    Log.e(TAG, readyNodes + " nodes are already ready");
+                SEMAPHORE = new CountDownLatch(Math.max(0, mAutoDiscovery.getConnectedNodes() - readyNodes)); // do not init Latch with negative number
+                Log.e(TAG, "Latch at " + SEMAPHORE.getCount());
+
+        } else
+            SEMAPHORE = new CountDownLatch(1);
+    }
+
+    private FFMpegProcess buildFFMPEG(Context context, String[] sensors, String[] formats, double[] rates) throws Exception {
+        /** create an ffmpeg process that will demux all sensor recordings into
+         * a single file on one time axis. */
+        FFMpegProcess.Builder fp = new FFMpegProcess.Builder();
+        fp.setOutput(output, "matroska")
+                .setCodec("a", "wavpack")
+                .setCodec("v", "libx264")
+                .addOutputArgument("-preset", "ultrafast")
+                .setLoglevel("debug");
+
+        /** create a SensorProcess for each input and wire it to ffmpeg
+         * accordingly */
+        for (int j = 0; j < sensors.length; j++) {
+
+            Sensor matched = SensorProcess.getMatchingSensor(this, sensors[j]);
+
+            if (matched instanceof VideoSensor) {
+                VideoSensor.CameraSize size = VideoSensor.getCameraSize(formats[j]);
+
+                fp
+                        .addVideo(size.width, size.height, rates[j], "rawvideo", "nv21")
+                        .setStreamTag("name", "Android Default Cam");
+            } else if (matched instanceof AudioSensor) {
+                Log.i(TAG, "Endianess " + ByteOrder.nativeOrder());
+                fp
+                        .addAudio(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "s16le" : "s16be", rates[j], ((AudioSensor) matched).getChannels()) // native endian!
+                        .setStreamTag("name", sensors[j]);
+            } else
+                fp
+                        .addAudio("f32be", rates[j], SensorProcess.getSampleSize(this, sensors[j]))
+                        .setStreamTag("name", sensors[j]);
+        }
+
+        return fp.build(context);
     }
 
     private boolean isIntentForwarded(Intent intent) {
@@ -310,12 +351,12 @@ public class Recorder extends IntentService {
         for (Thread t : Thread.getAllStackTraces().keySet()) {
             if (t.getName().contains(Recorder.class.getCanonicalName())) {
                 t.interrupt();
-                Log.e(TAG, t.getName() +" interrupted!");
-                return;
+                Log.e(TAG, t.getName() + " interrupted!");
             }
         }
     }
 
+    @Override
     public void onDestroy() {
         mIsRecording = false;
 

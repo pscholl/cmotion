@@ -17,23 +17,27 @@ import com.google.android.gms.location.LocationServices;
  */
 public class LocationSensor extends Sensor implements GoogleApiClient.ConnectionCallbacks, LocationListener {
 
-    protected final GoogleApiClient mGoogleApiClient;
+    protected GoogleApiClient mGoogleApiClient;
     protected Location mLastLocation = new Location("empty");
     private boolean mConnected = false;
+    private Handler handler;
 
     public LocationSensor(Context c) {
         super(c, 4);
-        mGoogleApiClient = new GoogleApiClient.Builder(c)
-                .addConnectionCallbacks(this)
-                .addApi(LocationServices.API)
-                .build();
         mLastLocation.setLatitude(-1);
         mLastLocation.setLongitude(-1);
     }
 
     @Override
     public void prepareSensor() {
+
+        mGoogleApiClient = new GoogleApiClient.Builder(mContext)
+                .addConnectionCallbacks(LocationSensor.this)
+                .addApi(LocationServices.API)
+                .build();
         mGoogleApiClient.connect();
+
+
     }
 
     @Override
@@ -61,7 +65,7 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
 
     @Override
     public String getStringType() {
-        return "android.hardware.sensor.Location";
+        return "android.hardware.sensor.location";
     }
 
     @Override
@@ -78,6 +82,7 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     @Override
     public void registerListener(SensorEventListener l, int rate, int delay, String format, Handler h) {
         super.registerListener(l, rate, delay, format, h);
+        this.handler = h;
 
         //if (!PermissionDialog.location(mContext))
         //    return;
@@ -103,7 +108,7 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
         req.setFastestInterval(min_rate);
         req.setMaxWaitTime(min_delay);
 
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, req, this);
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, req, this, handler.getLooper());
     }
 
     @Override
@@ -111,8 +116,8 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
         Location l = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
         mConnected = true;
         setPrepared();
-        onNewListener();
-        if (l != null) onLocationChanged(l);
+//        onNewListener();
+//        if (l != null) onLocationChanged(l);
     }
 
     @Override
@@ -134,7 +139,6 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
         mEvent.values[1] = (float) mLastLocation.getLongitude();
         mEvent.values[2] = (float) mLastLocation.getAltitude();
         mEvent.values[3] = (float) mLastLocation.getAccuracy();
-
         notifyListeners();
     }
 }

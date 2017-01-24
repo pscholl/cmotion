@@ -1,5 +1,7 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
+import android.util.Log;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -59,11 +61,12 @@ public class EventualSocketOutputStream extends OutputStream {
             mSock.connect(new InetSocketAddress("localhost", mPort), 50);
             mWasConnected = true;
             buf = ((ByteArrayOutputStream) mOutS).toByteArray();
+
             mOutS = mSock.getOutputStream();
             mOutS.write(buf);
-            //System.err.printf("written %d bytes on %d\n", buf.length, mPort);
+            Log.e("buffer",String.format("written %d bytes on %d\n", buf.length, mPort));
         } catch (Exception e) {
-          //System.err.printf("unable to write on %d\n", mPort);
+          System.err.printf("unable to write on %d\n", mPort);
           mSock = null;
         }
     }

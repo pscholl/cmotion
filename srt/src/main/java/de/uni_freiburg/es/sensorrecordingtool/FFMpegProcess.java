@@ -69,6 +69,7 @@ public class FFMpegProcess {
 
 
     protected FFMpegProcess(ProcessBuilder process) throws IOException {
+
         boolean isinputarg = false;
         LinkedList<String> newargs;
 
@@ -98,6 +99,7 @@ public class FFMpegProcess {
         verboseMonitor.executeOnExecutor(THREAD_POOL_EXECUTOR, p.getErrorStream());
         exitMonitor.executeOnExecutor(THREAD_POOL_EXECUTOR, p);
     }
+
 
     public int getPort(int j) {
         return ports.get(j);
@@ -298,6 +300,8 @@ public class FFMpegProcess {
         public FFMpegProcess build(Context c) throws IOException {
             LinkedList<String> cmdline = new LinkedList<String>();
             File path = new File(new File(c.getFilesDir().getParentFile(), "lib"), "libffmpeg.so");
+
+            Log.e("PATH", path.toString());
 
             for (int i=0; i<numinputs; i++) {
                 outputopts.add("-map");

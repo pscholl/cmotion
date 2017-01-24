@@ -1,10 +1,13 @@
-package de.uni_freiburg.es.sensorrecordingtool;
+package de.uni_freiburg.es.sensorrecordingtool.permissions;
 
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -19,10 +22,12 @@ import java.util.ArrayList;
  */
 public class PermissionHelperActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
 
-    private static final int PERMISSION_REQUEST = 11;
+    private static final int PERMISSION_REQUEST = 11; // request code must be in the range of 0.. 65535
     private static final String TAG = PermissionHelperActivity.class.getSimpleName();
     private static PermissionRunnable permissionsGrantedRunnable, notGrantedRunnable;
 
+    ArrayList<String> grantedList = new ArrayList<>();
+    ArrayList<String> notGrantedList = new ArrayList<>();
 
     /**
      * Request permissions, will launch a new Activity (and Task) if one or more Permissions are not granted.
@@ -61,11 +66,6 @@ public class PermissionHelperActivity extends AppCompatActivity implements Activ
         if (requestCode != PERMISSION_REQUEST)
             return;
 
-        finish(); // Kill our useless activity
-
-        ArrayList<String> grantedList = new ArrayList<>();
-        ArrayList<String> notGrantedList = new ArrayList<>();
-
         for (int i = 0; i < permissions.length; i++) {
             String p = permissions[i];
             int resu = grantResults[i];
@@ -75,13 +75,44 @@ public class PermissionHelperActivity extends AppCompatActivity implements Activ
             } else grantedList.add(p);
         }
 
+        if(!overlay(this))
+            askForOverlay(this);
+        else end();
+
+    }
+
+    @Override
+    public void onBackPressed() {
+        // do nothing
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode,  Intent data) {
+        /** check if received result code
+         is equal our requested code for draw permission  */
+        if (requestCode == PERMISSION_REQUEST) {
+            (!overlay(this) ? notGrantedList : grantedList).add("android.permission.SYSTEM_ALERT_WINDOW");
+            end();
+        }
+    }
+
+    private void end() {
+        finish(); // Kill our useless activity
         permissionsGrantedRunnable.setResults(grantedList.toArray(new String[grantedList.size()]),
                 notGrantedList.toArray(new String[notGrantedList.size()]));
         notGrantedRunnable.setResults(grantedList.toArray(new String[grantedList.size()]),
                 notGrantedList.toArray(new String[notGrantedList.size()]));
-
         (notGrantedList.size() == 0 ? permissionsGrantedRunnable : notGrantedRunnable).run();
     }
+
+    private void askForOverlay(Context c) {
+        /** if not construct intent to request permission */
+        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:" + getPackageName()));
+        /** request permission via start activity for result */
+        startActivityForResult(intent, PERMISSION_REQUEST);
+    }
+
 
     public static boolean externalStorage(Context c) {
         return ContextCompat.checkSelfPermission(c, Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -103,8 +134,26 @@ public class PermissionHelperActivity extends AppCompatActivity implements Activ
                 == PackageManager.PERMISSION_GRANTED;
     }
 
+    /**
+     * Systemoverlay permissions are auto granted on SDK < 23 but auto denied on higher SDKs.
+     *
+     * @param c
+     * @return
+     */
+    public static boolean overlay(Context c) {
+        if (Build.VERSION.SDK_INT < 23)
+            return true;
+        return overlaySDK23(c);
+    }
+
+    @android.support.annotation.RequiresApi(api = Build.VERSION_CODES.M)
+    private static boolean overlaySDK23(Context c) {
+        return Settings.canDrawOverlays(c);
+    }
+
+
     public static boolean needToAskForPermission(Context context) {
-        return !externalStorage(context) || !location(context) || !camera(context) || !audio(context);
+        return !externalStorage(context) || !location(context) || !camera(context) || !audio(context) || !overlay(context);
     }
 
 }

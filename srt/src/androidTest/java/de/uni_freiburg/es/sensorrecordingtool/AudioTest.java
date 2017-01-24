@@ -40,7 +40,7 @@ public class AudioTest extends BroadcastingTest {
     public void setup() {
         c = InstrumentationRegistry.getTargetContext();
         i = new Intent(c, Recorder.class);
-        o = RecorderCommands.getDefaultOutputPath() + Integer.toString(count++);
+        o = RecorderCommands.getDefaultOutputPath(c) + Integer.toString(count++);
         i.setAction(Recorder.RECORD_ACTION);
         i.putExtra("-o", o);
     }

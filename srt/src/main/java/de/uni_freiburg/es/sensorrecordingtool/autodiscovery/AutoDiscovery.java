@@ -9,7 +9,6 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 import de.uni_freiburg.es.sensorrecordingtool.Recorder;
@@ -26,8 +25,8 @@ public class AutoDiscovery {
     private static AutoDiscovery sInstance;
     private final Context mContext;
 
-    private HashMap<String, List<String>> mDiscoveredMap = new HashMap<>();
-    private OnNodeSensorsDiscoveredListener mListener;
+    private ArrayList<Node> mDiscoveredList = new ArrayList<>();
+    private List<OnNodeSensorsDiscoveredListener> mListeners = new ArrayList<>();
 
     /**
      * Listens for Responses.
@@ -49,19 +48,23 @@ public class AutoDiscovery {
      */
     private void interpreteDiscovery(Intent intent) {
         String platform = intent.getStringExtra(RecorderStatus.PLATFORM);
+        String aid = intent.getStringExtra(RecorderStatus.ANDROID_ID);
         String[] sensors = intent.getStringArrayExtra(RecorderStatus.SENSORS);
+
+        Node node = new Node(platform, aid);
 
         Log.e(TAG, String.format("Device %s has following sensors: %s", platform, sensors != null ? Arrays.toString(sensors) : "[]"));
 
-        if (!mDiscoveredMap.containsKey(platform))
-            mDiscoveredMap.put(platform, new ArrayList<String>());
+        if (!mDiscoveredList.contains(node))
+            mDiscoveredList.add(node);
+        else node = mDiscoveredList.get(mDiscoveredList.indexOf(node));
+
         if (sensors != null) {
-            for(String sensor : sensors)
-            mDiscoveredMap.get(platform).add(sensor);
+            node.setAvailableSensors(sensors);
         }
 
-        if(mListener != null)
-            mListener.onNodeSensorsDiscovered(platform, sensors);
+        for(OnNodeSensorsDiscoveredListener listener : mListeners)
+            listener.onNodeSensorsDiscovered(node, sensors);
     }
 
 
@@ -80,7 +83,7 @@ public class AutoDiscovery {
      * Starts the autodiscovery asynchronously. Will remove all previously discovered devices.
      */
     public void discover() {
-        mDiscoveredMap = new HashMap<>();
+//        mDiscoveredMap = new HashMap<>();
 //        mTimingHandler.postDelayed(new Runnable() {
 //            @Override
 //            public void run() {
@@ -106,15 +109,15 @@ public class AutoDiscovery {
      * @param listener
      */
     public void setListener(OnNodeSensorsDiscoveredListener listener) {
-        this.mListener = listener;
+        this.mListeners.add(listener);
     }
 
 
-    public HashMap<String, List<String>> getDiscoveredSensors() {
-        return mDiscoveredMap;
+    public ArrayList<Node> getDiscoveredSensors() {
+        return mDiscoveredList;
     }
 
     public int getConnectedNodes() {
-        return mDiscoveredMap.keySet().size();
+        return mDiscoveredList.size();
     }
 }

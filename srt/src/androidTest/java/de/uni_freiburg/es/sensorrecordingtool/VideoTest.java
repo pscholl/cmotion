@@ -41,7 +41,7 @@ public class VideoTest extends BroadcastingTest {
     @Before public void setup() {
         c = InstrumentationRegistry.getTargetContext();
         i = new Intent(c, Recorder.class);
-        o = RecorderCommands.getDefaultOutputPath() + Integer.toString(count++);
+        o = RecorderCommands.getDefaultOutputPath(c) + Integer.toString(count++);
         i.putExtra("-o", o);
         i.setAction(Recorder.RECORD_ACTION);
 

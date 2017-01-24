@@ -206,7 +206,8 @@ public abstract class SensorProcess implements SensorEventListener {
                         new Class[]{android.hardware.Sensor.class, int.class});
             m.setAccessible(true);
             return (int) m.invoke(null, ((SensorWrapper) s).mSensor, Build.VERSION.SDK_INT);
-        }
+        } else if(s instanceof LocationSensor)
+            return 4;
 
         throw new Exception("unknown sensor: " + sensor);
     }

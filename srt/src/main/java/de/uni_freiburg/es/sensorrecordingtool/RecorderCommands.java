@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Environment;
 import android.os.Handler;
+import android.provider.Settings;
 import android.util.Log;
 
 import java.io.File;
@@ -12,6 +13,9 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.TimeZone;
+
+import de.uni_freiburg.es.sensorrecordingtool.permissions.PermissionHelperActivity;
+import de.uni_freiburg.es.sensorrecordingtool.permissions.PermissionRunnable;
 
 /**
  * A Broadcast which distributes a recording intent to the proper Services and also makes
@@ -88,7 +92,7 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
     private void parseIntentOrFail(Context context, Intent intent) {
 
         try {
-            Intent call = parseRecorderIntent(intent);
+            Intent call = parseRecorderIntent(context, intent);
             if (intent.hasExtra("forwarded"))
                 call.putExtra("forwarded", true);
             call.setClass(context, Recorder.class);
@@ -109,7 +113,7 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
      * @param intent the original intent
      * @return a new machinable intent
      */
-    public static Intent parseRecorderIntent(Intent intent) throws Exception {
+    public static Intent parseRecorderIntent(Context context, Intent intent) throws Exception {
         String output = intent.getStringExtra(Recorder.RECORDER_OUTPUT);
         String[] sensors = getStringOrArray(intent, Recorder.RECORDER_INPUT);
         double[] rates = getIntFloatOrDoubleArray(intent, Recorder.RECORDER_RATE, 50.);
@@ -119,7 +123,7 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
 
         call.setAction(intent.getAction());
 
-        output = output == null ? getDefaultOutputPath() : output;
+        output = output == null ? getDefaultOutputPath(context) : output;
 
         if (sensors.length <= 0)
             throw new Exception("no input supplied");
@@ -155,11 +159,23 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
         return call;
     }
 
-    private static double getDoubleOrFloat(Intent i, String key, float v) {
+    public static double getDoubleOrFloat(Intent i, String key, float v) {
         double omg = i.getDoubleExtra(key, -1);
         return omg == -1 ? i.getFloatExtra(key, v) : omg;
     }
 
+    public static boolean getBooleanOrString(Intent i, String key, boolean b) {
+        boolean retVal = b;
+
+        if(i.hasExtra(key)) {
+            if((i.getExtras().get(key)) instanceof Boolean)
+                retVal = i.getBooleanExtra(key, b);
+            else if((i.getExtras().get(key)) instanceof String)
+                retVal = Boolean.parseBoolean(i.getStringExtra(key));
+        }
+
+        return retVal;
+    }
     public static String[] getStringOrArray(Intent i, String extra) {
         String[] arr = i.getStringArrayExtra(extra);
         if (arr != null)
@@ -171,9 +187,9 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
     }
 
     public static double[] getIntFloatOrDoubleArray(Intent i, String extra, double def) {
-        int iarr[] = i.getIntArrayExtra(extra);
-        float farr[] = i.getFloatArrayExtra(extra);
-        double darr[] = i.getDoubleArrayExtra(extra);
+        int iarr[] = i.hasExtra(extra) && i.getExtras().get(extra) instanceof int[] ? i.getIntArrayExtra(extra) : null;
+        float farr[] = i.hasExtra(extra) && i.getExtras().get(extra) instanceof float[] ?i.getFloatArrayExtra(extra) : null;
+        double darr[] = i.hasExtra(extra) && i.getExtras().get(extra) instanceof double[] ?i.getDoubleArrayExtra(extra) : null;
 
         if (darr != null)
             return darr;
@@ -216,15 +232,17 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
     /**
      * utility function for ISO datetime path on public storage
      */
-    public static String getDefaultOutputPath() {
+    public static String getDefaultOutputPath(Context context) {
         File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
-        return new File(path, getDefaultFileName()).toString();
+        return new File(path, getDefaultFileName(context)).toString();
     }
 
-    public static String getDefaultFileName() {
+    public static String getDefaultFileName(Context context) {
         TimeZone tz = TimeZone.getTimeZone("UTC");
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmZ");
         df.setTimeZone(tz);
-        return df.format(new Date());
+        String aid = Settings.Secure.getString(context.getContentResolver(),
+                Settings.Secure.ANDROID_ID);
+        return df.format(new Date())+"_"+aid;
     }
 }

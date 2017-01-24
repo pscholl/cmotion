@@ -19,6 +19,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.AutoDiscovery;
+import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.Node;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.OnNodeSensorsDiscoveredListener;
 
 /**
@@ -55,15 +56,14 @@ public class DiscoveryTest extends BroadcastingTest {
         final CountDownLatch latch = new CountDownLatch(1);
         discovery.setListener(new OnNodeSensorsDiscoveredListener() {
             @Override
-            public void onNodeSensorsDiscovered(String nodeName, String[] availableSensors) {
+            public void onNodeSensorsDiscovered(Node node, String[] availableSensors) {
                 latch.countDown();
             }
         });
         discovery.discover();
         latch.await(5000, TimeUnit.MILLISECONDS);
         Assert.assertTrue("Connected nodes >= 1", discovery.getConnectedNodes() > 0);
-        Assert.assertTrue("Sensors >= 4", discovery.getDiscoveredSensors()
-                .get(discovery.getDiscoveredSensors().keySet().iterator().next()).size() >= 4);
+        Assert.assertTrue("Sensors >= 4", discovery.getDiscoveredSensors().get(0).getAvailableSensors().length >= 4);
         discovery.close();
     }
 

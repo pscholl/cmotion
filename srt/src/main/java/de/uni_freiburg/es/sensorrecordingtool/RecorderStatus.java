@@ -4,13 +4,16 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.os.Bundle;
 import android.provider.Settings;
+import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
 import java.util.List;
 
+import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.NodeStatus;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorProcess;
 
 /**
@@ -25,6 +28,7 @@ public class RecorderStatus {
 
     /* action for reporting error from the recorder service */
     public static final String STATUS_ACTION = "recorder_status";
+    public static final String ASK_STATUS_ACTION = "recorder_ask_status";
     public static final String STATUS_ELAPSED = "recorder_status_elapsed";
     public static final String STATUS_DURATION = "recorder_status_duration";
     public static final String ERROR_ACTION = "recorder_error";
@@ -36,10 +40,14 @@ public class RecorderStatus {
     public static final String PLATFORM = "recording_platform";
     public static final String START_TIME = "recording_starttime";
     public static final String DRIFT = "recording_drift";
+    public static final String DRIFT_VALID = "recording_drift_valid";
+    public static final String STATE = "recording_state";
 
     /* store the duration to handle the progressbar */
     public final int NOTIFICATION_ID = 123;
     public final int mDuration;
+
+    private NodeStatus mSrtStatus = NodeStatus.UNKNOWN;
 
     /**
      * creates a new Notification and updates it for the user. Every other update
@@ -89,9 +97,14 @@ public class RecorderStatus {
      * @param output path of the finished recording
      */
     public void finished(String output) {
+        mSrtStatus = NodeStatus.FINISHED;
+
         Intent i = new Intent(FINISH_ACTION);
         i.putExtra(FINISH_PATH, output);
+        includeIdentifier(i);
         c.sendBroadcast(i);
+
+        sendStatusIntent();
 
         mNotification.mActions.clear(); // remove cancel button
 
@@ -113,15 +126,14 @@ public class RecorderStatus {
      * @param duration timespan which will be recorded for
      */
     public void recording(long elapsed, long duration) {
-        Intent i = new Intent(STATUS_ACTION);
-        i.putExtra(STATUS_ELAPSED, elapsed);
-        i.putExtra(STATUS_DURATION, duration);
-        c.sendBroadcast(i);
+        mSrtStatus = NodeStatus.RECORDING;
 
+        Bundle extras = new Bundle();
+        extras.putLong(STATUS_ELAPSED, elapsed);
+        extras.putLong(STATUS_DURATION, duration);
+        sendStatusIntent(extras);
         if (mDuration <= 0)
             return;
-
-
         mNotification
                 .setProgress(mDuration, (int) elapsed, false)
         ;
@@ -137,9 +149,15 @@ public class RecorderStatus {
      * @param exception reason for this error
      */
     public void error(Exception exception) {
+        mSrtStatus = NodeStatus.ERROR;
+
+
         Intent i = new Intent(ERROR_ACTION);
         i.putExtra(ERROR_REASON, exception.getMessage());
+        includeIdentifier(i);
         c.sendBroadcast(i);
+
+        sendStatusIntent();
 
         mNotification.mActions.clear(); // remove cancel button
 
@@ -158,17 +176,30 @@ public class RecorderStatus {
     /**
      * to be called when an all sensors are initialised, only sent by slaves.
      *
-     * @param sensors all ininitlaised sensors
+     * @param sensors all initialised sensors
      */
-    public void ready(String[] sensors) {
+    public void ready(String[] sensors, long drift, boolean driftSet) {
+        mSrtStatus = NodeStatus.READY;
+
+        Bundle extra = new Bundle();
+        extra.putStringArray(SENSORS, sensors);
+        extra.putDouble(DRIFT, drift);
+        extra.putBoolean(DRIFT_VALID, driftSet);
+
         Intent i = new Intent(Recorder.READY_ACTION);
-        i.putExtra(SENSORS, sensors);
+        i.putExtras(extra);
+        includeIdentifier(i);
+        c.sendBroadcast(i);
+        Log.e(TAG, "sending ready");
+
+        sendStatusIntent(extra);
+    }
+
+    private void includeIdentifier(Intent i) {
         i.putExtra(ANDROID_ID, Settings.Secure.getString(c.getContentResolver(),
                 Settings.Secure.ANDROID_ID));
         i.putExtra(PLATFORM, Build.BOARD);
-        i.putExtra(DRIFT, Recorder.DRIFT);
-        c.sendBroadcast(i);
-        Log.e(TAG, "sending ready");
+
     }
 
     /**
@@ -177,11 +208,28 @@ public class RecorderStatus {
      * @param startTime wall-clock time at which all nodes shall start recording the intinitalised sensors
      */
     public void steady(long startTime) {
+
+
         Intent i = new Intent(Recorder.STEADY_ACTION);
         i.putExtra(START_TIME, startTime * 1d);
+        includeIdentifier(i);
         c.sendBroadcast(i);
         Log.e(TAG, "sending steady");
     }
+
+    private void sendStatusIntent() {
+        sendStatusIntent(null);
+    }
+
+    private void sendStatusIntent(@Nullable Bundle extras) {
+        Intent intent = new Intent(STATUS_ACTION);
+        intent.putExtra(STATE, mSrtStatus.toString());
+        if (extras != null)
+            intent.putExtras(extras);
+        includeIdentifier(intent);
+        c.sendBroadcast(intent);
+    }
+
 
     /**
      * Determine whethe the code is runnong on Google Glass

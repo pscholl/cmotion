@@ -16,11 +16,14 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import es.uni_freiburg.de.cmotion.adapter.SensorAdapter;
 import es.uni_freiburg.de.cmotion.model.SensorModel;
 import es.uni_freiburg.de.cmotion.ui.DigitEditDialog;
 import es.uni_freiburg.de.cmotion.ui.RecordFloatingActionButton;
@@ -36,6 +39,7 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
     private BroadcastReceiver mReceiver;
     private AutoDiscoveryWrapper mAutoDiscovery;
     private SwipeRefreshLayout mSwipeRefreshLayout;
+    private SlidingUpPanelLayout mSlidingUpPanelLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,12 +55,13 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
         mAutoDiscovery = new AutoDiscoveryWrapper(this, mRecyclerViewAdapter);
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipeContainer);
         mSwipeRefreshLayout.setOnRefreshListener(this);
+        mSlidingUpPanelLayout = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
+
         mAutoDiscovery.refresh();
 
         registerReceiver(mReceiver, INTENTFILTER);
+
     }
-
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -107,12 +112,14 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
 
 
     public void onFabClick(View view) {
-        if (mRecFab.isRecording())
+        if (mRecFab.isRecording()) {
             SRTHelper.sendCancelIntent(this);
-        else {
+        } else {
             persistCheckedSensors();
+            mSlidingUpPanelLayout.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
             mRecFab.setFreeze(true);
             SRTHelper.sendRecordIntent(this, mRecyclerViewAdapter.getSelectedItems());
+
         }
     }
 

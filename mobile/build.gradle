@@ -23,6 +23,9 @@ android {
 }
 
 dependencies {
+    repositories {
+        mavenCentral()
+    }
     compile fileTree(include: ['*.jar'], dir: 'libs')
     wearApp project(':wear')
     compile project(':srt')
@@ -34,4 +37,6 @@ dependencies {
     compile 'com.android.support:design:25.+'
     compile 'com.android.support:support-v4:25+'
     androidTestCompile 'com.android.support:support-annotations:25.+'
+    compile 'com.sothree.slidinguppanel:library:3.3.1'
+
 }

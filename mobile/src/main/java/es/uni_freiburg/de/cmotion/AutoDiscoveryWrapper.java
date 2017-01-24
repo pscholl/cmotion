@@ -12,8 +12,10 @@ import java.util.List;
 import java.util.Set;
 
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.AutoDiscovery;
+import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.Node;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.OnNodeSensorsDiscoveredListener;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.AudioSensor;
+import es.uni_freiburg.de.cmotion.adapter.SensorAdapter;
 import es.uni_freiburg.de.cmotion.model.SensorModel;
 
 public class AutoDiscoveryWrapper {
@@ -24,7 +26,7 @@ public class AutoDiscoveryWrapper {
 
     private OnNodeSensorsDiscoveredListener mOnNodeSensorsDiscoveredListener = new OnNodeSensorsDiscoveredListener() {
         @Override
-        public void onNodeSensorsDiscovered(String nodeName, String[] availableSensors) {
+        public void onNodeSensorsDiscovered(Node node, String[] availableSensors) {
             mAdapter.setData(convert(mAutoDiscovery.getDiscoveredSensors()));
         }
     };
@@ -38,21 +40,24 @@ public class AutoDiscoveryWrapper {
 //        mAutoDiscovery.discover();
     }
 
-    private List<SensorModel> convert(HashMap<String, List<String>> map) {
+    private List<SensorModel> convert(ArrayList<Node> list) {
 
         Set<String> persistedSensors = PreferenceManager.getDefaultSharedPreferences(mContext).getStringSet("checked", new HashSet<String>());
         HashMap<String, SensorModel> sensorMap = new HashMap<>();
 
-        for (String key : map.keySet()) {
-            for (String value : map.get(key)) {
+        for (Node key : list) {
+            for (String value : key.getAvailableSensors()) {
 
                 String newName = value.contains(".") ? value.substring(value.lastIndexOf(".")+1).replace("_", " ") : value;
 
                 SensorModel sensorModel = new SensorModel(newName);
-                sensorModel.addAvailablePlatform(key);
+                sensorModel.addAvailablePlatform(key.getPlatform());
 
                 if (value.toLowerCase().contains("audio")) // modify predefined sample rate for audio
                     sensorModel.setSamplingRate(AudioSensor.getAudioSampleRate());
+
+                if (value.toLowerCase().contains("video")) // TODO
+                    sensorModel.setSamplingRate(15);
 
                 if(persistedSensors.contains(sensorModel.getName()))
                     sensorModel.setEnabled(true);
@@ -60,18 +65,18 @@ public class AutoDiscoveryWrapper {
                 if (!sensorMap.containsKey(sensorModel.getName()))
                     sensorMap.put(sensorModel.getName(), sensorModel);
                 else // we already have a sensor like this
-                    sensorMap.get(sensorModel.getName()).addAvailablePlatform(key);
+                    sensorMap.get(sensorModel.getName()).addAvailablePlatform(key.getPlatform());
             }
         }
 
-        List<SensorModel> list = new ArrayList<>();
+        List<SensorModel> ret = new ArrayList<>();
         for (String key : sensorMap.keySet()) { // add all sensors to list
-            list.add(sensorMap.get(key));
+            ret.add(sensorMap.get(key));
         }
 
-        Collections.sort(list);
+        Collections.sort(ret);
 
-        return list;
+        return ret;
     }
 
     public void close() {

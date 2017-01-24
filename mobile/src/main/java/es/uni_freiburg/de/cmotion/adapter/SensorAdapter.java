@@ -1,4 +1,4 @@
-package es.uni_freiburg.de.cmotion;
+package es.uni_freiburg.de.cmotion.adapter;
 
 
 import android.content.Context;
@@ -14,6 +14,7 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
+import es.uni_freiburg.de.cmotion.R;
 import es.uni_freiburg.de.cmotion.model.SensorModel;
 import es.uni_freiburg.de.cmotion.ui.DigitEditDialog;
 

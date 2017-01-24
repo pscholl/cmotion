@@ -13,9 +13,12 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+
 import java.io.File;
 
 import de.uni_freiburg.es.sensorrecordingtool.RecorderStatus;
+import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.NodeStatus;
 import es.uni_freiburg.de.cmotion.ui.RecordFloatingActionButton;
 import es.uni_freiburg.de.cmotion.ui.TimedProgressBar;
 
@@ -25,11 +28,14 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
     private TimedProgressBar mProgressBar;
     private RecordFloatingActionButton mRecFab;
     private CoordinatorLayout mCoordinatorLayout;
+    private SlidingUpPanelLayout mSlidingUpPanelLayout;
+
 
     public CMotionBroadcastReceiver(Activity activity) {
         mProgressBar = (TimedProgressBar) activity.findViewById(R.id.progressBar);
         mRecFab = (RecordFloatingActionButton) activity.findViewById(R.id.fab);
         mCoordinatorLayout = (CoordinatorLayout) activity.findViewById(R.id.coordinatorLayout);
+        mSlidingUpPanelLayout = (SlidingUpPanelLayout) activity.findViewById(R.id.sliding_layout);
         mActivity = activity;
     }
 
@@ -37,9 +43,11 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         switch (intent.getAction()) {
             case RecorderStatus.STATUS_ACTION:
-                long elapsed = intent.getLongExtra(RecorderStatus.STATUS_ELAPSED, -1);
-                long duration = intent.getLongExtra(RecorderStatus.STATUS_DURATION, -1);
-                startRecordingAnimations(elapsed, duration);
+                if (NodeStatus.valueOf(intent.getStringExtra(RecorderStatus.STATE)) == NodeStatus.RECORDING) {
+                    long elapsed = intent.getLongExtra(RecorderStatus.STATUS_ELAPSED, -1);
+                    long duration = intent.getLongExtra(RecorderStatus.STATUS_DURATION, -1);
+                    startRecordingAnimations(elapsed, duration);
+                }
                 break;
             case RecorderStatus.ERROR_ACTION:
                 Snackbar snackbar = Snackbar
@@ -61,7 +69,6 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
                 stopRecordingAnimations();
                 break;
             case RecorderStatus.FINISH_ACTION:
-                stopRecordingAnimations();
 
                 final String path = intent.getStringExtra(RecorderStatus.FINISH_PATH);
                 Snackbar
@@ -73,6 +80,9 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
                             }
                         })
                         .show();
+
+                stopRecordingAnimations();
+
                 break;
 
             default:
@@ -100,6 +110,7 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
             mProgressBar.setProgress((int) ((elapsed / (double) duration) * mProgressBar.getMax()));
         }
         mRecFab.setRecording(true);
+        mSlidingUpPanelLayout.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
     }
 
     private void stopRecordingAnimations() {

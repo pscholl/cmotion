@@ -13,9 +13,25 @@ public class TimeSync {
     NtpClient client = new NtpClient();
 
     private AtomicBoolean mIsDriftCalculated = new AtomicBoolean(false);
-    private final String HOST = "de.pool.ntp.org"; // TODO international
     private static TimeSync sInstance = null;
     private Long mDrift = 0L;
+
+
+    /**
+     * NTP Host, Android Default.
+     */
+    private final String HOST = "2.android.pool.ntp.org";
+
+    /**
+     * Timeout for each attempt. Android Default.
+     */
+    private static final int TIMEOUT = 20000;
+
+    /**
+     * Maximum number of attempts before we give up.
+     */
+    private final int MAX_TRIES = 3;
+
     private CountDownLatch mCountDownLatch = new CountDownLatch(1);
 
     private TimeSync() {
@@ -32,13 +48,16 @@ public class TimeSync {
 
             @Override
             protected Void doInBackground(NtpClient... clients) {
-                TimeInfo info = clients[0].requestTime(HOST, 10000);
-                if (info != null) {
-                    mIsDriftCalculated.set(true);
-                    mDrift = info.getOffset();
-                } else {
-                    mIsDriftCalculated.set(false);
-                    mDrift = 0L;
+                for (int i = 0; i < MAX_TRIES; i++) {
+                    TimeInfo info = clients[0].requestTime(HOST, TIMEOUT);
+                    if (info != null) {
+                        mDrift = info.getOffset();
+                        mIsDriftCalculated.set(true);
+                        break; // We have a time!
+                    } else {
+                        mDrift = 0L;
+                        mIsDriftCalculated.set(false);
+                    }
                 }
 
                 mCountDownLatch.countDown();
@@ -69,7 +88,6 @@ public class TimeSync {
 
 
     /**
-     *
      * @return
      * @throws InterruptedException
      */

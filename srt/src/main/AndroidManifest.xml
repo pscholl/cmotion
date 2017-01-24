@@ -11,6 +11,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <uses-feature android:name="android.hardware.camera" />
+    <uses-feature android:name="android.hardware.camera.autofocus" />
+
     <!--
     <uses-feature android:name="android.hardware.type.watch" android:required="true"/>
     -->
@@ -26,6 +29,7 @@
                 <action android:name="senserec_cancel" />
                 <action android:name="senserec_ready" />
                 <action android:name="senserec_steady" />
+                <action android:name="recorder_ask_status" />
             </intent-filter>
         </receiver>
 
@@ -37,7 +41,8 @@
 
 
         <service android:name=".Recorder"></service>
-        <activity android:name=".PermissionHelperActivity" />
+
+        <activity android:name=".permissions.PermissionHelperActivity" />
     </application>
 
 </manifest>

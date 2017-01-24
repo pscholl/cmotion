@@ -62,7 +62,7 @@ public class SRTHelper {
 
         intent.putExtra(Recorder.RECORDER_INPUT, sensors); // sensors
         intent.putExtra(Recorder.RECORDER_RATE, rates); // rates
-        intent.putExtra(Recorder.RECORDER_OUTPUT, new File(target, de.uni_freiburg.es.sensorrecordingtool.RecorderCommands.getDefaultFileName()).toString());
+        intent.putExtra(Recorder.RECORDER_OUTPUT, new File(target, de.uni_freiburg.es.sensorrecordingtool.RecorderCommands.getDefaultFileName(context)).toString());
         intent.putExtra(Recorder.RECORDER_DURATION, sRecordingDurationSec * 1d); // duration as doubles
         context.sendBroadcast(intent);
     }

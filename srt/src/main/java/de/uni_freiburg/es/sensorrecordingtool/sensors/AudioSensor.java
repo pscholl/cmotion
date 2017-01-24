@@ -21,14 +21,17 @@ public class AudioSensor extends Sensor {
     private int mRateinMus = 0;
 
 
-    private static int mChannelConfig = AudioFormat.CHANNEL_IN_MONO;
+    private int mChannelConfig;
     private static int mAudioFormat = AudioFormat.ENCODING_PCM_16BIT;
 
     private RecorderThread mRecorderThread;
 
-    public AudioSensor(Context c) {
+
+    public AudioSensor(Context c, int channelConfig) {
         super(c, 1);
         context = c;
+        assert channelConfig == AudioFormat.CHANNEL_IN_MONO || channelConfig == AudioFormat.CHANNEL_IN_STEREO;
+        mChannelConfig = channelConfig;
     }
 
     @Override
@@ -39,12 +42,12 @@ public class AudioSensor extends Sensor {
 
     @Override
     public String getStringName() {
-        return "Audio";
+        return String.format("Audio %s", mChannelConfig == AudioFormat.CHANNEL_IN_MONO ? "mono" : "stereo");
     }
 
     @Override
     public String getStringType() {
-        return "android.hardware.audio";
+        return String.format("android.hardware.audio_%s", mChannelConfig == AudioFormat.CHANNEL_IN_MONO ? "mono" : "stereo");
     }
 
     @Override
@@ -54,7 +57,7 @@ public class AudioSensor extends Sensor {
 
         if (mListeners.size() == 0) {
             mRateinMus = rate_in_mus;
-            if(mRecorderThread == null)
+            if (mRecorderThread == null)
                 mRecorderThread = new RecorderThread();
             mRecorderThread.startRecording();
         }
@@ -92,7 +95,7 @@ public class AudioSensor extends Sensor {
      */
         for (int i = 0; i < validSampleRates.length; i++) {
             int result = AudioRecord.getMinBufferSize(validSampleRates[i],
-                    mChannelConfig,
+                    AudioFormat.CHANNEL_IN_MONO,
                     mAudioFormat);
             if (result > 0) {
                 // return the mininum supported audio sample rate
@@ -114,7 +117,7 @@ public class AudioSensor extends Sensor {
      */
         for (int i = 0; i < validSampleRates.length; i++) {
             int result = AudioRecord.getMinBufferSize(validSampleRates[i],
-                    mChannelConfig,
+                    AudioFormat.CHANNEL_IN_MONO,
                     mAudioFormat);
             if (result > 0) {
                 // return the mininum supported audio sample rate
@@ -127,9 +130,13 @@ public class AudioSensor extends Sensor {
 
     }
 
+    public int getChannels() {
+        return mChannelConfig == AudioFormat.CHANNEL_IN_MONO ? 1 : 2;
+    }
+
     class RecorderThread extends Thread {
 
-        private int sampleRate =  (int) ((1000 * 1000f) / mRateinMus);
+        private int sampleRate = (int) ((1000 * 1000f) / mRateinMus);
         private AudioRecord mAudioRecorder;
 
         private int minBufSize = AudioRecord.getMinBufferSize(sampleRate, mChannelConfig, mAudioFormat);

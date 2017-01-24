@@ -2,13 +2,13 @@ package de.uni_freiburg.es.sensorrecordingtool.sensors;
 
 import android.content.Context;
 import android.graphics.ImageFormat;
-import android.graphics.PixelFormat;
+import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.SurfaceHolder;
+import android.view.Display;
+import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.WindowManager;
 
@@ -18,27 +18,34 @@ import android.view.WindowManager;
  * <p>
  * Created by phil on 4/26/16.
  */
-public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
+public class VideoSensor extends Sensor {
     protected static final String TAG = VideoSensor.class.getName();
     protected final Context context;
+    private final int id;
+    private int facing;
     private Camera mCamera;
     private int mRateInMilliHz = 0;
     private SurfaceView mSurface;
 
-    public VideoSensor(Context c) {
+    public VideoSensor(Context c, int id) {
         super(c, 1);
         context = c;
+        this.id = id;
+
+        Camera.CameraInfo info = new Camera.CameraInfo();
+        Camera.getCameraInfo(id, info);
+        this.facing = info.facing;
         mEvent = new SensorEvent(0);
     }
 
     @Override
     public String getStringName() {
-        return "Video";
+        return String.format("Video %s", facing == Camera.CameraInfo.CAMERA_FACING_BACK ? "back" : "front");
     }
 
     @Override
     public String getStringType() {
-        return "android.hardware.video";
+        return String.format("android.hardware.video_%s", facing == Camera.CameraInfo.CAMERA_FACING_BACK ? "back" : "front");
     }
 
     @Override
@@ -47,13 +54,22 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
         //    return;
 
         if (mListeners.size() == 0) {
+
+            mRateInMilliHz = (int) (1000 * 1000 / rate_in_mus) * 1000;
+
             /** open the camera if we are just creating the first listeners, otherwise just
              * add a new listener. */
             CameraSize mSize = getCameraSize(format);
             mCamera = Camera.open();
             Camera.Parameters params = mCamera.getParameters();
             params.setPreviewSize(mSize.width, mSize.height);
+            params.setPreviewFpsRange(mRateInMilliHz, mRateInMilliHz);
+            Log.d(TAG, "starting recording with pixel format " + params.getPictureFormat());
+            Log.d(TAG, "resolution " + params.getPreviewSize().width + "x" + params.getPreviewSize().height);
+
             mCamera.setParameters(params);
+
+            setCameraDisplayOrientation(mCamera);
 
             int bytesPerBuffer = (int) Math.ceil(
                     ImageFormat.getBitsPerPixel(params.getPreviewFormat()) / 8.
@@ -62,7 +78,6 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
             mCamera.addCallbackBuffer(new byte[bytesPerBuffer]);
             mCamera.addCallbackBuffer(new byte[bytesPerBuffer]);
 
-            mRateInMilliHz = (int) (1000 * 1000 / rate_in_mus) * 1000;
             startRecording();
         }
 
@@ -90,18 +105,20 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
             Camera.Parameters params = cam.getParameters();
             Camera.Size tmpSize = params.getPreviewSize();
 
-            mSize.width = tmpSize.width;
-            mSize.height = tmpSize.height;
+            mSize = new CameraSize(tmpSize.width, tmpSize.height);
 
             cam.unlock();
             cam.release();
 
-            String[] wh = format.split("x");
-            int w = Integer.parseInt(wh[0]),
-                    h = Integer.parseInt(wh[1]);
+            if (format != null && format.contains("x")) {
 
-            mSize.width = w;
-            mSize.height = h;
+                String[] wh = format.split("x");
+                int w = Integer.parseInt(wh[0]),
+                        h = Integer.parseInt(wh[1]);
+
+                mSize.width = w;
+                mSize.height = h;
+            }
         } catch (NullPointerException e) {
             Log.d(TAG, "camera not available");
         } catch (Exception e) {
@@ -119,21 +136,22 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
      */
     @Override
     public void prepareSensor() {
-        WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
-        mSurface = new SurfaceView(mContext);
-        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
-                200, 100, 0, 300,
-                WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
-                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
-                PixelFormat.TRANSLUCENT);
-        lp.gravity = Gravity.LEFT | Gravity.TOP;
-        wm.addView(mSurface, lp);
+
         setPrepared();
     }
 
     @Override
     public void startRecording() {
-        mSurface.getHolder().addCallback(this);
+
+        try {
+            mCamera.setPreviewTexture(new SurfaceTexture(10));
+            mCamera.setPreviewCallbackWithBuffer(preview);
+            mCamera.startPreview();
+        } catch (Exception e) {
+            stopRecording();
+        }
+
+
     }
 
     public void stopRecording() {
@@ -145,15 +163,80 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
         }
     }
 
+
+    public void setCameraDisplayOrientation(android.hardware.Camera camera) {
+        Camera.Parameters parameters = camera.getParameters();
+
+        android.hardware.Camera.CameraInfo camInfo =
+                new android.hardware.Camera.CameraInfo();
+        android.hardware.Camera.getCameraInfo(getBackFacingCameraId(), camInfo);
+
+
+        Display display = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+        int rotation = display.getRotation();
+        int degrees = 0;
+        switch (rotation) {
+            case Surface.ROTATION_0:
+                degrees = 0;
+                break;
+            case Surface.ROTATION_90:
+                degrees = 90;
+                break;
+            case Surface.ROTATION_180:
+                degrees = 180;
+                break;
+            case Surface.ROTATION_270:
+                degrees = 270;
+                break;
+        }
+
+        int result;
+        if (camInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            result = (camInfo.orientation + degrees) % 360;
+            result = (360 - result) % 360;  // compensate the mirror
+        } else {  // back-facing
+            result = (camInfo.orientation - degrees + 360) % 360;
+        }
+        camera.setDisplayOrientation(result);
+    }
+
+    private int getBackFacingCameraId() {
+        int cameraId = -1;
+        // Search for the front facing camera
+        int numberOfCameras = Camera.getNumberOfCameras();
+        for (int i = 0; i < numberOfCameras; i++) {
+            Camera.CameraInfo info = new Camera.CameraInfo();
+            Camera.getCameraInfo(i, info);
+            if (info.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+
+                cameraId = i;
+                break;
+            }
+        }
+        return cameraId;
+    }
+
+
     protected Camera.PreviewCallback preview = new Camera.PreviewCallback() {
         @Override
         public void onPreviewFrame(byte[] bytes, Camera camera) {
+
+//            Log.e(TAG, "DATA!");
+
             mEvent.timestamp = System.currentTimeMillis() * 1000 * 1000;
             mEvent.rawdata = bytes;
             notifyListeners();
 
-            /** add the buffer again to the queue */
-            mCamera.addCallbackBuffer(bytes);
+
+            try {
+                /** add the buffer again to the queue */
+                mCamera.addCallbackBuffer(bytes);
+
+//                mCamera.setPreviewTexture(new SurfaceTexture(10));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
         }
 
         // Default format is YCbCr'NV21
@@ -164,55 +247,73 @@ public class VideoSensor extends Sensor implements SurfaceHolder.Callback {
         super.unregisterListener(l);
 
         if (mListeners.size() == 0) {
-            try {
-                WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
-                wm.removeView(mSurface);
-            } catch (Exception e) {
-            }
-        }
-    }
-
-    @Override
-    public void surfaceCreated(SurfaceHolder surfaceHolder) {
-        Camera.Parameters p = null;
-        try {
-            if (mCamera == null)
-                mCamera = Camera.open();
-            p = mCamera.getParameters();
-            p.setPreviewFpsRange(mRateInMilliHz, mRateInMilliHz);
-            mCamera.setParameters(p);
-
-            Log.d(TAG, "starting recording with pixel format " + p.getPictureFormat());
-            Log.d(TAG, "resolution " + p.getPreviewSize().width + "x" + p.getPreviewSize().height);
-
-            mCamera.setPreviewDisplay(mSurface.getHolder());
-            mCamera.setPreviewCallbackWithBuffer(preview);
-            mCamera.startPreview();
-
-        } catch (Exception e) {
             stopRecording();
-
-            if (mCamera != null) {
-                Log.d(TAG, e.toString());
-                Log.d(TAG, "available rates are:");
-
-                if (p != null)
-                    for (int r[] : p.getSupportedPreviewFpsRange())
-                        Log.d(TAG, Integer.toString(r[0]) + " " + Integer.toString(r[1]) + " milli-Hz");
-            }
-
+//            try {
+//                WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
+//                wm.removeView(mSurface);
+//            } catch (Exception e) {
+//            }
         }
     }
 
-    @Override
-    public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
-    }
-
-    @Override
-    public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
-        mSurface.getHolder().removeCallback(this);
-        stopRecording();
-    }
+//    @Override
+//    public void surfaceCreated(SurfaceHolder surfaceHolder) {
+//        surface(surfaceHolder);
+//    }
+//
+//    @Override
+//    public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+//        surface(surfaceHolder);
+//    }
+//
+//    private void surface(SurfaceHolder surfaceHolder) {
+//
+//        if (surfaceHolder.getSurface() == null) {
+//            return;
+//        }
+//
+//        try {
+//            mCamera.stopPreview();
+//        } catch (Exception e) {
+//            // ignore: tried to stop a non-existent preview
+//        }
+//
+//
+//        Camera.Parameters p = null;
+//        try {
+//            if (mCamera == null)
+//                mCamera = Camera.open();
+//            p = mCamera.getParameters();
+//            p.setPreviewFpsRange(mRateInMilliHz, mRateInMilliHz);
+//            mCamera.setParameters(p);
+//
+//            Log.d(TAG, "starting recording with pixel format " + p.getPictureFormat());
+//            Log.d(TAG, "resolution " + p.getPreviewSize().width + "x" + p.getPreviewSize().height);
+//
+//            mCamera.setPreviewDisplay(mSurface.getHolder());
+//            mCamera.setPreviewCallbackWithBuffer(preview);
+//            mCamera.startPreview();
+//
+//        } catch (Exception e) {
+//            stopRecording();
+//
+//            if (mCamera != null) {
+//                Log.d(TAG, e.toString());
+//                Log.d(TAG, "available rates are:");
+//
+//                if (p != null)
+//                    for (int r[] : p.getSupportedPreviewFpsRange())
+//                        Log.d(TAG, Integer.toString(r[0]) + " " + Integer.toString(r[1]) + " milli-Hz");
+//            }
+//
+//        }
+//    }
+//
+//    @Override
+//    public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+//        mSurface.getHolder().removeCallback(this);
+//        stopRecording();
+//    }
 
     public static class CameraSize {
         public int width, height;

@@ -1,4 +1,4 @@
-package de.uni_freiburg.es.sensorrecordingtool;
+package de.uni_freiburg.es.sensorrecordingtool.permissions;
 
 /**
  * Abstract runnable class that contains information about granted and not granted results. For

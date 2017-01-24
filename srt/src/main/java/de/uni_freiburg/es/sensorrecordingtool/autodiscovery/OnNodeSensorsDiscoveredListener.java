@@ -7,8 +7,8 @@ public interface OnNodeSensorsDiscoveredListener {
 
     /**
      * Triggered when a node has been discovered. Once for each node in a discovery cycle.
-     * @param nodeName The node name, usually the model
+     * @param node The node
      * @param availableSensors All available Sensor names
      */
-    void onNodeSensorsDiscovered(String nodeName, String[] availableSensors);
+    void onNodeSensorsDiscovered(Node node, String[] availableSensors);
 }
