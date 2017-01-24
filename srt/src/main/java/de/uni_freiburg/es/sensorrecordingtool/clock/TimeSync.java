@@ -20,7 +20,7 @@ public class TimeSync {
     /**
      * NTP Host, Android Default.
      */
-    private final String HOST = "2.android.pool.ntp.org";
+    private final String HOST = "pool.ntp.org";
 
     /**
      * Timeout for each attempt. Android Default.
