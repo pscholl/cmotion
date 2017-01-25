@@ -93,6 +93,16 @@ public abstract class Sensor {
         return list;
     }
 
+    /** check whether the given string identifies the current sensor instance
+     * by comparing it's type. This should match the identifiers returned by
+     * getAvailableSensors() so they can be string-instaniated.
+     *
+     * @param sensor sensor identifier
+     */
+    public boolean equals(String sensor) {
+        return this.getStringType().toLowerCase().contains(sensor.toLowerCase());
+    }
+
     protected void onNewListener() {
         if (!isPrepared)
             throw new IllegalStateException("sensor was not prepared");

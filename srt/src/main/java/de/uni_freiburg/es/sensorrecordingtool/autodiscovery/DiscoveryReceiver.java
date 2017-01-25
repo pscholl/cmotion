@@ -12,6 +12,7 @@ import java.util.ArrayList;
 
 import de.uni_freiburg.es.sensorrecordingtool.Recorder;
 import de.uni_freiburg.es.sensorrecordingtool.RecorderStatus;
+import de.uni_freiburg.es.sensorrecordingtool.sensors.Sensor;
 
 /**
  * Created by paulgavrikov on 19/11/2016.
@@ -35,7 +36,7 @@ public class DiscoveryReceiver extends BroadcastReceiver {
         response.setAction(Recorder.DISCOVERY_RESPONSE_ACTION);
 
         ArrayList<String> sensorNameList = new ArrayList<>();
-        for (de.uni_freiburg.es.sensorrecordingtool.sensors.Sensor sensor : de.uni_freiburg.es.sensorrecordingtool.sensors.Sensor.getAvailableSensors(context)) {
+        for (Sensor sensor : Sensor.getAvailableSensors(context)) {
             String name = sensor.getStringType();
             if(TextUtils.isEmpty(name))
                 name = "to.unknown."+sensor.getStringName().toLowerCase().replace(" ","_")+"_unknown";

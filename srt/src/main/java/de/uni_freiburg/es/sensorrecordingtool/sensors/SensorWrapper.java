@@ -46,7 +46,7 @@ public class SensorWrapper extends Sensor {
             return mSensor.getStringType() != null ? mSensor.getStringType() : "unknown";
         } else {
             String mStringType;
-            
+
             switch (mSensor.getType()) {
                 case android.hardware.Sensor.TYPE_ACCELEROMETER:
                     mStringType =  android.hardware.Sensor.STRING_TYPE_ACCELEROMETER;

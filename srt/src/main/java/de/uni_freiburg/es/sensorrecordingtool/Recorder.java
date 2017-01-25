@@ -226,6 +226,7 @@ public class Recorder extends InfiniteIntentService {
             error = true;
             Log.e(TAG, "recording aborted during semaphore phase");
         } catch (Exception e) {
+          // TODO needs to be more explicit
             error = true;
             e.printStackTrace();
             Log.d(TAG, "unable to start recording");

@@ -47,10 +47,7 @@ public class AutoDiscoveryWrapper {
 
         for (Node key : list) {
             for (String value : key.getAvailableSensors()) {
-
-                String newName = value.contains(".") ? value.substring(value.lastIndexOf(".")+1).replace("_", " ") : value;
-
-                SensorModel sensorModel = new SensorModel(newName);
+                SensorModel sensorModel = new SensorModel(value);
                 sensorModel.addAvailablePlatform(key.getPlatform());
 
                 if (value.toLowerCase().contains("audio")) // modify predefined sample rate for audio

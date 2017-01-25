@@ -77,7 +77,11 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
     @Override
     public void onBindViewHolder(final ViewHolder holder, final int position) {
         final SensorModel model = mCollection.get(position);
-        holder.nameTextView.setText(model.getName());
+        String name = model.getName().contains(".") ?
+                      model.getName().substring(model.getName().lastIndexOf(".")+1).replace("_", " ") :
+                      model.getName();
+
+        holder.nameTextView.setText(name);
         holder.nameTextView.append("\n");
         holder.nameTextView.append(model.getAvailablePlatforms().toString());
 

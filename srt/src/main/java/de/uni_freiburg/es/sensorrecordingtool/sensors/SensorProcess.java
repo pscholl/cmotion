@@ -92,13 +92,15 @@ public abstract class SensorProcess implements SensorEventListener {
         LinkedList<Sensor> candidates = new LinkedList<Sensor>();
 
         for (Sensor s : Sensor.getAvailableSensors(context))
-            if (s.getStringName().toLowerCase().contains(sensor.toLowerCase()))
+            if (s.equals(sensor))
                 candidates.add(s);
 
         if (candidates.size() == 0) {
             StringBuilder b = new StringBuilder();
             for (Sensor s : Sensor.getAvailableSensors(context)) {
                 b.append(s.getStringName());
+                b.append(" ");
+                b.append(s.getStringType());
                 b.append("\n");
             }
             throw new Exception("no matches for " + sensor + " found."+
@@ -119,6 +121,8 @@ public abstract class SensorProcess implements SensorEventListener {
             StringBuilder b = new StringBuilder();
             for (Sensor s : candidates) {
                 b.append(s.getStringName());
+                b.append(" ");
+                b.append(s.getStringType());
                 b.append(", ");
             }
             throw new Exception("too many sensor candidates for " + sensor +
