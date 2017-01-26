@@ -22,6 +22,8 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
 
     private final Context context;
     private List<SensorModel> mCollection = null;
+    private boolean isFrozen = false;
+
     private DigitEditDialog.OnTextChangedListener mEditTextListener = new DigitEditDialog.OnTextChangedListener() {
         @Override
         public void onTextChanged(Object tag, String newText) {
@@ -96,6 +98,9 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
 
 
         holder.checkBox.setChecked(model.isEnabled());
+        holder.checkBox.setEnabled(!isFrozen);
+        holder.samplingRateButton.setEnabled(!isFrozen);
+
         holder.checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -114,6 +119,15 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
         if (mCollection == null)
             return 0;
         else return mCollection.size();
+    }
+
+    public boolean isFrozen() {
+        return isFrozen;
+    }
+
+    public void setFrozen(boolean frozen) {
+        isFrozen = frozen;
+        notifyDataSetChanged();
     }
 
 

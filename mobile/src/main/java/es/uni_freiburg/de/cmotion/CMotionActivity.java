@@ -36,7 +36,7 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
     private static final IntentFilter INTENTFILTER = new RecordingIntentFilter();
     private RecyclerView mRecyclerView;
     private RecordFloatingActionButton mRecFab;
-    private SensorAdapter mRecyclerViewAdapter;
+    SensorAdapter mRecyclerViewAdapter;
     private BroadcastReceiver mReceiver;
     private AutoDiscoveryWrapper mAutoDiscovery;
     private SwipeRefreshLayout mSwipeRefreshLayout;
@@ -122,6 +122,7 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
         if (mRecFab.isRecording()) {
             SRTHelper.sendCancelIntent(this);
         } else {
+            mRecyclerViewAdapter.setFrozen(true);
             mSlidingUpPanelLayout.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
             mRecFab.setFreeze(true);
             SRTHelper.sendRecordIntent(this, mRecyclerViewAdapter.getSelectedItems());
