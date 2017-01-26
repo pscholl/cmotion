@@ -30,10 +30,15 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
             notifyItemChanged(pos);
         }
     };
+    private CompoundButton.OnCheckedChangeListener externalListener;
 
     public SensorAdapter(Context context, List<SensorModel> data) {
         this.context = context;
         setData(data);
+    }
+
+    public void setExternalCheckListener(CompoundButton.OnCheckedChangeListener listener) {
+        this.externalListener = listener;
     }
 
     public void setData(List<SensorModel> data) {
@@ -97,6 +102,8 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
                 if (buttonView.isPressed()) {// recycler view automatically unchecks destroyed items -> check for user
                     mCollection.get(position).setEnabled(isChecked);
                 }
+                if(externalListener != null)
+                    externalListener.onCheckedChanged(buttonView, isChecked);
             }
         });
     }
