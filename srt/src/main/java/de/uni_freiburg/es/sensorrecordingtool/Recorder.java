@@ -2,6 +2,8 @@ package de.uni_freiburg.es.sensorrecordingtool;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.PowerManager;
@@ -12,8 +14,11 @@ import java.io.OutputStream;
 import java.nio.ByteOrder;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipEntry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.text.SimpleDateFormat;
 
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.AutoDiscovery;
@@ -291,6 +296,20 @@ public class Recorder extends InfiniteIntentService {
             SEMAPHORE = new CountDownLatch(1);
     }
 
+    private String getBuildDate() {
+        try{
+            ApplicationInfo ai = getPackageManager().getApplicationInfo(getPackageName(), 0);
+            ZipFile zf = new ZipFile(ai.sourceDir);
+            ZipEntry ze = zf.getEntry("classes.dex");
+            long time = ze.getTime();
+            String s = SimpleDateFormat.getInstance().format(new java.util.Date(time));
+            zf.close();
+            return s;
+        }catch(Exception e){ 
+            return "unknown";
+        }
+    }
+
     private FFMpegProcess buildFFMPEG(Context context, String[] sensors, String[] formats, double[] rates) throws Exception {
         /** create an ffmpeg process that will demux all sensor recordings into
          * a single file on one time axis. */
@@ -298,30 +317,34 @@ public class Recorder extends InfiniteIntentService {
         fp.setOutput(output, "matroska")
                 .setCodec("a", "wavpack")
                 .setCodec("v", "libx264")
+                .setTag("recorder", "cmotion v" + getBuildDate())
+                .setTag("platform", Build.BOARD + " " + Build.DEVICE + " " + Build.VERSION.SDK_INT)
+                .setTag("fingerprint", Build.FINGERPRINT)
                 .addOutputArgument("-preset", "ultrafast")
                 .setLoglevel("debug");
 
         /** create a SensorProcess for each input and wire it to ffmpeg
          * accordingly */
         for (int j = 0; j < sensors.length; j++) {
-
             Sensor matched = SensorProcess.getMatchingSensor(this, sensors[j]);
 
             if (matched instanceof VideoSensor) {
                 VideoSensor.CameraSize size = VideoSensor.getCameraSize(formats[j]);
 
                 fp
-                        .addVideo(size.width, size.height, rates[j], "rawvideo", "nv21")
-                        .setStreamTag("name", "Android Default Cam");
+                  .addVideo(size.width, size.height, rates[j], "rawvideo", "nv21")
+                  .setStreamTag("name", "Android Default Cam");
             } else if (matched instanceof AudioSensor) {
                 Log.i(TAG, "Endianess " + ByteOrder.nativeOrder());
                 fp
-                        .addAudio(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "s16le" : "s16be", rates[j], ((AudioSensor) matched).getChannels()) // native endian!
-                        .setStreamTag("name", sensors[j]);
+                  .addAudio(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "s16le" : "s16be",
+                            rates[j],
+                            ((AudioSensor) matched).getChannels()) // native endian!
+                  .setStreamTag("name", sensors[j]);
             } else
                 fp
-                        .addAudio("f32be", rates[j], SensorProcess.getSampleSize(this, sensors[j]))
-                        .setStreamTag("name", sensors[j]);
+                  .addAudio("f32be", rates[j], SensorProcess.getSampleSize(this, sensors[j]))
+                  .setStreamTag("name", sensors[j]);
         }
 
         return fp.build(context);
