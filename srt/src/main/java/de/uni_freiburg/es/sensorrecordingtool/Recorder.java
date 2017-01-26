@@ -207,10 +207,10 @@ public class Recorder extends InfiniteIntentService {
                     ready &= process.getSensor().isPrepared();
             }
 
-            DRIFT = TimeSync.getInstance().getDrift(); // TODO fetch error
-            Log.e(TAG, String.format("Clock drift: %s ms - valid computation: %s", DRIFT, TimeSync.getInstance().isDriftCalculated()));
+            DRIFT = TimeSync.getInstance(this).getDrift(); // TODO fetch error
+            Log.e(TAG, String.format("Clock drift: %s ms - valid computation: %s", DRIFT, TimeSync.getInstance(this).isDriftCalculated()));
 
-            readySteady(isMaster, sensors, DRIFT, TimeSync.getInstance().isDriftCalculated());
+            readySteady(isMaster, sensors, DRIFT, TimeSync.getInstance(this).isDriftCalculated());
 
             Log.e(TAG, "RECORDING");
 

@@ -71,12 +71,16 @@ public class AutoDiscovery {
     public static AutoDiscovery getInstance(Context context) {
         if(sInstance == null)
             sInstance = new AutoDiscovery(context);
+        sInstance.bind();
         return sInstance;
+    }
+
+    private void bind() {
+        mContext.registerReceiver(mMasterReceiver, new IntentFilter(Recorder.DISCOVERY_RESPONSE_ACTION));
     }
 
     private AutoDiscovery(Context context) {
         mContext = context;
-        mContext.registerReceiver(mMasterReceiver, new IntentFilter(Recorder.DISCOVERY_RESPONSE_ACTION));
     }
 
     /**

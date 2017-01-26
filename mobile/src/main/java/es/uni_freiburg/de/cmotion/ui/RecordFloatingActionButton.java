@@ -54,10 +54,11 @@ public class RecordFloatingActionButton extends FloatingActionButton {
 
     public void setFreeze(boolean b) {
         if (b) {
+            setRecording(true);
             startAnimation(anim);
         } else
             anim.cancel();
 
-        setEnabled(!b);
+//        setEnabled(!b);
     }
 }

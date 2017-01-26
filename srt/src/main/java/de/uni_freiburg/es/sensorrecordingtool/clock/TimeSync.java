@@ -1,6 +1,9 @@
 package de.uni_freiburg.es.sensorrecordingtool.clock;
 
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 
 import org.apache.commons.net.ntp.TimeInfo;
@@ -33,13 +36,15 @@ public class TimeSync {
     private final int MAX_TRIES = 3;
 
     private CountDownLatch mCountDownLatch = new CountDownLatch(1);
+    private Context mContext;
 
-    private TimeSync() {
+    private TimeSync(Context context) {
+        this.mContext = context;
     }
 
-    public static TimeSync getInstance() {
+    public static TimeSync getInstance(Context context) {
         if (sInstance == null)
-            sInstance = new TimeSync();
+            sInstance = new TimeSync(context);
         return sInstance;
     }
 
@@ -49,11 +54,13 @@ public class TimeSync {
             @Override
             protected Void doInBackground(NtpClient... clients) {
                 for (int i = 0; i < MAX_TRIES; i++) {
-                    TimeInfo info = clients[0].requestTime(HOST, TIMEOUT);
-                    if (info != null) {
-                        mDrift = info.getOffset();
-                        mIsDriftCalculated.set(true);
-                        break; // We have a time!
+                    if(isNetworkAvailable()) {
+                        TimeInfo info = clients[0].requestTime(HOST, TIMEOUT);
+                        if (info != null) {
+                            mDrift = info.getOffset();
+                            mIsDriftCalculated.set(true);
+                            break; // We have a time!
+                        }
                     } else {
                         mDrift = 0L;
                         mIsDriftCalculated.set(false);
@@ -65,6 +72,13 @@ public class TimeSync {
             }
 
         }.execute(client);
+    }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
     /**
