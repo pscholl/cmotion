@@ -69,17 +69,18 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
                 break;
             case RecorderStatus.FINISH_ACTION:
 
-                final String path = intent.getStringExtra(RecorderStatus.FINISH_PATH);
-                Snackbar
-                        .make(mCoordinatorLayout, "Written to: " + path, Snackbar.LENGTH_LONG)
-                        .setAction("Open", new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                openFileIfPossible(path);
-                            }
-                        })
-                        .show();
-
+                if (intent.hasExtra(RecorderStatus.FINISH_PATH)) {
+                    final String path = intent.getStringExtra(RecorderStatus.FINISH_PATH);
+                    Snackbar
+                            .make(mCoordinatorLayout, "Written to: " + path, Snackbar.LENGTH_LONG)
+                            .setAction("Open", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    openFileIfPossible(path);
+                                }
+                            })
+                            .show();
+                }
                 stopRecordingAnimations();
 
                 break;

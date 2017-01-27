@@ -11,10 +11,7 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
-import java.util.List;
-
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.NodeStatus;
-import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorProcess;
 
 /**
  * Notify the system about the current recorder stats, as well as the user.
@@ -55,7 +52,7 @@ public class RecorderStatus {
      *
      * @param context to create the notification on
      */
-    public RecorderStatus(Context context, List<SensorProcess> inputs, double duration) {
+    public RecorderStatus(Context context, int inputs, double duration) {
         c = context;
         mService = (NotificationManagerCompat) NotificationManagerCompat.from(c);
         mDuration = duration < 0 ? 0 : (int) duration * 1000;
@@ -63,8 +60,8 @@ public class RecorderStatus {
         String content;
         content = c.getResources().getQuantityString(
                 R.plurals.notification_text,
-                inputs.size(),
-                inputs.size());
+                inputs,
+                inputs);
 
         PendingIntent pi = PendingIntent.getBroadcast(context, 0,
                 new Intent(Recorder.SHOWUI_ACTION), 0);
