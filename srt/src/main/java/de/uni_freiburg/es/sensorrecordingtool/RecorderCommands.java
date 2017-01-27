@@ -34,7 +34,7 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
             return;
         if (intent.getAction().equals(Recorder.READY_ACTION) && Recorder.isMaster) {
             receivedReady(intent);
-        } else if (intent.getAction().equals(Recorder.STEADY_ACTION) && !Recorder.isMaster) {
+        } else if (intent.getAction().equals(Recorder.STEADY_ACTION) && !Recorder.isMaster && Recorder.isReady) {
             receivedSteady(intent);
         } else if (Recorder.RECORD_ACTION.equals(intent.getAction())) {
             receivedRecord(context, intent);

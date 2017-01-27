@@ -113,6 +113,7 @@ public class Recorder extends InfiniteIntentService {
 
     public static CountDownLatch SEMAPHORE = new CountDownLatch(1);
     public static boolean isMaster;
+    public static boolean isReady = false;
 
     private AutoDiscovery mAutoDiscovery;
 
@@ -177,6 +178,7 @@ public class Recorder extends InfiniteIntentService {
             String[] formats = intent.getStringArrayExtra(RECORDER_FORMAT);
             double[] rates = intent.getDoubleArrayExtra(RECORDER_RATE);
             duration = intent.getDoubleExtra(RECORDER_DURATION, -1);
+            isReady =  false;
 
             status = new RecorderStatus(getApplicationContext(), sensors.length, duration);
 
@@ -274,6 +276,7 @@ public class Recorder extends InfiniteIntentService {
 
     private void readySteady(boolean isMaster, String[] sensors, long drift, boolean driftSet) throws InterruptedException {
         status.ready(sensors, drift, driftSet);
+        isReady = true;
         SEMAPHORE.await();
 
         if (isMaster) { // wait for everyone to send prepared
