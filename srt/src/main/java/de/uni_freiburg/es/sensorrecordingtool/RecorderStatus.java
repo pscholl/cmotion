@@ -223,13 +223,14 @@ public class RecorderStatus {
         intent.putExtra(STATE, mSrtStatus.toString());
         if (extras != null)
             intent.putExtras(extras);
+        intent.putExtra("doWearForward", !Recorder.isMaster);
         includeIdentifier(intent);
         c.sendBroadcast(intent);
     }
 
 
     /**
-     * Determine whethe the code is runnong on Google Glass
+     * Determine when the the code is running on Google Glass
      *
      * @return True if and only if Manufacturer is Google and Model begins with Glass
      */
