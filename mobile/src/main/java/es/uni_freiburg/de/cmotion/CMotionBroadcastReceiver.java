@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
+import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -61,6 +62,7 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
                 if (snackbar != null && snackbarView.findViewById(android.support.design.R.id.snackbar_text) != null) {
                     TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
                     textView.setTextColor(Color.RED);
+                    textView.setMovementMethod(new ScrollingMovementMethod());
                     textView.setMaxLines(10);
                 }
 

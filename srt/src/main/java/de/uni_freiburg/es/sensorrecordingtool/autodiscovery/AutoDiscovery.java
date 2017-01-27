@@ -63,15 +63,14 @@ public class AutoDiscovery {
             node.setAvailableSensors(sensors);
         }
 
-        for(OnNodeSensorsDiscoveredListener listener : mListeners)
+        for (OnNodeSensorsDiscoveredListener listener : mListeners)
             listener.onNodeSensorsDiscovered(node, sensors);
     }
 
 
     public static AutoDiscovery getInstance(Context context) {
-        if(sInstance == null)
+        if (sInstance == null)
             sInstance = new AutoDiscovery(context);
-        sInstance.bind();
         return sInstance;
     }
 
@@ -81,6 +80,7 @@ public class AutoDiscovery {
 
     private AutoDiscovery(Context context) {
         mContext = context;
+        bind();
     }
 
     /**
@@ -105,11 +105,14 @@ public class AutoDiscovery {
      * Close the discovery by unregistering the BroadcastReceivers. Must be called on Recorder end.
      */
     public void close() {
-        mContext.unregisterReceiver(mMasterReceiver);
+        try {
+            mContext.unregisterReceiver(mMasterReceiver);
+        } catch (IllegalArgumentException e) {}
     }
 
     /**
      * Sets the OnNodeSensorsDiscoveredListener.
+     *
      * @param listener
      */
     public void setListener(OnNodeSensorsDiscoveredListener listener) {

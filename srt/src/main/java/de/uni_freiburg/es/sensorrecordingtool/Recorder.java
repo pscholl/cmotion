@@ -104,6 +104,7 @@ public class Recorder extends InfiniteIntentService {
 
     /* for handing over the cancel action from a notification */
     public static final String CANCEL_ACTION = "senserec_cancel";
+    private static final long STEADY_TIMEOUT = 5000;
 
     /* whether we are currently recording */
     public static boolean mIsRecording = false;
@@ -178,7 +179,7 @@ public class Recorder extends InfiniteIntentService {
             String[] formats = intent.getStringArrayExtra(RECORDER_FORMAT);
             double[] rates = intent.getDoubleArrayExtra(RECORDER_RATE);
             duration = intent.getDoubleExtra(RECORDER_DURATION, -1);
-            isReady =  false;
+            isReady = false;
 
             status = new RecorderStatus(getApplicationContext(), sensors.length, duration);
 
@@ -222,26 +223,12 @@ public class Recorder extends InfiniteIntentService {
             for (SensorProcess process : sensorProcesses)
                 process.startRecording();
             mRecordingSince = System.currentTimeMillis();
-
-
-//            /** now wait until the recording is stopped or a timeout has occurred, give
-//             //             * 1 seconds extra, as the sensorprocesses should stop themselves,
-//             //             * but need additional time to transport the data */
-//            for (mRecordingSince = System.currentTimeMillis();
-//                 mIsRecording && (duration <= 0 ||
-//                         System.currentTimeMillis() - mRecordingSince < (long) duration * 1000 + 1000);
-//                 Thread.sleep(500))
-//                status.recording((System.currentTimeMillis() - mRecordingSince) * 1000, (long) duration * 1000 * 1000);
-//
-//            mRecordingSince = System.currentTimeMillis() - mRecordingSince;
-//
-//            Log.e(TAG, mRecordingSince + "ms recording stopped");
-
             waitUntilEnd();
-
         } catch (InterruptedException ie) {
             error = true;
             Log.e(TAG, "recording aborted during semaphore phase");
+            if (status != null)
+                status.error(new Exception("Recording terminated"));
         } catch (Exception e) {
             error = true;
             e.printStackTrace();
@@ -277,7 +264,11 @@ public class Recorder extends InfiniteIntentService {
     private void readySteady(boolean isMaster, String[] sensors, long drift, boolean driftSet) throws InterruptedException {
         status.ready(sensors, drift, driftSet);
         isReady = true;
-        SEMAPHORE.await();
+
+        if (!isMaster)
+            SEMAPHORE.await(); // wait and die
+        else
+            SEMAPHORE.await(STEADY_TIMEOUT, TimeUnit.MILLISECONDS); // MASTER may have a timeout
 
         if (isMaster) { // wait for everyone to send prepared
             Log.e(TAG, "all nodes are ready - sending steady");
@@ -388,8 +379,6 @@ public class Recorder extends InfiniteIntentService {
 
         if (sensorProcesses != null)
             status.finished(output);
-        else
-            status.error(new Exception("Recording terminated"));
 
         sensorProcesses = null;
         ffmpeg = null;
