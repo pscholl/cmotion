@@ -10,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 
 /**
  * A manager class to determine drift against bonded Bluetooth Classic nodes. It is assumed that the
@@ -17,6 +18,10 @@ import java.util.UUID;
  * We also assume a low latency BT Link.
  */
 public class ClockSyncManager {
+
+
+    private final int MAX_ATTEMPTS = 3;
+    private final long MAX_ATTEMPT_MILLIS = 15 * 1000L;
 
     private static final String TAG = ClockSyncManager.class.getSimpleName();
     /**
@@ -51,14 +56,46 @@ public class ClockSyncManager {
      * @return drift in ms
      * @throws Exception
      */
-    public long getTime() throws Exception {
+    public long getDrift() throws Exception {
         for (BluetoothDevice device : mBtAdapter.getBondedDevices()) {
             Log.i(TAG, "bonded device " + device.getName() + " " + device.getAddress());
             BluetoothSocket socket = tryDevice(device);
             if (socket != null)
-                return getTimeFromDevice(socket);
+                return geDriftFromDevice(socket);
         }
         throw new Exception("no master node found");
+    }
+
+    /**
+     * Tries to determine the drift against a selected master. Will perform  {@link #MAX_ATTEMPTS}
+     * successful connections or timeout after {@link #MAX_ATTEMPT_MILLIS} milliseconds and throw
+     * a TimeoutException
+     * @return measured minimal drift
+     * @throws TimeoutException
+     */
+    public long getDriftSafe() throws TimeoutException {
+        int tries = 0;
+
+        long minDrift = Long.MAX_VALUE;
+        long startTime = System.currentTimeMillis();
+
+        while(tries < MAX_ATTEMPTS && (System.currentTimeMillis() - startTime) < MAX_ATTEMPT_MILLIS) {
+            try {
+                long drift = getDrift();
+                if(drift < minDrift)
+                    minDrift = drift;
+                tries ++;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        if(minDrift < MAX_ATTEMPTS)
+            throw new TimeoutException(String.format("not able to sync %d times in %d millis, succeeded syncs=%d",MAX_ATTEMPTS,MAX_ATTEMPT_MILLIS,tries));
+
+        return minDrift;
+
     }
 
     /**
@@ -81,7 +118,7 @@ public class ClockSyncManager {
      * @return determiend drift, contains the RTT, but is assumed to be low latency.
      * @throws Exception
      */
-    public long getTimeFromDevice(BluetoothSocket bluetoothSocket) throws Exception {
+    public long geDriftFromDevice(BluetoothSocket bluetoothSocket) throws Exception {
 
         bluetoothSocket.connect(); // will block until a connection is established or failed
         try {
