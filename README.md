@@ -1,10 +1,11 @@
-# Sensor Recorder
+# CMotion - Multi-Device, Multi-Sensor Synchronized Logging
 
- This is a multi-device sensor recording utility.
- In records data from a Smartphone, Smartwatch and Google Glass in parallel.
- Additionally a live stream can be recorded.
- The data is stored locally on each device in binary format.
- Each sensor gets its own file and recording rates can be specified per sensors.
+ Android application for recording sensor data from multiple devices in a
+parallel, synchronized way. Data is stored locallly on each device in
+matroska/mkv format. FFMpeg is used for compressing this data. Video, Audio as
+well as other Android sensors can be recorded and compressed in a single file.
+Metdata like recording date, sample rate, sample format etc. is stored
+side-by-side with the data streams.
 
 ## Building and Deploying
 
@@ -17,6 +18,10 @@
     cd wear && ../gradlew installDebug
 
 ## Starting a Recording
+
+ You can either use the GUI to select the sensors and devices to record or you can control the whole process via Android Intents programmatically:
+
+![screenshot](https://raw.githubusercontent.com/pscholl/cmotion/master/cmotion.gif)
 
  Recordings can be started via broadcast intents, for example from the adb shell:
 
