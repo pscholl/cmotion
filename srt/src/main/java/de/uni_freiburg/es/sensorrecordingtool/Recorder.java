@@ -18,7 +18,10 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipEntry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
 
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.AutoDiscovery;
@@ -320,6 +323,7 @@ public class Recorder extends InfiniteIntentService {
                 .setTag("recorder", "cmotion v" + getBuildDate())
                 .setTag("platform", Build.BOARD + " " + Build.DEVICE + " " + Build.VERSION.SDK_INT)
                 .setTag("fingerprint", Build.FINGERPRINT)
+                .setTag("beginning", getCurrentDataAsIso())
                 .addOutputArgument("-preset", "ultrafast")
                 .setLoglevel("debug");
 
@@ -340,6 +344,8 @@ public class Recorder extends InfiniteIntentService {
                   .addAudio(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "s16le" : "s16be",
                             rates[j],
                             ((AudioSensor) matched).getChannels()) // native endian!
+                  //.setStreamTag("resolution", sensors[j].getResolution())
+                  //.setStreamTag("unit", sensors[j].getUnit())
                   .setStreamTag("name", sensors[j]);
             } else
                 fp
@@ -364,6 +370,16 @@ public class Recorder extends InfiniteIntentService {
                 Log.e(TAG, t.getName() + " interrupted!");
             }
         }
+    }
+
+    public static String getCurrentDataAsIso() {
+      /** from
+       * https://stackoverflow.com/questions/3914404/how-to-get-current-moment-in-iso-8601-format
+       * */
+       TimeZone tz = TimeZone.getTimeZone("UTC");
+      DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'"); // Quoted "Z" to indicate UTC, no timezone offset
+      df.setTimeZone(tz);
+      return df.format(new Date());
     }
 
     @Override

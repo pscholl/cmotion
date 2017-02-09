@@ -203,7 +203,7 @@ public class FFMpegProcess {
                 throw new Exception("no stream to apply tags to, please add one first");
 
             outputopts.add(String.format("-metadata:s:%d", numinputs-1));
-            outputopts.add(String.format("%s=%s", key, value));
+            outputopts.add(String.format("'%s=%s'", key, value));
 
             return this;
         }
@@ -215,7 +215,7 @@ public class FFMpegProcess {
          */
         public Builder setTag(String key, String value) {
             outputopts.add("-metadata");
-            outputopts.add(String.format("%s=%s", key, value));
+            outputopts.add(String.format("'%s=%s'", key, value));
 
             return this;
         }

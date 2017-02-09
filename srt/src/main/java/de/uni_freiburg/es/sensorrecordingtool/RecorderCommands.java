@@ -10,9 +10,9 @@ import android.util.Log;
 import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.Arrays;
 
 import de.uni_freiburg.es.sensorrecordingtool.permissions.PermissionHelperActivity;
 import de.uni_freiburg.es.sensorrecordingtool.permissions.PermissionRunnable;
