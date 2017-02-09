@@ -1,4 +1,4 @@
-# CMotion - Multi-Device, Multi-Sensor Synchronized Logging
+# CMotion - Multi-Device, -Sensor Synchronized Logging
 
  Android application for recording sensor data from multiple devices in a
 parallel, synchronized way. Data is stored locallly on each device in
