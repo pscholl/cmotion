@@ -14,7 +14,8 @@ import es.uni_freiburg.de.cmotion.R;
 public class RecordFloatingActionButton extends FloatingActionButton {
     private boolean mRecording = false;
 
-    ScaleAnimation anim = new ScaleAnimation(1f, 0.5f, 1f, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f,
+    final float animFrom = 1f, animTo = 0.75f;
+    ScaleAnimation anim = new ScaleAnimation(animFrom, animTo, animFrom, animTo, Animation.RELATIVE_TO_SELF, 0.5f,
             Animation.RELATIVE_TO_SELF, 0.5f);
 
 
@@ -54,10 +55,11 @@ public class RecordFloatingActionButton extends FloatingActionButton {
 
     public void setFreeze(boolean b) {
         if (b) {
+            setRecording(true);
             startAnimation(anim);
         } else
             anim.cancel();
 
-        setEnabled(!b);
+//        setEnabled(!b);
     }
 }

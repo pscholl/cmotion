@@ -22,6 +22,8 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
 
     private final Context context;
     private List<SensorModel> mCollection = null;
+    private boolean isFrozen = false;
+
     private DigitEditDialog.OnTextChangedListener mEditTextListener = new DigitEditDialog.OnTextChangedListener() {
         @Override
         public void onTextChanged(Object tag, String newText) {
@@ -30,10 +32,15 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
             notifyItemChanged(pos);
         }
     };
+    private CompoundButton.OnCheckedChangeListener externalListener;
 
     public SensorAdapter(Context context, List<SensorModel> data) {
         this.context = context;
         setData(data);
+    }
+
+    public void setExternalCheckListener(CompoundButton.OnCheckedChangeListener listener) {
+        this.externalListener = listener;
     }
 
     public void setData(List<SensorModel> data) {
@@ -95,12 +102,17 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
 
 
         holder.checkBox.setChecked(model.isEnabled());
+        holder.checkBox.setEnabled(!isFrozen);
+        holder.samplingRateButton.setEnabled(!isFrozen);
+
         holder.checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (buttonView.isPressed()) {// recycler view automatically unchecks destroyed items -> check for user
                     mCollection.get(position).setEnabled(isChecked);
                 }
+                if(externalListener != null)
+                    externalListener.onCheckedChanged(buttonView, isChecked);
             }
         });
     }
@@ -111,6 +123,15 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
         if (mCollection == null)
             return 0;
         else return mCollection.size();
+    }
+
+    public boolean isFrozen() {
+        return isFrozen;
+    }
+
+    public void setFrozen(boolean frozen) {
+        isFrozen = frozen;
+        notifyDataSetChanged();
     }
 
 

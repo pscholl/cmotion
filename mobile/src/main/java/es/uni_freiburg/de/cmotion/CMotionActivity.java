@@ -15,6 +15,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.CompoundButton;
 
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
@@ -35,7 +36,7 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
     private static final IntentFilter INTENTFILTER = new RecordingIntentFilter();
     private RecyclerView mRecyclerView;
     private RecordFloatingActionButton mRecFab;
-    private SensorAdapter mRecyclerViewAdapter;
+    SensorAdapter mRecyclerViewAdapter;
     private BroadcastReceiver mReceiver;
     private AutoDiscoveryWrapper mAutoDiscovery;
     private SwipeRefreshLayout mSwipeRefreshLayout;
@@ -56,6 +57,13 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipeContainer);
         mSwipeRefreshLayout.setOnRefreshListener(this);
         mSlidingUpPanelLayout = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
+
+        mRecyclerViewAdapter.setExternalCheckListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                persistCheckedSensors();
+            }
+        });
 
         mAutoDiscovery.refresh();
 
@@ -104,7 +112,6 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
 
     @Override
     protected void onPause() {
-        persistCheckedSensors();
         stopService(new Intent(this, LocalSensorService.class));
         stopService(new Intent(this, WearSensorService.class));
         super.onPause();
@@ -115,7 +122,7 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
         if (mRecFab.isRecording()) {
             SRTHelper.sendCancelIntent(this);
         } else {
-            persistCheckedSensors();
+            mRecyclerViewAdapter.setFrozen(true);
             mSlidingUpPanelLayout.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
             mRecFab.setFreeze(true);
             SRTHelper.sendRecordIntent(this, mRecyclerViewAdapter.getSelectedItems());

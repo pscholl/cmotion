@@ -1,5 +1,6 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
+import android.os.AsyncTask;
 import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
@@ -75,12 +76,24 @@ public class EventualSocketOutputStream extends OutputStream {
     public void close() throws IOException {
         /* try a little bit harder if the socket was never open */
         for (long ticks = 0; !mWasConnected && (mTimeout == 0 || ticks < mTimeout); ticks += 10) {
-          eventuallyConnectSocketAndFlush();
+          new AsyncTask<Void, Void, Void>() {
+              @Override
+              protected Void doInBackground(Void... params) {
+                  eventuallyConnectSocketAndFlush();
+                  return null;
+              }
+          }.execute();
           try { Thread.sleep(10); }
           catch(InterruptedException e) {}
         }
 
-        eventuallyConnectSocketAndFlush();
+        new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... params) {
+                eventuallyConnectSocketAndFlush();
+                return null;
+            }
+        }.execute();
 
         if (mSock != null) {
             mOutS.close();

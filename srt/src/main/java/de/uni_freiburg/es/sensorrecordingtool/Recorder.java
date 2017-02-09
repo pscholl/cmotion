@@ -112,6 +112,7 @@ public class Recorder extends InfiniteIntentService {
 
     /* for handing over the cancel action from a notification */
     public static final String CANCEL_ACTION = "senserec_cancel";
+    private static final long STEADY_TIMEOUT = 5000;
 
     /* whether we are currently recording */
     public static boolean mIsRecording = false;
@@ -121,6 +122,7 @@ public class Recorder extends InfiniteIntentService {
 
     public static CountDownLatch SEMAPHORE = new CountDownLatch(1);
     public static boolean isMaster;
+    public static boolean isReady = false;
 
     private AutoDiscovery mAutoDiscovery;
 
@@ -185,6 +187,9 @@ public class Recorder extends InfiniteIntentService {
             String[] formats = intent.getStringArrayExtra(RECORDER_FORMAT);
             double[] rates = intent.getDoubleArrayExtra(RECORDER_RATE);
             duration = intent.getDoubleExtra(RECORDER_DURATION, -1);
+            isReady = false;
+
+            status = new RecorderStatus(getApplicationContext(), sensors.length, duration);
 
             initSynchronization(isMaster);
 
@@ -201,7 +206,6 @@ public class Recorder extends InfiniteIntentService {
              * destroyed by using the startForeground method. If not doing so,
              * the service is also killed when an accompanying Activity is
              * destroyed (wtf). */
-            status = new RecorderStatus(getApplicationContext(), sensorProcesses, duration);
             startForeground(status.NOTIFICATION_ID, status.mNotification.build());
 
             /** acquire a wake lock to avoid the sensor data generators to suspend */
@@ -215,10 +219,10 @@ public class Recorder extends InfiniteIntentService {
                     ready &= process.getSensor().isPrepared();
             }
 
-            DRIFT = TimeSync.getInstance().getDrift(); // TODO fetch error
-            Log.e(TAG, String.format("Clock drift: %s ms - valid computation: %s", DRIFT, TimeSync.getInstance().isDriftCalculated()));
+            DRIFT = TimeSync.getInstance(this).getDrift(); // TODO fetch error
+            Log.e(TAG, String.format("Clock drift: %s ms - valid computation: %s", DRIFT, TimeSync.getInstance(this).isDriftCalculated()));
 
-            readySteady(isMaster, sensors, DRIFT, TimeSync.getInstance().isDriftCalculated());
+            readySteady(isMaster, sensors, DRIFT, TimeSync.getInstance(this).isDriftCalculated());
 
             Log.e(TAG, "RECORDING");
 
@@ -227,18 +231,18 @@ public class Recorder extends InfiniteIntentService {
             for (SensorProcess process : sensorProcesses)
                 process.startRecording();
             mRecordingSince = System.currentTimeMillis();
-
             waitUntilEnd();
-
         } catch (InterruptedException ie) {
             error = true;
             Log.e(TAG, "recording aborted during semaphore phase");
+            if (status != null)
+                status.error(new Exception("Recording terminated"));
         } catch (Exception e) {
           // TODO needs to be more explicit
             error = true;
             e.printStackTrace();
             Log.d(TAG, "unable to start recording");
-            if(status != null)
+            if (status != null)
                 status.error(e);
         }
         if (error)
@@ -254,12 +258,13 @@ public class Recorder extends InfiniteIntentService {
         if (mIsRecording && (duration <= 0 ||
                 System.currentTimeMillis() - mRecordingSince < (long) duration * 1000 + 1000)) {
             status.recording((System.currentTimeMillis() - mRecordingSince) * 1000, (long) duration * 1000 * 1000);
+            long timeLeft = Double.valueOf(duration).longValue() - (System.currentTimeMillis() - mRecordingSince);
             handler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     waitUntilEnd();
                 }
-            }, 500);
+            }, Math.min(500, duration <= 0 ? Integer.MAX_VALUE : timeLeft));
         } else
             stopSelf();
 
@@ -267,7 +272,12 @@ public class Recorder extends InfiniteIntentService {
 
     private void readySteady(boolean isMaster, String[] sensors, long drift, boolean driftSet) throws InterruptedException {
         status.ready(sensors, drift, driftSet);
-        SEMAPHORE.await();
+        isReady = true;
+
+        if (!isMaster)
+            SEMAPHORE.await(); // wait and die
+        else
+            SEMAPHORE.await(STEADY_TIMEOUT, TimeUnit.MILLISECONDS); // MASTER may have a timeout
 
         if (isMaster) { // wait for everyone to send prepared
             Log.e(TAG, "all nodes are ready - sending steady");
@@ -280,20 +290,20 @@ public class Recorder extends InfiniteIntentService {
 
     private void initSynchronization(boolean isMaster) throws InterruptedException {
         if (isMaster) {
-                SEMAPHORE = new CountDownLatch(Integer.MAX_VALUE);
-                mAutoDiscovery = AutoDiscovery.getInstance(this);
-                if (mAutoDiscovery.getConnectedNodes() <= 1 || true) {
-                    Log.e(TAG, "Running discovery to find nodes");
-                    mAutoDiscovery.discover();
-                    Thread.sleep(5000);
-                    Log.e(TAG, String.format("We have at least %s nodes (including us)", mAutoDiscovery.getConnectedNodes()));
-                }
+            SEMAPHORE = new CountDownLatch(Integer.MAX_VALUE);
+            mAutoDiscovery = AutoDiscovery.getInstance(this);
+            if (mAutoDiscovery.getConnectedNodes() <= 1 || true) {
+                Log.e(TAG, "Running discovery to find nodes");
+                mAutoDiscovery.discover();
+                Thread.sleep(5000);
+                Log.e(TAG, String.format("We have at least %s nodes (including us)", mAutoDiscovery.getConnectedNodes()));
+            }
 
-                int readyNodes = Integer.MAX_VALUE - (int) (SEMAPHORE.getCount());
-                if (readyNodes > 0)
-                    Log.e(TAG, readyNodes + " nodes are already ready");
-                SEMAPHORE = new CountDownLatch(Math.max(0, mAutoDiscovery.getConnectedNodes() - readyNodes)); // do not init Latch with negative number
-                Log.e(TAG, "Latch at " + SEMAPHORE.getCount());
+            int readyNodes = Integer.MAX_VALUE - (int) (SEMAPHORE.getCount());
+            if (readyNodes > 0)
+                Log.e(TAG, readyNodes + " nodes are already ready");
+            SEMAPHORE = new CountDownLatch(Math.max(0, mAutoDiscovery.getConnectedNodes() - readyNodes)); // do not init Latch with negative number
+            Log.e(TAG, "Latch at " + SEMAPHORE.getCount());
 
         } else
             SEMAPHORE = new CountDownLatch(1);
@@ -386,26 +396,29 @@ public class Recorder extends InfiniteIntentService {
     public void onDestroy() {
         mIsRecording = false;
 
-        if (sensorProcesses == null)
-            return;
+        if (sensorProcesses != null) {
 
-        /** close all streams to notify each process that we're done */
-        for (SensorProcess p : sensorProcesses)
-            p.terminate();
+            /** close all streams to notify each process that we're done */
+            for (SensorProcess p : sensorProcesses)
+                p.terminate();
 
-        /** wait for ffmpeg to finish */
-        try {
-            ffmpeg.terminate();
-        } catch (InterruptedException e) {
+            /** wait for ffmpeg to finish */
+            try {
+                ffmpeg.terminate();
+            } catch (InterruptedException e) {
+            }
+
+            /** release the wakelock again */
+            mWl.release();
+
+            /** notify the system that a sensor recording is finished, stopForeground
+             * to remove the service-bound notification and display the finished one */
+            stopForeground(true);
+
         }
 
-        /** release the wakelock again */
-        mWl.release();
-
-        /** notify the system that a sensor recording is finished, stopForeground
-         * to remove the service-bound notification and display the finished one */
-        stopForeground(true);
-        status.finished(output);
+        if (sensorProcesses != null)
+            status.finished(output);
 
         sensorProcesses = null;
         ffmpeg = null;
