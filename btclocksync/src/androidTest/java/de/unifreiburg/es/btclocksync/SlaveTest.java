@@ -28,7 +28,7 @@ public class SlaveTest {
 
         for (int i = 0; i < max; i++)
             try {
-                long drift = mgr.getDrift();
+                long drift = mgr.getOffset();
 
                 if(drift > maxTime)
                     maxTime = drift;
@@ -41,7 +41,7 @@ public class SlaveTest {
             }
 
         Log.e("RESULT", ((System.currentTimeMillis() - start) / 1000f) + "s");
-        Log.e("RESULT", (fails / (float) max) * max + "% error rate, min="+minTime+" max="+maxTime);
+        Log.e("RESULT", (fails / (float) max) * 100 + "% error rate, min="+minTime+" max="+maxTime);
 
         Assert.assertTrue("connections: " + (fails / (float) max) * max + "% error is too much", fails < max / 2f);
 
@@ -74,7 +74,7 @@ public class SlaveTest {
         Log.e("RESULT", ((System.currentTimeMillis() - start) / 1000f) + "s");
         Log.e("RESULT", (fails / (float) max) * max + "% error rate, min="+minTime+" max="+maxTime);
 
-        Assert.assertTrue("connections: " + (fails / (float) max) * max + "% error is too much", fails < max / 2f);
+        Assert.assertTrue("connections: " + (fails / (float) max) * 100 + "% error is too much", fails < max / 2f);
         Assert.assertTrue("distance too high: "+(maxTime-minTime), (maxTime - minTime) < 10); // error less then 10ms
 
     }

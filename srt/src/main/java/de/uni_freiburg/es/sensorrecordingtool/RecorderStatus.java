@@ -82,6 +82,9 @@ public class RecorderStatus {
         PendingIntent pendingIntent = PendingIntent.getBroadcast(c, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         mNotification.addAction(R.drawable.ic_stop_white_24dp, c.getString(android.R.string.cancel), pendingIntent);
 
+        mSrtStatus = NodeStatus.PREPARING;
+        sendStatusIntent();
+
         if (!isRunningOnGlass())
             mService.notify(NOTIFICATION_ID, mNotification.build());
     }
@@ -205,8 +208,6 @@ public class RecorderStatus {
      * @param startTime wall-clock time at which all nodes shall start recording the intinitalised sensors
      */
     public void steady(long startTime) {
-
-
         Intent i = new Intent(Recorder.STEADY_ACTION);
         i.putExtra(START_TIME, startTime * 1d);
         includeIdentifier(i);

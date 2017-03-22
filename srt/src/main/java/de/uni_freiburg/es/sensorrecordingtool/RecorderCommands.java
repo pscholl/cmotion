@@ -65,7 +65,7 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
         long startTime = (long) intent.getDoubleExtra(RecorderStatus.START_TIME, -1);
         Log.e(TAG, "Steady, starting recording at " + startTime);
 
-        long correctTime = System.currentTimeMillis() + Recorder.DRIFT;
+        long correctTime = System.currentTimeMillis() + Recorder.OFFSET;
         long diff = startTime - correctTime; // Due to clock drift
         Log.e(TAG, "Waiting for " + diff + "ms");
 
@@ -81,7 +81,7 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
     }
 
     private void receivedReady(Intent intent) {
-        Log.e(TAG, String.format("node %s[%s] is ready with DRIFT=%s, Semaphore at %d",
+        Log.e(TAG, String.format("node %s[%s] is ready with OFFSET=%s, Semaphore at %d",
                 intent.getStringExtra(RecorderStatus.ANDROID_ID),
                 intent.getStringExtra(RecorderStatus.PLATFORM),
                 intent.getDoubleExtra(RecorderStatus.DRIFT, 0) + " ms",
