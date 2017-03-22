@@ -15,7 +15,7 @@ public class FunctionalityTest {
     @Test
     public void test() throws Exception {
 
-        new ServerThread().start();
+        new ClockSyncServerThread().start();
         while(true) Thread.yield();
     }
 }

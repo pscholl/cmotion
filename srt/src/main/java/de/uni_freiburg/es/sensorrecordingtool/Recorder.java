@@ -14,16 +14,18 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.AutoDiscovery;
-import de.uni_freiburg.es.sensorrecordingtool.clock.TimeSync;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.AudioSensor;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.BlockSensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.NonBlockSensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.Sensor;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.SensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.VideoSensor;
+import de.unifreiburg.es.btclocksync.ClockSyncManager;
+import de.unifreiburg.es.btclocksync.ClockSyncServerThread;
 
 /**
  * A tool for recording arbitrary combinations of sensor attached and reachable via Android. The
@@ -118,6 +120,8 @@ public class Recorder extends InfiniteIntentService {
 
     private AutoDiscovery mAutoDiscovery;
 
+    private ClockSyncServerThread mClockSyncServerThread = null;
+
     /* members when a recording is ongoing, stored here for cleanup from
      * onDestroy */
     private List<SensorProcess> sensorProcesses;
@@ -125,7 +129,7 @@ public class Recorder extends InfiniteIntentService {
     private RecorderStatus status;
     private FFMpegProcess ffmpeg;
     private String output;
-    public static long DRIFT;
+    public static long OFFSET;
     private double duration;
 
     public Recorder() {
@@ -211,10 +215,23 @@ public class Recorder extends InfiniteIntentService {
                     ready &= process.getSensor().isPrepared();
             }
 
-            DRIFT = TimeSync.getInstance(this).getDrift(); // TODO fetch error
-            Log.e(TAG, String.format("Clock drift: %s ms - valid computation: %s", DRIFT, TimeSync.getInstance(this).isDriftCalculated()));
+            boolean driftCalculated = true;
 
-            readySteady(isMaster, sensors, DRIFT, TimeSync.getInstance(this).isDriftCalculated());
+            if (!isMaster) {
+                try {
+//                    OFFSET = 0;
+                    OFFSET = new ClockSyncManager(this).getDriftSafe();
+                } catch (TimeoutException e) {
+                    // TODO come up with something clever here.
+                    e.printStackTrace();
+                    driftCalculated = false;
+                    OFFSET = 0;
+                }
+            } else OFFSET = 0; // since we provide the time in this case ...
+
+            Log.e(TAG, String.format("Clock drift: %s ms - valid computation: %s", OFFSET, driftCalculated));
+
+            readySteady(isMaster, sensors, OFFSET, driftCalculated);
 
             Log.e(TAG, "RECORDING");
 
@@ -272,7 +289,7 @@ public class Recorder extends InfiniteIntentService {
 
         if (isMaster) { // wait for everyone to send prepared
             Log.e(TAG, "all nodes are ready - sending steady");
-            long correctTime = System.currentTimeMillis() + Recorder.DRIFT;
+            long correctTime = System.currentTimeMillis() + Recorder.OFFSET;
             status.steady(correctTime + DEFAULT_STEADY_TIME);
             new CountDownLatch(1).await(DEFAULT_STEADY_TIME, TimeUnit.MILLISECONDS);
 
@@ -281,6 +298,15 @@ public class Recorder extends InfiniteIntentService {
 
     private void initSynchronization(boolean isMaster) throws InterruptedException {
         if (isMaster) {
+
+            try {
+                mClockSyncServerThread = new ClockSyncServerThread();
+                mClockSyncServerThread.start();
+            } catch (Exception e) {
+                Log.e(TAG, "Unable to start BT-Clock Server "+e);
+                e.printStackTrace();
+            }
+
             SEMAPHORE = new CountDownLatch(Integer.MAX_VALUE);
             mAutoDiscovery = AutoDiscovery.getInstance(this);
             if (mAutoDiscovery.getConnectedNodes() <= 1 || true) {
@@ -355,6 +381,12 @@ public class Recorder extends InfiniteIntentService {
     @Override
     public void onDestroy() {
         mIsRecording = false;
+
+        if(handler != null)
+            handler.removeCallbacksAndMessages(null);
+
+        if (mClockSyncServerThread != null)
+            mClockSyncServerThread.interrupt();
 
         if (sensorProcesses != null) {
 

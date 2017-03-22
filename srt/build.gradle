@@ -36,4 +36,5 @@ dependencies {
     compile 'commons-net:commons-net:3.3'
     compile 'com.android.support:support-annotations:25.0.0'
     compile 'org.jetbrains:annotations-java5:15.0'
+    compile project(path: ':btclocksync')
 }
