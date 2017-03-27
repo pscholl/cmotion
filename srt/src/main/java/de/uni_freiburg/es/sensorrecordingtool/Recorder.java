@@ -344,7 +344,7 @@ public class Recorder extends InfiniteIntentService {
             String s = SimpleDateFormat.getInstance().format(new java.util.Date(time));
             zf.close();
             return s;
-        }catch(Exception e){ 
+        }catch(Exception e){
             return "unknown";
         }
     }
