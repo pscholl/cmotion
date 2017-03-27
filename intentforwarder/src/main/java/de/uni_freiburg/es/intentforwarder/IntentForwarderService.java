@@ -13,6 +13,7 @@ import android.util.Log;
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.UUID;
@@ -112,8 +113,9 @@ public class IntentForwarderService extends Service {
                     BufferedInputStream is = new BufferedInputStream(s.getInputStream());
                     byte[] fuckingjava = new byte[4];
                     is.read(fuckingjava);
+
                     byte[] msg = new byte[ByteBuffer.wrap(fuckingjava).asIntBuffer().get()];
-                    is.read(msg);
+                    new DataInputStream(is).readFully(msg);
                     s.close();
 
                     Intent jmsg = ForwardedUtils.fromJson(msg);

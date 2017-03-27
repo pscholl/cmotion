@@ -27,7 +27,7 @@ public class CMotionCardService extends Service {
     private static final String LIVE_CARD_TAG = "CMotionCardService";
     private static final String TAG = CMotionCardService.class.getSimpleName();
 
-    protected HashMap<Integer, LiveCard> cards = new HashMap<Integer, LiveCard>();
+    protected UpdateLiveCard card;
     private Handler mHandler = new Handler();
 
     @Override
@@ -41,55 +41,38 @@ public class CMotionCardService extends Service {
             return START_STICKY;
 
         String action = intent.getAction();
-        Integer id = intent.getIntExtra(Recorder.RECORDING_ID, -1);
-
-        if (id==-1) {
-            Log.d(TAG, "unknown recording");
-            return START_STICKY;
-        }
 
         if (Notification.NEW_RECORDING.equals(action))
-            newRecording(id, intent.getIntExtra(Notification.EXTRA_NUM_SENSORS, -1),
-                             intent.getDoubleExtra(Notification.EXTRA_DURATION, -1.));
+            newRecording(intent.getIntExtra(Notification.EXTRA_NUM_SENSORS, -1),
+                         intent.getDoubleExtra(Notification.EXTRA_DURATION, -1.));
         else if (Notification.CANCEL_RECORDING.equals(action))
-            cancelRecording(id);
+            cancelRecording();
         else if (Notification.FINISHED_RECORDING.equals(action))
-            finishRecording(id);
+            finishRecording();
         else
             Log.d(TAG, "unknown action " + action);
 
         return START_STICKY;
     }
 
-    private void finishRecording(Integer id) {
-        Log.d(TAG, "finished recording " + id);
-
-        UpdateLiveCard card = (UpdateLiveCard) cards.get(id);
+    private void finishRecording() {
         if (card != null) {
             card.setFinished(true);
             card.unpublish();
-            cards.remove(id);
         }
     }
 
-    private void cancelRecording(Integer id) {
-        Log.d(TAG, "cancel recording " + id);
-        finishRecording(id);
+    private void cancelRecording() {
+        finishRecording();
     }
 
-    private void newRecording(Integer id, Integer numsensor, double duration) {
-        Log.d(TAG, "new recording " + id);
-
-        LiveCard card = cards.get(id);
+    private void newRecording(Integer numsensor, double duration) {
         if (card == null) {
-            String tag = LIVE_CARD_TAG + id.toString();
-            card = new UpdateLiveCard(this, tag, numsensor, duration);
+            card = new UpdateLiveCard(this, LIVE_CARD_TAG, numsensor, duration);
             card.setVoiceActionEnabled(true);
-            cards.put(id, card);
         }
 
         Intent menuIntent = new Intent(this, CMotionCardMenuActivity.class);
-        menuIntent.putExtra(Recorder.RECORDING_ID, id);
         card.setAction(PendingIntent.getActivity(this, 0,
                 menuIntent, PendingIntent.FLAG_UPDATE_CURRENT));
 

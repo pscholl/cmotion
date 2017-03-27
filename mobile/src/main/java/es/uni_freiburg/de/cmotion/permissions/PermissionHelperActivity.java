@@ -1,4 +1,4 @@
-package de.uni_freiburg.es.sensorrecordingtool.permissions;
+package es.uni_freiburg.de.cmotion.permissions;
 
 import android.Manifest;
 import android.content.Context;
@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.app.Activity;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -20,7 +21,7 @@ import java.util.ArrayList;
 /**
  * A class for requesting permissions.
  */
-public class PermissionHelperActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
+public class PermissionHelperActivity extends Activity {
 
     private static final int PERMISSION_REQUEST = 11; // request code must be in the range of 0.. 65535
     private static final String TAG = PermissionHelperActivity.class.getSimpleName();

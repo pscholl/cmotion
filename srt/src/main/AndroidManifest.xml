@@ -39,10 +39,7 @@
             </intent-filter>
         </receiver>
 
-
         <service android:name=".Recorder"></service>
-
-        <activity android:name=".permissions.PermissionHelperActivity" />
     </application>
 
 </manifest>

@@ -77,8 +77,6 @@ public class CMotionCardMenuActivity extends Activity {
             case R.id.action_stop:
                 // Stop the service which will unpublish the live card.
                 Intent cancel_intent = new Intent(Recorder.CANCEL_ACTION);
-                cancel_intent.putExtra(Recorder.RECORDING_ID,
-                        getIntent().getIntExtra(Recorder.RECORDING_ID, -1));
                 sendBroadcast(cancel_intent);
                 return true;
             default:

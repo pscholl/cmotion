@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 'android-25'
+    compileSdkVersion 25
     buildToolsVersion project.properties.BuildToolsVersion
 
     defaultConfig {
@@ -21,6 +21,9 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_7
         targetCompatibility JavaVersion.VERSION_1_7
     }
+    lintOptions {
+        abortOnError false
+    }
 }
 
 dependencies {
@@ -32,7 +35,4 @@ dependencies {
     compile project(path: ':intentforwarder')
     compile 'commons-net:commons-net:3.3'
     compile 'org.jetbrains:annotations-java5:15.0'
-    compile 'com.android.support:support-annotations:25+'
-    compile 'com.android.support:support-v4:25+'
-    compile 'com.android.support:appcompat-v7:25+'
 }

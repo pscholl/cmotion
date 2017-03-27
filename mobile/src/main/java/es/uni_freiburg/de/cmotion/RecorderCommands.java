@@ -17,12 +17,6 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
         if (intent == null)
             return;
 
-//        if (PermissionDialog.needToAskForPermission(context)) {
-//            intent.setClass(context, PermissionDialog.class);
-//            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//            context.startActivity(intent);
-//        }
-
         if (Recorder.SHOWUI_ACTION.equals(intent.getAction()))
         {
             intent.setClass(context, CMotionActivity.class);

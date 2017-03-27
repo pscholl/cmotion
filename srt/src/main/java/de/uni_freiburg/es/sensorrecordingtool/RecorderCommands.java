@@ -14,9 +14,6 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.util.Arrays;
 
-import de.uni_freiburg.es.sensorrecordingtool.permissions.PermissionHelperActivity;
-import de.uni_freiburg.es.sensorrecordingtool.permissions.PermissionRunnable;
-
 /**
  * A Broadcast which distributes a recording intent to the proper Services and also makes
  * sure to stop an ongoing recording if there is any.
@@ -45,20 +42,7 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
 
     private void receivedRecord(final Context context, final Intent intent) {
         Recorder.stopCurrentRecording();
-
-        new PermissionHelperActivity().runWithPermissions(context, new PermissionRunnable() {
-            @Override
-            public void run() {
-                parseIntentOrFail(context, intent);
-            }
-        }, new PermissionRunnable() {
-            @Override
-            public void run() {
-                Intent i = new Intent(RecorderStatus.ERROR_ACTION);
-                i.putExtra(RecorderStatus.ERROR_REASON, "Following permissions not granted: " + Arrays.toString(notGrantedResults));
-                context.sendBroadcast(i);
-            }
-        });
+        parseIntentOrFail(context, intent);
     }
 
     private void receivedSteady(Intent intent) {
