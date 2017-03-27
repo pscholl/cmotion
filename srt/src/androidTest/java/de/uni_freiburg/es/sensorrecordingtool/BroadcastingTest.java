@@ -1,6 +1,5 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -16,30 +15,30 @@ import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.DiscoveryReceiver;
 import static android.support.test.InstrumentationRegistry.getInstrumentation;
 
 /**
- * An abstract class to be implemented by all tests. Will enable / disable BroadcastReceivers on
- * demand and prevent the real up from interacting with test receivers.
+ * An abstract class to be implemented by all tests. Will enable / disable BroadcastReceivers / Services on
+ * demand and prevent the real app from interacting with test components.
  */
 @RunWith(AndroidJUnit4.class)
 public abstract class BroadcastingTest {
 
 
-    private final Class[] mReceivers = new Class[]{RecorderCommands.class, DiscoveryReceiver.class, IntentForwarder.class};
+    private final Class[] mComponents = new Class[]{RecorderCommands.class, DiscoveryReceiver.class, IntentForwarder.class, Recorder.class};
 
     @Before
-    public void startAllReceivers() {
-        for (Class receiver : mReceivers)
-            enableBroadcastReceiver(receiver, true);
+    public void startAllComponents() {
+        for (Class receiver : mComponents)
+            enableComponent(receiver, true);
     }
 
     @After
-    public void destroyAllReceivers() {
-        for (Class receiver : mReceivers)
-            enableBroadcastReceiver(receiver, false);
+    public void destroyAllComponents() {
+        for (Class receiver : mComponents)
+            enableComponent(receiver, false);
     }
 
-    private void enableBroadcastReceiver( Class<? extends BroadcastReceiver> receiver, boolean on) {
+    private void enableComponent(Class<?> cl, boolean on) {
         Context context = getInstrumentation().getTargetContext();
-        ComponentName component = new ComponentName(context, receiver);
+        ComponentName component = new ComponentName(context, cl);
         PackageManager pm = context.getPackageManager();
         pm.setComponentEnabledSetting(component,
                 (on ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED : PackageManager.COMPONENT_ENABLED_STATE_DISABLED),
