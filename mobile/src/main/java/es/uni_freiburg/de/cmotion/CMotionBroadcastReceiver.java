@@ -6,9 +6,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
+import android.provider.Settings;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -41,6 +43,15 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+
+        if (intent == null)
+            return;
+
+        if (!intent.getStringExtra(RecorderStatus.ANDROID_ID).equals(
+                Settings.Secure.getString(context.getContentResolver(),
+                        Settings.Secure.ANDROID_ID))) // block slave responses => might destroy logic
+            return;
+
         switch (intent.getAction()) {
             case RecorderStatus.STATUS_ACTION:
                 if (NodeStatus.valueOf(intent.getStringExtra(RecorderStatus.STATE)) == NodeStatus.RECORDING) {
@@ -103,6 +114,7 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
     }
 
     private void startRecordingAnimations(long elapsed, long duration) {
+        Log.e("UIX", "start");
         mActivity.mRecyclerViewAdapter.setFrozen(true);
         mRecFab.setFreeze(false);
         if (duration < 0)
@@ -116,6 +128,8 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
     }
 
     private void stopRecordingAnimations() {
+        Log.e("UIX", "stop");
+
         mActivity.mRecyclerViewAdapter.setFrozen(false);
         mProgressBar.stopAnimation();
         mRecFab.setFreeze(false);
