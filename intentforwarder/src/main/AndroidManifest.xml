@@ -21,6 +21,7 @@
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
 
                 <action android:name="senserec"/>
+                <action android:name="recorder_status"/>
                 <action android:name="senserec_cancel"/>
                 <action android:name="senserec_ready"/>
                 <action android:name="senserec_steady"/>

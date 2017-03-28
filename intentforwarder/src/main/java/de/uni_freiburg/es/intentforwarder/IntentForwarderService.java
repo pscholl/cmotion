@@ -54,7 +54,6 @@ public class IntentForwarderService extends Service {
             return super.onStartCommand(intent, flags, startId);
 
         if (intent.getAction() != null) {
-
             intent.putExtra("forwarded", true); // flag it as forwarded intent
 
             /** got a broadcast action, let's forward to all bound nodes */
@@ -66,7 +65,6 @@ public class IntentForwarderService extends Service {
                     new SenderThread(d, extras);
         }
 
-        Log.d(TAG, "service running with " + mServerThread);
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -142,6 +140,7 @@ public class IntentForwarderService extends Service {
         public SenderThread(BluetoothDevice d, JSONObject extras) {
             mDevice = d;
             mExtras = extras;
+            Log.d(TAG, "sending msg " + extras +  " to " + d.toString());
             start();
         }
 

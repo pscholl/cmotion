@@ -241,13 +241,13 @@ public class Recorder extends InfiniteIntentService {
 
             readySteady(isMaster, sensors, OFFSET, driftCalculated);
 
-            Log.e(TAG, "RECORDING");
-
-            ((Vibrator) getApplicationContext().getSystemService(VIBRATOR_SERVICE)).vibrate(100);
-
             for (SensorProcess process : sensorProcesses)
                 process.startRecording();
+
             mRecordingSince = System.currentTimeMillis();
+            ((Vibrator) getApplicationContext().getSystemService(VIBRATOR_SERVICE)).vibrate(100);
+            Log.e(TAG, "RECORDING");
+
             waitUntilEnd();
         } catch (InterruptedException ie) {
             error = true;
@@ -274,6 +274,7 @@ public class Recorder extends InfiniteIntentService {
     private void waitUntilEnd() {
         if (mIsRecording && (duration <= 0 ||
                 System.currentTimeMillis() - mRecordingSince < (long) duration * 1000 + 1000)) {
+            Log.d(TAG, "recording status");
             status.recording((System.currentTimeMillis() - mRecordingSince) * 1000, (long) duration * 1000 * 1000);
             long timeLeft = Double.valueOf(duration).longValue() - (System.currentTimeMillis() - mRecordingSince);
             handler.postDelayed(new Runnable() {
