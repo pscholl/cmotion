@@ -7,14 +7,11 @@ import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.util.Log;
 
-
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.List;
 
 import de.uni_freiburg.es.sensorrecordingtool.Recorder;
-import de.uni_freiburg.es.sensorrecordingtool.RecorderCommands;
 
 /** Sequencializes request for forwarding the recording commands to the Theta or any compatible
  * OSC camera. This involves several steps:
@@ -42,7 +39,7 @@ public class ThetaService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         String action = intent.getAction();
-        mWifi = (WifiManager) getSystemService(WIFI_SERVICE);
+        mWifi = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
 
         if (action == null)
             return;
