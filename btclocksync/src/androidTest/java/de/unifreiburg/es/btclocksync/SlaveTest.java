@@ -59,7 +59,7 @@ public class SlaveTest {
 
         for (int i = 0; i < max; i++)
             try {
-                long drift = mgr.getDriftSafe();
+                long drift = mgr.getOffsetSafe();
 
                 if(drift > maxTime)
                     maxTime = drift;

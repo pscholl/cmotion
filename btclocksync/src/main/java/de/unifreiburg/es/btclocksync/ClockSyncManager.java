@@ -65,7 +65,7 @@ public class ClockSyncManager {
             Log.i(TAG, "bonded device " + device.getName() + " " + device.getAddress());
             BluetoothSocket socket = tryDevice(device);
             if (socket != null)
-                return geDriftFromDevice(socket);
+                return getOffsetFromDevice(socket);
         }
         throw new Exception("no master node found");
     }
@@ -79,7 +79,7 @@ public class ClockSyncManager {
      * @throws TimeoutException
      * @throws InterruptedException
      */
-    public long getDriftSafe() throws TimeoutException, InterruptedException {
+    public long getOffsetSafe() throws TimeoutException, InterruptedException {
         int tries = 0;
 
         long minOffset = Long.MAX_VALUE;
@@ -126,7 +126,7 @@ public class ClockSyncManager {
      * @return determined offset, contains the link latency, but is assumed to be low latency.
      * @throws Exception
      */
-    public long geDriftFromDevice(BluetoothSocket bluetoothSocket) throws Exception {
+    public long getOffsetFromDevice(BluetoothSocket bluetoothSocket) throws Exception {
 
         bluetoothSocket.connect(); // will block until a connection is established or failed
         BufferedReader br = null;
@@ -143,7 +143,7 @@ public class ClockSyncManager {
                 br.readLine();
                 String line = br.readLine();
                 long remoteTime = Long.parseLong(line);
-                long offset = System.currentTimeMillis() - remoteTime;
+                long offset = remoteTime - System.currentTimeMillis();
                 Log.e(TAG, "Offset=" + offset);
                 return offset;
             } else throw new Exception("link not created");
