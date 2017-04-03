@@ -3,7 +3,9 @@ package de.uni_freiburg.es.sensorrecordingtool.sensors;
 import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.PowerManager;
+import android.util.Log;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -13,23 +15,25 @@ import java.util.Iterator;
 import java.util.LinkedList;
 
 
-/** Copies *sensor* data for *dur* seconds at *rate* to a bufferedwriter *bf*. Automatically
+/**
+ * Copies *sensor* data for *dur* seconds at *rate* to a bufferedwriter *bf*. Automatically
  * closes the output buffer when done.
- *
+ * <p>
  * This is all done in binary float format, all the channels are recorded and the current
  * accuracy of the process. For example the accelerometer reports all three axes, so one sample
  * is 3 (channels) * 4 (bytes per float) + 4 (bytes for accuracy as float).
- *
+ * <p>
  * Arguments:
- *  sensor - a string representation for the sensor, must match Android Sensor types
- *  dur    - a double seconds of recording duration
- *  rate   - double Hz for the recording, non-negative
- *  bf     - a bufferedwriter, where data gets written to in binary format.
- *
+ * sensor - a string representation for the sensor, must match Android Sensor types
+ * dur    - a double seconds of recording duration
+ * rate   - double Hz for the recording, non-negative
+ * bf     - a bufferedwriter, where data gets written to in binary format.
  */
 public abstract class SensorProcess implements SensorEventListener {
-    /** when no duration is set this constant is used for the maximum delay to report
-     * on new sensor data. We chose ten minutes for no specific reason. */
+    /**
+     * when no duration is set this constant is used for the maximum delay to report
+     * on new sensor data. We chose ten minutes for no specific reason.
+     */
     public static final int DEFAULT_LATENCY_US = 10 * 60 * 1000 * 1000;
     final Sensor mSensor;
     final double mRate;
@@ -65,13 +69,13 @@ public abstract class SensorProcess implements SensorEventListener {
 
     public void startRecording() {
         int maxreportdelay_us = DEFAULT_LATENCY_US;
-        if ( mDur-1 > 0 ) // make it one second shorter
-            maxreportdelay_us = (int) (mDur-1.) * 1000 * 1000;
+        if (mDur - 1 > 0) // make it one second shorter
+            maxreportdelay_us = (int) (mDur - 1.) * 1000 * 1000;
 
         /** XXX flushing the sensor is not working reliably at the moment, so we
          * completly avoid the reporting latency in favor of having the correct
          * number of samples in the output. */
-                maxreportdelay_us = 0;
+        maxreportdelay_us = 0;
         mSensor.registerListener(this, (int) (1 / mRate * 1000 * 1000), maxreportdelay_us, mFormat, mHandler);
     }
 
@@ -103,8 +107,8 @@ public abstract class SensorProcess implements SensorEventListener {
                 b.append(s.getStringType());
                 b.append("\n");
             }
-            throw new Exception("no matches for " + sensor + " found."+
-                                "Options are: \n"+b.toString());
+            throw new Exception("no matches for " + sensor + " found." +
+                    "Options are: \n" + b.toString());
         }
 
         int minimum = Integer.MAX_VALUE;
@@ -113,7 +117,7 @@ public abstract class SensorProcess implements SensorEventListener {
             minimum = Math.min(minimum, s.getStringName().length());
 
         Iterator<Sensor> it = candidates.iterator();
-        while(it.hasNext())
+        while (it.hasNext())
             if (it.next().getStringName().length() != minimum)
                 it.remove();
 
@@ -135,8 +139,6 @@ public abstract class SensorProcess implements SensorEventListener {
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
 
-
-
         if (mLastTimestamp == -1) {
             mLastTimestamp = sensorEvent.timestamp;
             return;
@@ -148,7 +150,7 @@ public abstract class SensorProcess implements SensorEventListener {
              * interpolation here. I.e. we make sure that at least 1/rate seconds have passed
              * between samples.
              */
-            assert( mLastTimestamp < sensorEvent.timestamp );
+            assert (mLastTimestamp < sensorEvent.timestamp);
             mDiff += (sensorEvent.timestamp - mLastTimestamp) * 1e-9;
 
             if (mDur > 0 && mElapsed > mDur) {
@@ -164,17 +166,17 @@ public abstract class SensorProcess implements SensorEventListener {
             /*
              * store it or multiple copies of the same, close when done.
              */
-            while (mDiff >= 1./mRate) {
+            while (mDiff >= 1. / mRate) {
                 mOut.write(arr);
                 mDiff -= 1. / mRate;
                 mElapsed += 1. / mRate;
 
-                if (mDur > 0 && mElapsed > mDur+.5/mRate) {
+                if (mDur > 0 && mElapsed > mDur + .5 / mRate) {
                     terminate();
                     return;
                 }
 
-                if (mSensor instanceof AudioSensor) // we dont need repititon for audio
+                if (mSensor instanceof AudioSensor) // we dont need repetition for audio
                     break;
             }
 
@@ -188,18 +190,24 @@ public abstract class SensorProcess implements SensorEventListener {
     public abstract byte[] transfer(SensorEvent sensorEvent);
 
     public void terminate() {
+
+        if(Thread.currentThread() == Looper.getMainLooper().getThread())
+            Log.wtf("SensorProcess", "Terminate called on UI Thread!!!");
+
         if (mDur < mElapsed || mDur < 0)
-            mSensor.flush(this);
+            mSensor.flush(SensorProcess.this);
         else
             onFlushCompleted();
     }
 
     @Override
     public void onFlushCompleted() {
-        if (mWl.isHeld())  mWl.release();
+        if (mWl.isHeld()) mWl.release();
         mSensor.unregisterListener(this);
-        try { mOut.close();}
-        catch (IOException e) {}
+        try {
+            mOut.close();
+        } catch (IOException e) {
+        }
     }
 
     public static int getSampleSize(Context context, String sensor) throws Exception {
@@ -207,10 +215,10 @@ public abstract class SensorProcess implements SensorEventListener {
 
         if (s instanceof SensorWrapper) {
             Method m = android.hardware.Sensor.class.getDeclaredMethod("getMaxLengthValuesArray",
-                        new Class[]{android.hardware.Sensor.class, int.class});
+                    new Class[]{android.hardware.Sensor.class, int.class});
             m.setAccessible(true);
             return (int) m.invoke(null, ((SensorWrapper) s).mSensor, Build.VERSION.SDK_INT);
-        } else if(s instanceof LocationSensor)
+        } else if (s instanceof LocationSensor)
             return 4;
 
         throw new Exception("unknown sensor: " + sensor);

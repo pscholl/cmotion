@@ -10,9 +10,9 @@ import android.util.Log;
 import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.TimeZone;
-import java.util.Arrays;
 
 import de.uni_freiburg.es.sensorrecordingtool.permissions.PermissionHelperActivity;
 import de.uni_freiburg.es.sensorrecordingtool.permissions.PermissionRunnable;
@@ -35,6 +35,7 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
         if (intent.getAction().equals(Recorder.READY_ACTION) && Recorder.isMaster) {
             receivedReady(intent);
         } else if (intent.getAction().equals(Recorder.STEADY_ACTION) && !Recorder.isMaster && Recorder.isReady) {
+            Recorder.mRecordUUID = intent.getStringExtra(RecorderStatus.RECORDING_UUID);
             receivedSteady(intent);
         } else if (Recorder.RECORD_ACTION.equals(intent.getAction())) {
             receivedRecord(context, intent);
@@ -81,6 +82,9 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
     }
 
     private void receivedReady(Intent intent) {
+
+        Recorder.mReadyNodes.add(intent.getStringExtra(RecorderStatus.ANDROID_ID));
+
         Log.e(TAG, String.format("node %s[%s] is ready with OFFSET=%s, Semaphore at %d",
                 intent.getStringExtra(RecorderStatus.ANDROID_ID),
                 intent.getStringExtra(RecorderStatus.PLATFORM),
@@ -160,22 +164,25 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
     }
 
     public static double getDoubleOrFloat(Intent i, String key, float v) {
-        double omg = i.getDoubleExtra(key, -1);
-        return omg == -1 ? i.getFloatExtra(key, v) : omg;
+        if(!i.hasExtra(key))
+            return v;
+        double omg = i.getExtras().get(key) instanceof  Double? i.getDoubleExtra(key, v) : v;
+        return omg == v ? i.getFloatExtra(key, v) : omg;
     }
 
     public static boolean getBooleanOrString(Intent i, String key, boolean b) {
         boolean retVal = b;
 
-        if(i.hasExtra(key)) {
-            if((i.getExtras().get(key)) instanceof Boolean)
+        if (i.hasExtra(key)) {
+            if ((i.getExtras().get(key)) instanceof Boolean)
                 retVal = i.getBooleanExtra(key, b);
-            else if((i.getExtras().get(key)) instanceof String)
+            else if ((i.getExtras().get(key)) instanceof String)
                 retVal = Boolean.parseBoolean(i.getStringExtra(key));
         }
 
         return retVal;
     }
+
     public static String[] getStringOrArray(Intent i, String extra) {
         String[] arr = i.getStringArrayExtra(extra);
         if (arr != null)
@@ -188,8 +195,8 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
 
     public static double[] getIntFloatOrDoubleArray(Intent i, String extra, double def) {
         int iarr[] = i.hasExtra(extra) && i.getExtras().get(extra) instanceof int[] ? i.getIntArrayExtra(extra) : null;
-        float farr[] = i.hasExtra(extra) && i.getExtras().get(extra) instanceof float[] ?i.getFloatArrayExtra(extra) : null;
-        double darr[] = i.hasExtra(extra) && i.getExtras().get(extra) instanceof double[] ?i.getDoubleArrayExtra(extra) : null;
+        float farr[] = i.hasExtra(extra) && i.getExtras().get(extra) instanceof float[] ? i.getFloatArrayExtra(extra) : null;
+        double darr[] = i.hasExtra(extra) && i.getExtras().get(extra) instanceof double[] ? i.getDoubleArrayExtra(extra) : null;
 
         if (darr != null)
             return darr;
@@ -243,6 +250,6 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
         df.setTimeZone(tz);
         String aid = Settings.Secure.getString(context.getContentResolver(),
                 Settings.Secure.ANDROID_ID);
-        return df.format(new Date())+"_"+aid;
+        return df.format(new Date()) + "_" + aid;
     }
 }

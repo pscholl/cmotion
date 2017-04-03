@@ -32,6 +32,7 @@ public class RecorderStatus {
     public static final String ERROR_REASON = "error_reason";
     public static final String FINISH_ACTION = "recorder_done";
     public static final String FINISH_PATH = "recording_path";
+    public static final String RECORDING_UUID = "recording_uuid";
     public static final String SENSORS = "recording_sensors";
     public static final String ANDROID_ID = "recording_aid";
     public static final String PLATFORM = "recording_platform";
@@ -39,10 +40,13 @@ public class RecorderStatus {
     public static final String DRIFT = "recording_drift";
     public static final String DRIFT_VALID = "recording_drift_valid";
     public static final String STATE = "recording_state";
+    public static final String CONNECTIONTECH = "recording_connectiontech";
+    public static final String CONNECTIONTECH_ID = "recording_connectiontech_ID";
 
     /* store the duration to handle the progressbar */
     public final int NOTIFICATION_ID = 123;
     public final int mDuration;
+    public String mRecordUUID;
 
     private NodeStatus mSrtStatus = NodeStatus.UNKNOWN;
 
@@ -51,11 +55,13 @@ public class RecorderStatus {
      * must be done through one of the finished, recording, or error function.
      *
      * @param context to create the notification on
+     * @param recordUUID
      */
-    public RecorderStatus(Context context, int inputs, double duration) {
+    public RecorderStatus(Context context, int inputs, double duration, String recordUUID) {
         c = context;
         mService = (NotificationManagerCompat) NotificationManagerCompat.from(c);
         mDuration = duration < 0 ? 0 : (int) duration * 1000;
+        this.mRecordUUID = recordUUID;
 
         String content;
         content = c.getResources().getQuantityString(
@@ -199,7 +205,7 @@ public class RecorderStatus {
         i.putExtra(ANDROID_ID, Settings.Secure.getString(c.getContentResolver(),
                 Settings.Secure.ANDROID_ID));
         i.putExtra(PLATFORM, Build.BOARD);
-
+        i.putExtra(RECORDING_UUID, mRecordUUID);
     }
 
     /**

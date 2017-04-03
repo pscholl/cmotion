@@ -139,6 +139,7 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
         mEvent.values[1] = (float) mLastLocation.getLongitude();
         mEvent.values[2] = (float) mLastLocation.getAltitude();
         mEvent.values[3] = (float) mLastLocation.getAccuracy();
+
         notifyListeners();
     }
 }

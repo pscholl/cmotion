@@ -8,24 +8,31 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.PowerManager;
 import android.os.Vibrator;
+import android.provider.Settings;
 import android.util.Log;
 
+import java.io.File;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.ByteOrder;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipEntry;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.TimeZone;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.AutoDiscovery;
+import de.uni_freiburg.es.sensorrecordingtool.merger.MergeService;
+import de.uni_freiburg.es.sensorrecordingtool.merger.provider.MergeProviderSession;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.AudioSensor;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.BlockSensorProcess;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.NonBlockSensorProcess;
@@ -114,7 +121,7 @@ public class Recorder extends InfiniteIntentService {
 
     /* for handing over the cancel action from a notification */
     public static final String CANCEL_ACTION = "senserec_cancel";
-    private static final long STEADY_TIMEOUT = 5000;
+    private static final long STEADY_TIMEOUT = 10000;
 
     /* whether we are currently recording */
     public static boolean mIsRecording = false;
@@ -139,6 +146,10 @@ public class Recorder extends InfiniteIntentService {
     private String output;
     public static long OFFSET;
     private double duration;
+
+    public static String mRecordUUID;
+
+    public static ArrayList<String> mReadyNodes = new ArrayList<>();
 
     public Recorder() {
         super(Recorder.class.getName());
@@ -177,6 +188,7 @@ public class Recorder extends InfiniteIntentService {
         }
 
         mIsRecording = true;
+        mReadyNodes.clear();
 
         isMaster = !isIntentForwarded(intent);
         Log.e(TAG, "We are " + (isMaster ? "Master" : "Slave"));
@@ -193,7 +205,10 @@ public class Recorder extends InfiniteIntentService {
             duration = intent.getDoubleExtra(RECORDER_DURATION, -1);
             isReady = false;
 
-            status = new RecorderStatus(getApplicationContext(), sensors.length, duration);
+
+            if (isMaster)
+                mRecordUUID = UUID.randomUUID().toString();
+            status = new RecorderStatus(getApplicationContext(), sensors.length, duration, mRecordUUID);
 
             initSynchronization(isMaster);
 
@@ -223,12 +238,14 @@ public class Recorder extends InfiniteIntentService {
                     ready &= process.getSensor().isPrepared();
             }
 
-            boolean driftCalculated = true;
+            if (Thread.currentThread().interrupted())
+                throw new InterruptedIOException();
 
+            boolean driftCalculated = true;
             if (!isMaster) {
                 try {
 //                    OFFSET = 0;
-                    OFFSET = new ClockSyncManager(this).getDriftSafe();
+                    OFFSET = new ClockSyncManager(this).getOffsetSafe();
                 } catch (TimeoutException e) {
                     // TODO come up with something clever here.
                     e.printStackTrace();
@@ -239,7 +256,15 @@ public class Recorder extends InfiniteIntentService {
 
             Log.e(TAG, String.format("Clock drift: %s ms - valid computation: %s", OFFSET, driftCalculated));
 
+            if (Thread.currentThread().interrupted())
+                throw new InterruptedIOException();
+
             readySteady(isMaster, sensors, OFFSET, driftCalculated);
+
+            if (isMaster) {
+                startMergeService();
+            }
+
 
             Log.e(TAG, "RECORDING");
 
@@ -255,7 +280,7 @@ public class Recorder extends InfiniteIntentService {
             if (status != null)
                 status.error(new Exception("Recording terminated"));
         } catch (Exception e) {
-          // TODO needs to be more explicit
+            // TODO needs to be more explicit
             error = true;
             e.printStackTrace();
             Log.d(TAG, "unable to start recording");
@@ -312,7 +337,7 @@ public class Recorder extends InfiniteIntentService {
                 mClockSyncServerThread = new ClockSyncServerThread();
                 mClockSyncServerThread.start();
             } catch (Exception e) {
-                Log.e(TAG, "Unable to start BT-Clock Server "+e);
+                Log.e(TAG, "Unable to start BT-Clock Server " + e);
                 e.printStackTrace();
             }
 
@@ -335,8 +360,17 @@ public class Recorder extends InfiniteIntentService {
             SEMAPHORE = new CountDownLatch(1);
     }
 
+    private void startMergeService() {
+        assert isMaster;
+
+        Intent startServiceIntent = new Intent(getApplicationContext(), MergeService.class);
+        startServiceIntent.putExtra(RecorderStatus.RECORDING_UUID, mRecordUUID);
+        startServiceIntent.putExtra(MergeService.RELEVANT_AIDS, mReadyNodes);
+        getApplicationContext().startService(startServiceIntent);
+    }
+
     private String getBuildDate() {
-        try{
+        try {
             ApplicationInfo ai = getPackageManager().getApplicationInfo(getPackageName(), 0);
             ZipFile zf = new ZipFile(ai.sourceDir);
             ZipEntry ze = zf.getEntry("classes.dex");
@@ -344,12 +378,15 @@ public class Recorder extends InfiniteIntentService {
             String s = SimpleDateFormat.getInstance().format(new java.util.Date(time));
             zf.close();
             return s;
-        }catch(Exception e){
+        } catch (Exception e) {
             return "unknown";
         }
     }
 
     private FFMpegProcess buildFFMPEG(Context context, String[] sensors, String[] formats, double[] rates) throws Exception {
+
+        String platform = Build.BOARD + " " + Build.DEVICE + " " + Build.VERSION.SDK_INT;
+
         /** create an ffmpeg process that will demux all sensor recordings into
          * a single file on one time axis. */
         FFMpegProcess.Builder fp = new FFMpegProcess.Builder();
@@ -357,7 +394,10 @@ public class Recorder extends InfiniteIntentService {
                 .setCodec("a", "wavpack")
                 .setCodec("v", "libx264")
                 .setTag("recorder", "cmotion v" + getBuildDate())
-                .setTag("platform", Build.BOARD + " " + Build.DEVICE + " " + Build.VERSION.SDK_INT)
+                .setTag("recording_id", mRecordUUID)
+                .setTag("android_id", Settings.Secure.getString(getContentResolver(),
+                        Settings.Secure.ANDROID_ID))
+                .setTag("platform", platform)
                 .setTag("fingerprint", Build.FINGERPRINT)
                 .setTag("beginning", getCurrentDataAsIso())
                 .addOutputArgument("-preset", "ultrafast")
@@ -372,21 +412,22 @@ public class Recorder extends InfiniteIntentService {
                 VideoSensor.CameraSize size = VideoSensor.getCameraSize(formats[j]);
 
                 fp
-                  .addVideo(size.width, size.height, rates[j], "rawvideo", "nv21")
-                  .setStreamTag("name", "Android Default Cam");
+                        .addVideo(size.width, size.height, rates[j], "rawvideo", "nv21")
+                        .setStreamTag("name", "Android Default Cam" + " platform:" + platform);
+                ;
             } else if (matched instanceof AudioSensor) {
-                Log.i(TAG, "Endianess " + ByteOrder.nativeOrder());
                 fp
-                  .addAudio(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "s16le" : "s16be",
-                            rates[j],
-                            ((AudioSensor) matched).getChannels()) // native endian!
-                  //.setStreamTag("resolution", sensors[j].getResolution())
-                  //.setStreamTag("unit", sensors[j].getUnit())
-                  .setStreamTag("name", sensors[j]);
+                        .addAudio(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "s16le" : "s16be",
+                                rates[j],
+                                ((AudioSensor) matched).getChannels()) // native endian!
+                        //.setStreamTag("resolution", sensors[j].getResolution())
+                        //.setStreamTag("unit", sensors[j].getUnit())
+                        .setStreamTag("name", sensors[j] + " platform:" + platform);
+                ;
             } else
                 fp
-                  .addAudio("f32be", rates[j], SensorProcess.getSampleSize(this, sensors[j]))
-                  .setStreamTag("name", sensors[j]);
+                        .addAudio("f32be", rates[j], SensorProcess.getSampleSize(this, sensors[j]))
+                        .setStreamTag("name", sensors[j] + " platform:" + platform);
         }
 
         return fp.build(context);
@@ -409,52 +450,65 @@ public class Recorder extends InfiniteIntentService {
     }
 
     public static String getCurrentDataAsIso() {
-      /** from
-       * https://stackoverflow.com/questions/3914404/how-to-get-current-moment-in-iso-8601-format
-       * */
-       TimeZone tz = TimeZone.getTimeZone("UTC");
-      DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'"); // Quoted "Z" to indicate UTC, no timezone offset
-      df.setTimeZone(tz);
-      return df.format(new Date());
+        /** from
+         * https://stackoverflow.com/questions/3914404/how-to-get-current-moment-in-iso-8601-format
+         * */
+        TimeZone tz = TimeZone.getTimeZone("UTC");
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'"); // Quoted "Z" to indicate UTC, no timezone offset
+        df.setTimeZone(tz);
+        return df.format(new Date());
     }
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
         mIsRecording = false;
 
-        if(handler != null)
+        if (handler != null)
             handler.removeCallbacksAndMessages(null);
 
         if (mClockSyncServerThread != null)
             mClockSyncServerThread.interrupt();
 
-        if (sensorProcesses != null) {
+        new Thread() {
 
-            /** close all streams to notify each process that we're done */
-            for (SensorProcess p : sensorProcesses)
-                p.terminate();
+            @Override
+            public void run() {
+                if (sensorProcesses != null) {
 
-            /** wait for ffmpeg to finish */
-            try {
-                ffmpeg.terminate();
-            } catch (InterruptedException e) {
+                    /** close all streams to notify each process that we're done */
+                    for (SensorProcess p : sensorProcesses)
+                        p.terminate();
+
+                    /** wait for ffmpeg to finish */
+                    try {
+                        ffmpeg.terminate();
+                    } catch (InterruptedException e) {
+                    }
+
+                    /** release the wakelock again */
+                    mWl.release();
+
+                    /** notify the system that a sensor recording is finished, stopForeground
+                     * to remove the service-bound notification and display the finished one */
+                    stopForeground(true);
+
+                }
+
+                spawnProvider();
+                status.finished(output);
+
+
+                sensorProcesses = null;
+                ffmpeg = null;
+                status = null;
+                mWl = null;
             }
+        }.start();
+    }
 
-            /** release the wakelock again */
-            mWl.release();
-
-            /** notify the system that a sensor recording is finished, stopForeground
-             * to remove the service-bound notification and display the finished one */
-            stopForeground(true);
-
-        }
-
-        if (sensorProcesses != null)
-            status.finished(output);
-
-        sensorProcesses = null;
-        ffmpeg = null;
-        status = null;
-        mWl = null;
+    private void spawnProvider() {
+        if (!isMaster) // masters dont have providers
+            new MergeProviderSession(Recorder.this, mRecordUUID, new File(output));
     }
 }
