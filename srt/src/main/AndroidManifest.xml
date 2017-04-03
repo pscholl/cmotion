@@ -2,6 +2,7 @@
     package="de.uni_freiburg.es.sensorrecordingtool">
 
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.CAMERA" />
@@ -13,6 +14,11 @@
 
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.camera.autofocus" />
+
+    <!-- thanks to merger -->
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <!--
     <uses-feature android:name="android.hardware.type.watch" android:required="true"/>
@@ -33,13 +39,15 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".autodiscovery.DiscoveryReceiver" android:enabled="true">
+        <receiver android:name=".autodiscovery.DiscoveryResponderReceiver" android:enabled="true">
             <intent-filter>
                 <action android:name="senserec_discovery" />
             </intent-filter>
         </receiver>
 
         <service android:name=".Recorder"></service>
+        <service android:name=".merger.MergeService"></service>
+
     </application>
 
 </manifest>

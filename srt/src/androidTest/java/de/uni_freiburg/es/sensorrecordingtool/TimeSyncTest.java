@@ -1,5 +1,6 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
+import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 import android.test.suitebuilder.annotation.MediumTest;
 
@@ -19,7 +20,7 @@ public class TimeSyncTest extends BroadcastingTest {
 
 
     @Test public void doSync() throws Exception {
-        TimeSync sync = TimeSync.getInstance();
+        TimeSync sync = TimeSync.getInstance(InstrumentationRegistry.getTargetContext());
         sync.getDrift();
         sync.getDrift();
         sync.getDrift();

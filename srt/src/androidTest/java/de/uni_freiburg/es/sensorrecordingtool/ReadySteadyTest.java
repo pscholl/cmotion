@@ -7,7 +7,6 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
-import android.test.suitebuilder.annotation.MediumTest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -23,7 +22,6 @@ import java.util.concurrent.TimeUnit;
  * Created by phil on 2/23/16.
  */
 @RunWith(AndroidJUnit4.class)
-@MediumTest
 public class ReadySteadyTest extends BroadcastingTest {
     private Context c;
     private Intent i;
@@ -53,7 +51,7 @@ public class ReadySteadyTest extends BroadcastingTest {
             }
         }, new IntentFilter(Recorder.STEADY_ACTION));
         sendReady();
-        latch.await(5000, TimeUnit.MILLISECONDS);
+        latch.await(50000, TimeUnit.MILLISECONDS);
         Assert.assertTrue("Timeout", gotIntent[0]); // we got steady
         sendCancel();
     }
@@ -61,10 +59,6 @@ public class ReadySteadyTest extends BroadcastingTest {
     @Test
     public void testSlave() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
-        i.putExtra("forwarded", true);
-        c.sendBroadcast(i);
-
-
         final boolean[] gotIntent = {false};
         c.registerReceiver(new BroadcastReceiver() {
             @Override
@@ -74,7 +68,13 @@ public class ReadySteadyTest extends BroadcastingTest {
             }
         }, new IntentFilter(Recorder.READY_ACTION));
 
-        latch.await(5000, TimeUnit.MILLISECONDS);
+
+        i.putExtra("forwarded", true);
+        c.sendBroadcast(i);
+
+
+
+        latch.await(50000, TimeUnit.MILLISECONDS);
         Assert.assertTrue("waiting for Ready caused timeout", gotIntent[0]); // we got steady
 
 

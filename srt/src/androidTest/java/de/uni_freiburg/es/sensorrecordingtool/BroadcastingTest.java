@@ -10,7 +10,8 @@ import org.junit.Before;
 import org.junit.runner.RunWith;
 
 import de.uni_freiburg.es.intentforwarder.IntentForwarder;
-import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.DiscoveryReceiver;
+import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.DiscoveryResponderReceiver;
+import de.uni_freiburg.es.sensorrecordingtool.merger.MergeService;
 
 import static android.support.test.InstrumentationRegistry.getInstrumentation;
 
@@ -22,7 +23,7 @@ import static android.support.test.InstrumentationRegistry.getInstrumentation;
 public abstract class BroadcastingTest {
 
 
-    private final Class[] mComponents = new Class[]{RecorderCommands.class, DiscoveryReceiver.class, IntentForwarder.class, Recorder.class};
+    private final Class[] mComponents = new Class[]{RecorderCommands.class, DiscoveryResponderReceiver.class, IntentForwarder.class, Recorder.class, MergeService.class};
 
     @Before
     public void startAllComponents() {
