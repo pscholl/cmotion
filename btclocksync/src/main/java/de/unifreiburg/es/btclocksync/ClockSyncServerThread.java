@@ -45,7 +45,7 @@ public class ClockSyncServerThread extends Thread {
     }
 
     private void createServerSocket() throws IOException {
-        serverSocket = mBtAdapter.listenUsingInsecureRfcommWithServiceRecord("ESE-Clock-Sync",
+        serverSocket = mBtAdapter.listenUsingRfcommWithServiceRecord("ESE-Clock-Sync",
                 ClockSyncManager.RECORD_UUID);
     }
 
@@ -96,7 +96,7 @@ public class ClockSyncServerThread extends Thread {
         }
         try {
             serverSocket.close();
-            closePFD(serverSocket);
+//            closePFD(serverSocket);
             serverSocket = null;
         } catch (Exception e) {
             e.printStackTrace();
