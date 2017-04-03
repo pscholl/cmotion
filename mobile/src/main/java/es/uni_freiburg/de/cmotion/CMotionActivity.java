@@ -64,11 +64,8 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
                 persistCheckedSensors();
             }
         });
-
         mAutoDiscovery.refresh();
-
         registerReceiver(mReceiver, INTENTFILTER);
-
     }
 
     @Override

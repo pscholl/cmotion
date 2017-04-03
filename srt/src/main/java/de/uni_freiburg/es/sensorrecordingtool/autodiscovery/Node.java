@@ -7,6 +7,7 @@ public class Node implements Comparable<Node> {
     private NodeStatus nodeStatus = NodeStatus.UNKNOWN;
     private String[] readySensors = new String[0];
     private String[] availableSensors = new String[0];
+    private ConnectionTechnology[] connectionTechnologies = new ConnectionTechnology[0];
     private long drift = Long.MIN_VALUE;
 
     public Node(String platform, String aid) {
@@ -77,5 +78,13 @@ public class Node implements Comparable<Node> {
 
     public void setAvailableSensors(String[] availableSensors) {
         this.availableSensors = availableSensors;
+    }
+
+    public ConnectionTechnology[] getConnectionTechnologies() {
+        return connectionTechnologies;
+    }
+
+    public void setConnectionTechnologies(ConnectionTechnology[] connectionTechnologies) {
+        this.connectionTechnologies = connectionTechnologies;
     }
 }
