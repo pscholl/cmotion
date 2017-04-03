@@ -89,10 +89,10 @@ public class ClockSyncManager {
             if(Thread.currentThread().isInterrupted())
                 throw new InterruptedException();
             try {
+                tries++;
                 long offset = getOffset();
                 if (Math.abs(offset) < Math.abs(minOffset))
                     minOffset = offset;
-                tries++;
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -113,7 +113,7 @@ public class ClockSyncManager {
      * @throws IOException
      */
     private BluetoothSocket tryDevice(BluetoothDevice device) throws IOException {
-        BluetoothSocket bluetoothSocket = device.createInsecureRfcommSocketToServiceRecord(RECORD_UUID);
+        BluetoothSocket bluetoothSocket = device.createRfcommSocketToServiceRecord(RECORD_UUID);
         return bluetoothSocket;
     }
 
@@ -150,10 +150,10 @@ public class ClockSyncManager {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            if (br != null) br.close();
-            if (bw != null) bw.close();
             if (bluetoothSocket != null)
                 bluetoothSocket.close();
+            if (br != null) br.close();
+            if (bw != null) bw.close();
         }
         throw new Exception("no offset calculated");
     }
