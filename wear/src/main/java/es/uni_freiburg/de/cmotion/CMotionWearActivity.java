@@ -70,7 +70,7 @@ public class CMotionWearActivity extends Activity implements GoogleApiClient.Con
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         mSensorManager.registerListener(this,
                 mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),
-                20*1000, 0);
+                20 * 1000, 0);
 
         mHandler = new Handler();
         super.onResume();
