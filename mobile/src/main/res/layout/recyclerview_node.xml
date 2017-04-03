@@ -23,11 +23,18 @@
 
         <TextView
             android:id="@+id/nodeStateTextView"
+            android:background="@drawable/rounded_background"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Init" />
 
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/nodeTechnologyTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="WIFI; WEAR; BT" />
 
     <TextView
         android:id="@+id/nodeDriftTextView"

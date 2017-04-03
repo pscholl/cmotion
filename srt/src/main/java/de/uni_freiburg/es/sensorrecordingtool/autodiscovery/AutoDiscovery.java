@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.provider.Settings;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -51,6 +52,25 @@ public class AutoDiscovery {
         String aid = intent.getStringExtra(RecorderStatus.ANDROID_ID);
         String[] sensors = intent.getStringArrayExtra(RecorderStatus.SENSORS);
 
+        boolean isLocalNode = aid.equals(Settings.Secure.getString(mContext.getContentResolver(),
+                Settings.Secure.ANDROID_ID));
+
+        String[] cts = intent.getStringArrayExtra(RecorderStatus.CONNECTIONTECH);
+        String[] ctsId = intent.getStringArrayExtra(RecorderStatus.CONNECTIONTECH_ID);
+
+        // if we received ourselves add LOCAL connection tech.
+        List<ConnectionTechnology> connectionTechnologies = new ArrayList<>();
+
+        for (int i = 0; i < cts.length; i++) {
+            ConnectionTechnology ct = new ConnectionTechnology(ConnectionTechnology.Type.valueOf(cts[i]));
+            ct.setIdentifier(ctsId[i]);
+            connectionTechnologies.add(ct);
+        }
+
+        if (isLocalNode)
+            connectionTechnologies.add(new ConnectionTechnology(ConnectionTechnology.Type.LOCAL));
+
+
         Node node = new Node(platform, aid);
 
         Log.e(TAG, String.format("Device %s has following sensors: %s", platform, sensors != null ? Arrays.toString(sensors) : "[]"));
@@ -62,6 +82,8 @@ public class AutoDiscovery {
         if (sensors != null) {
             node.setAvailableSensors(sensors);
         }
+
+        node.setConnectionTechnologies(connectionTechnologies.toArray(new ConnectionTechnology[connectionTechnologies.size()]));
 
         for (OnNodeSensorsDiscoveredListener listener : mListeners)
             listener.onNodeSensorsDiscovered(node, sensors);
@@ -87,14 +109,6 @@ public class AutoDiscovery {
      * Starts the autodiscovery asynchronously. Will remove all previously discovered devices.
      */
     public void discover() {
-//        mDiscoveredMap = new HashMap<>();
-//        mTimingHandler.postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
-//                close();
-//            }
-//        }, DISCOVERY_TIMEOUT);
-
         Intent intent = new Intent();
         intent.setAction(Recorder.DISCOVERY_ACTION);
         mContext.sendBroadcast(intent);
@@ -107,7 +121,8 @@ public class AutoDiscovery {
     public void close() {
         try {
             mContext.unregisterReceiver(mMasterReceiver);
-        } catch (IllegalArgumentException e) {}
+        } catch (IllegalArgumentException e) {
+        }
     }
 
     /**

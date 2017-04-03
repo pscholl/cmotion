@@ -12,6 +12,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.Node;
@@ -64,6 +65,7 @@ public class NodeAdapter extends RecyclerView.Adapter<NodeAdapter.ViewHolder> {
         else
             holder.nodeDriftTextView.setText(node.getDrift() + "ms drift");
 
+        holder.nodeTechTextView.setText(Arrays.toString(node.getConnectionTechnologies()));
 
 
 
@@ -87,7 +89,7 @@ public class NodeAdapter extends RecyclerView.Adapter<NodeAdapter.ViewHolder> {
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         private final ArrayAdapter arrayAdapter;
-        public TextView nodeNameTextView, nodeStateTextView, nodeListTextView, nodeDriftTextView;
+        public TextView nodeNameTextView, nodeStateTextView, nodeListTextView, nodeDriftTextView, nodeTechTextView;
         public ListView nodeSensorListView;
         public Context context;
 
@@ -104,6 +106,7 @@ public class NodeAdapter extends RecyclerView.Adapter<NodeAdapter.ViewHolder> {
             nodeStateTextView = (TextView) itemView.findViewById(R.id.nodeStateTextView);
             nodeListTextView = (TextView) itemView.findViewById(R.id.nodeListTextView);
             nodeDriftTextView = (TextView) itemView.findViewById(R.id.nodeDriftTextView);
+            nodeTechTextView = (TextView) itemView.findViewById(R.id.nodeTechnologyTextView);
             nodeSensorListView = (ListView) itemView.findViewById(R.id.nodeSensorListView);
 
             nodeSensorListView.setAdapter(arrayAdapter);

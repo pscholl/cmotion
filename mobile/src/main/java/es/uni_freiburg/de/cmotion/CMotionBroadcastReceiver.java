@@ -10,7 +10,6 @@ import android.provider.Settings;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.text.method.ScrollingMovementMethod;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -114,7 +113,6 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
     }
 
     private void startRecordingAnimations(long elapsed, long duration) {
-        Log.e("UIX", "start");
         mActivity.mRecyclerViewAdapter.setFrozen(true);
         mRecFab.setFreeze(false);
         if (duration < 0)
@@ -128,8 +126,6 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
     }
 
     private void stopRecordingAnimations() {
-        Log.e("UIX", "stop");
-
         mActivity.mRecyclerViewAdapter.setFrozen(false);
         mProgressBar.stopAnimation();
         mRecFab.setFreeze(false);
