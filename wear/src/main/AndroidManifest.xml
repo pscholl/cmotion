@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="es.uni_freiburg.de.cmotion" >
+    package="es.uni_freiburg.de.cmotion">
 
     <uses-feature android:name="android.hardware.type.watch" />
 
@@ -8,16 +8,19 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@android:style/Theme.DeviceDefault" >
-
+        android:theme="@android:style/Theme.DeviceDefault">
         <activity
             android:name=".CMotionWearActivity"
-            android:label="@string/app_name" >
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".SelectPositionActivity"
+            android:label="@string/title_activity_select_position"></activity>
     </application>
 
 </manifest>

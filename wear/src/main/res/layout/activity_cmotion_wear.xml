@@ -35,5 +35,15 @@
             android:id="@+id/medtext"
             android:layout_below="@+id/largetext"
             android:layout_centerHorizontal="true" />
+
+        <Button
+            android:id="@+id/positionButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:text="@string/set_position"
+            android:onClick="setPosition"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentEnd="true" />
     </RelativeLayout>
 </FrameLayout>

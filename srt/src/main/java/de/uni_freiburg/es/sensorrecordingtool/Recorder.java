@@ -3,6 +3,7 @@ package de.uni_freiburg.es.sensorrecordingtool;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -393,7 +394,6 @@ public class Recorder extends InfiniteIntentService {
                 .setCodec("a", "wavpack")
                 .setCodec("v", "libx264")
                 .setTag("recorder", "cmotion v" + getBuildDate())
-                .setTag("recording_id", mRecordUUID)
                 .setTag("android_id", Settings.Secure.getString(getContentResolver(),
                         Settings.Secure.ANDROID_ID))
                 .setTag("platform", platform)
@@ -401,6 +401,13 @@ public class Recorder extends InfiniteIntentService {
                 .setTag("beginning", getCurrentDataAsIso())
                 .addOutputArgument("-preset", "ultrafast")
                 .setLoglevel("debug");
+
+        if(isMaster)
+            fp.setTag("recording_id", mRecordUUID);
+
+        if(context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH))
+            fp.setTag("wear_location", WearPositionManager.getPosition(context).name());
+
 
         /** create a SensorProcess for each input and wire it to ffmpeg
          * accordingly */
@@ -419,7 +426,7 @@ public class Recorder extends InfiniteIntentService {
                         .addAudio(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "s16le" : "s16be",
                                 rates[j],
                                 ((AudioSensor) matched).getChannels()) // native endian!
-                        //.setStreamTag("resolution", sensors[j].getResolution())
+//                        .setStreamTag("resolution", sensors[j].getResolution())
 //                        .setStreamTag("unit", sensors[j].getUnit())
                         .setStreamTag("name", sensors[j])
                 ;

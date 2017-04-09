@@ -1,6 +1,7 @@
 package es.uni_freiburg.de.cmotion;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -164,5 +165,10 @@ public class CMotionWearActivity extends Activity implements GoogleApiClient.Con
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
+    }
+
+    public void setPosition(View view) {
+        Intent intent = new Intent(this, SelectPositionActivity.class);
+        startActivity(intent);
     }
 }
