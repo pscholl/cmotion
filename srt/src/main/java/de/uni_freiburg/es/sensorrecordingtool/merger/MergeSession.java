@@ -30,11 +30,13 @@ public class MergeSession {
     private long TIMEOUT_AFTER_LAST_FILE_MS = 6000 * 1000;
     private boolean mIsFinished = false;
 
+    private MergeStatus mMergeStatus;
 
     public MergeSession(Context context, String recordingUUID, ArrayList<Node> nodes) {
         this.mContext = context;
         this.mNodeDataCount = nodes.size();
         this.mRecordingUUID = recordingUUID;
+        this.mMergeStatus = new MergeStatus(context, recordingUUID, nodes.size());
 
         for (Node node : nodes) {
             final String aid = node.getAid();
@@ -68,12 +70,17 @@ public class MergeSession {
                 input.add(file.getAbsolutePath());
 
         try {
+
+            String output = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+                    .getAbsolutePath() + "/" + mRecordingUUID + ".merged.mkv";
+
             FFMpegCopyProcess copyProcess = new FFMpegCopyProcess.Builder()
                     .setInput(input.toArray(new String[input.size()]))
-                    .setOutput(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
-                            .getAbsolutePath() + "/" + mRecordingUUID + ".merged.mkv")
+                    .setOutput(output)
                     .build(mContext);
             copyProcess.waitFor();
+
+            mMergeStatus.finished(output);
 
 //            for (File file : mFiles) // cleanup
 //                if (file != null && file.exists())
@@ -81,6 +88,7 @@ public class MergeSession {
 
             mIsFinished = true;
         } catch (Exception e) {
+            mMergeStatus.error(e);
             e.printStackTrace();
         }
     }
@@ -123,6 +131,7 @@ public class MergeSession {
         public void run() {
             this.retriever = pickRetriever(node);
             File file = retriever.getFile();
+            mMergeStatus.incrementProgress();
             mFiles.add(file);
             mTimeoutHandler.removeCallbacksAndMessages(null); // remove all scheduled runanbles
             mNodeDataCount--;

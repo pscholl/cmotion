@@ -319,7 +319,12 @@ public class FFMpegProcess {
             cmdline.addAll(inputopts);
             cmdline.add("-nostdin");
             cmdline.addAll(outputopts);
+
+
             ProcessBuilder pb = new ProcessBuilder(cmdline);
+
+
+
             pb.directory(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM));
             return new FFMpegProcess(pb);
         }

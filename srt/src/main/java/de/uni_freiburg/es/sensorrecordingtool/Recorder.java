@@ -413,7 +413,7 @@ public class Recorder extends InfiniteIntentService {
 
                 fp
                         .addVideo(size.width, size.height, rates[j], "rawvideo", "nv21")
-                        .setStreamTag("name", "Android Default Cam" + " platform:" + platform);
+                        .setStreamTag("name", "Android Default Cam");
                 ;
             } else if (matched instanceof AudioSensor) {
                 fp
@@ -421,13 +421,15 @@ public class Recorder extends InfiniteIntentService {
                                 rates[j],
                                 ((AudioSensor) matched).getChannels()) // native endian!
                         //.setStreamTag("resolution", sensors[j].getResolution())
-                        //.setStreamTag("unit", sensors[j].getUnit())
-                        .setStreamTag("name", sensors[j] + " platform:" + platform);
+//                        .setStreamTag("unit", sensors[j].getUnit())
+                        .setStreamTag("name", sensors[j])
                 ;
             } else
                 fp
                         .addAudio("f32be", rates[j], SensorProcess.getSampleSize(this, sensors[j]))
-                        .setStreamTag("name", sensors[j] + " platform:" + platform);
+                        .setStreamTag("name", sensors[j]);
+
+            fp.setStreamTag("platform", platform);
         }
 
         return fp.build(context);
