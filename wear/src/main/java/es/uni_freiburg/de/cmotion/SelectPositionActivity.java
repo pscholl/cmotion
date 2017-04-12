@@ -2,18 +2,21 @@ package es.uni_freiburg.de.cmotion;
 
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.wearable.view.WearableListView;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
+import android.widget.RadioButton;
 import android.widget.TextView;
 
 import de.uni_freiburg.es.sensorrecordingtool.WearPositionManager;
 
-public class SelectPositionActivity extends Activity implements WearableListView.ClickListener{
+/**
+ * A "preferences" class to define the position of the watch, by selecting an element from a list.
+ */
+public class SelectPositionActivity extends Activity implements WearableListView.ClickListener {
 
-    private WearableListView mView;
+    private HeadWearableListView mListView;
     private MyAdapter mAdapter;
 
 
@@ -21,11 +24,13 @@ public class SelectPositionActivity extends Activity implements WearableListView
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_select_position);
-        mView = (WearableListView) findViewById(R.id.wearable_list);
+        mListView = (HeadWearableListView) findViewById(R.id.headWearableListView);
+
         mAdapter = new MyAdapter(this, WearPositionManager.Position.values());
         mAdapter.setActive(WearPositionManager.getPosition(this));
-        mView.setAdapter(mAdapter);
-        mView.setClickListener(this);
+        mListView.getHeader().setText(R.string.wear_location_question);
+        mListView.getWearableListView().setAdapter(mAdapter);
+        mListView.getWearableListView().setClickListener(this);
     }
 
     @Override
@@ -65,15 +70,36 @@ public class SelectPositionActivity extends Activity implements WearableListView
         @Override
         public void onBindViewHolder(WearableListView.ViewHolder holder, int position) {
             TextView view = (TextView) holder.itemView.findViewById(R.id.textView);
+            RadioButton radioButton = (RadioButton) holder.itemView.findViewById(R.id.radioButton);
             WearPositionManager.Position item = mPositions[position];
-            view.setText(item.name());
-            if(item.equals(mActivePosition))
-                view.setTypeface(null, Typeface.BOLD);
-            else
-                view.setTypeface(null, Typeface.NORMAL);
+            view.setText(toCamelCase(item.name().replaceAll("_", " ")));
+
+//            view.setTypeface(null, item.equals(mActivePosition) ? Typeface.BOLD : Typeface.NORMAL);
+            radioButton.setChecked(item.equals(mActivePosition));
 
 
             holder.itemView.setTag(position);
+        }
+
+        private String toCamelCase(String in) {
+            in = in.toLowerCase().trim();
+            String[] a = in.split(" ");
+
+            StringBuilder builder = new StringBuilder();
+
+            for (int i = 0; i < a.length; i++) {
+                String s = a[i];
+
+                if (s == null || s.length() == 0)
+                    continue;
+
+                s = String.valueOf(s.charAt(0)).toUpperCase() + s.substring(1);
+                builder.append(s);
+                if (i != a.length - 1)
+                    builder.append(" ");
+            }
+
+            return builder.toString();
         }
 
         @Override

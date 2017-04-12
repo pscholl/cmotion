@@ -4,4 +4,5 @@
     <string name="hello_square">Hello Square World!</string>
     <string name="set_position">Set Position</string>
     <string name="title_activity_select_position">SelectPositionActivity</string>
+    <string name="wear_location_question">Where is this Wear worn?</string>
 </resources>
