@@ -6,12 +6,9 @@
     android:layout_height="match_parent"
     tools:context="es.uni_freiburg.de.cmotion.SelectPositionActivity">
 
-    <android.support.wearable.view.WearableListView
-        android:id="@+id/wearable_list"
-        android:layout_height="match_parent"
+    <es.uni_freiburg.de.cmotion.HeadWearableListView
+        android:id="@+id/headWearableListView"
         android:layout_width="match_parent"
-        android:scrollbars="none"
-        android:dividerHeight="0dp">
-    </android.support.wearable.view.WearableListView>
+        android:layout_height="wrap_content" />
 
 </RelativeLayout>
