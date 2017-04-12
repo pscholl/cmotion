@@ -42,6 +42,8 @@ public class RecorderStatus {
     public static final String STATE = "recording_state";
     public static final String CONNECTIONTECH = "recording_connectiontech";
     public static final String CONNECTIONTECH_ID = "recording_connectiontech_ID";
+    public static final String AUTONOMOUS = "recording_autonomous";
+
 
     /* store the duration to handle the progressbar */
     public final int NOTIFICATION_ID = 123;

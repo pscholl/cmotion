@@ -15,14 +15,11 @@
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.camera.autofocus" />
 
-    <!-- thanks to merger -->
+    <!-- thanks to merger & autodiscovery for other devices-->
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <!--
-    <uses-feature android:name="android.hardware.type.watch" android:required="true"/>
-    -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
 
     <application
         android:allowBackup="true"
@@ -39,14 +36,14 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".autodiscovery.DiscoveryResponderReceiver" android:enabled="true">
+        <receiver android:name=".autodiscovery.responder.DiscoveryResponderReceiver" android:enabled="true">
             <intent-filter>
                 <action android:name="senserec_discovery" />
             </intent-filter>
         </receiver>
 
-        <service android:name=".Recorder"></service>
-        <service android:name=".merger.MergeService"></service>
+        <service android:name=".Recorder" />
+        <service android:name=".merger.MergeService" />
 
     </application>
 
