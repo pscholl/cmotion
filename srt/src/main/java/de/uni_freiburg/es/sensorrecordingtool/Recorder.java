@@ -189,7 +189,7 @@ public class Recorder extends InfiniteIntentService {
         }
 
         mIsRecording = true;
-        mReadyNodes.clear();
+        mReadyNodes.clear(); // remove all old ready-flagged nodes
 
         isMaster = !isIntentForwarded(intent);
         Log.e(TAG, "We are " + (isMaster ? "Master" : "Slave"));
@@ -344,23 +344,26 @@ public class Recorder extends InfiniteIntentService {
 
             SEMAPHORE = new CountDownLatch(Integer.MAX_VALUE);
             mAutoDiscovery = AutoDiscovery.getInstance(this);
-            if (mAutoDiscovery.getConnectedNodes() <= 1 || true) {
+            if (mAutoDiscovery.getNonAutonomousConnectedNodes() <= 1 || true) {
                 Log.e(TAG, "Running discovery to find nodes");
                 mAutoDiscovery.discover();
                 Thread.sleep(5000);
-                Log.e(TAG, String.format("We have at least %s nodes (including us)", mAutoDiscovery.getConnectedNodes()));
+                Log.e(TAG, String.format("We have at least %s nodes (including us)", mAutoDiscovery.getNonAutonomousConnectedNodes()));
             }
 
             int readyNodes = Integer.MAX_VALUE - (int) (SEMAPHORE.getCount());
             if (readyNodes > 0)
                 Log.e(TAG, readyNodes + " nodes are already ready");
-            SEMAPHORE = new CountDownLatch(Math.max(0, mAutoDiscovery.getConnectedNodes() - readyNodes)); // do not init Latch with negative number
+            SEMAPHORE = new CountDownLatch(Math.max(0, mAutoDiscovery.getNonAutonomousConnectedNodes() - readyNodes)); // do not init Latch with negative number
             Log.e(TAG, "Latch at " + SEMAPHORE.getCount());
 
         } else
             SEMAPHORE = new CountDownLatch(1);
     }
 
+    /**
+     * Starts {@link MergeService} with the current recording-UUID and all nodes that have confirmed to be ready.
+     */
     private void startMergeService() {
         assert isMaster;
 

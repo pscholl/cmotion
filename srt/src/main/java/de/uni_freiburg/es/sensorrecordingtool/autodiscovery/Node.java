@@ -10,6 +10,11 @@ public class Node implements Comparable<Node> {
     private ConnectionTechnology[] connectionTechnologies = new ConnectionTechnology[0];
     private long drift = Long.MIN_VALUE;
 
+    /**
+     * Flags whether a device is independent of the SRT recording process, thus also doesn't ready / steady
+     */
+    private boolean isAutonomous;
+
     public Node(String platform, String aid) {
         this.platform = platform;
         this.aid = aid;
@@ -86,5 +91,13 @@ public class Node implements Comparable<Node> {
 
     public void setConnectionTechnologies(ConnectionTechnology[] connectionTechnologies) {
         this.connectionTechnologies = connectionTechnologies;
+    }
+
+    public boolean isAutonomous() {
+        return isAutonomous;
+    }
+
+    public void setAutonomous(boolean autonomous) {
+        isAutonomous = autonomous;
     }
 }

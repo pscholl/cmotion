@@ -83,6 +83,8 @@ public class AutoDiscovery {
             node.setAvailableSensors(sensors);
         }
 
+        node.setAutonomous(intent.getBooleanExtra(RecorderStatus.AUTONOMOUS, false));
+
         node.setConnectionTechnologies(connectionTechnologies.toArray(new ConnectionTechnology[connectionTechnologies.size()]));
 
         for (OnNodeSensorsDiscoveredListener listener : mListeners)
@@ -135,11 +137,28 @@ public class AutoDiscovery {
     }
 
 
+    /**
+     *
+     * @return All discovered nodes, since the first scan of this instance.
+     */
     public ArrayList<Node> getDiscoveredSensors() {
         return mDiscoveredList;
     }
 
     public int getConnectedNodes() {
         return mDiscoveredList.size();
+    }
+
+    /**
+     *
+     * @return Like {@link #getDiscoveredSensors()} but only discovered nodes that are flagged as non autonomous (default case).
+     */
+    public int getNonAutonomousConnectedNodes() {
+        int i = mDiscoveredList.size();
+
+        for(Node n : mDiscoveredList)
+            if(!n.isAutonomous())
+                i--;
+        return i;
     }
 }

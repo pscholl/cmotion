@@ -1,34 +1,34 @@
-package de.uni_freiburg.es.sensorrecordingtool.autodiscovery;
+package de.uni_freiburg.es.sensorrecordingtool.autodiscovery.responder;
 
-import android.content.BroadcastReceiver;
+
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.provider.Settings;
 import android.text.TextUtils;
-import android.util.Log;
 
 import java.util.ArrayList;
 
 import de.uni_freiburg.es.sensorrecordingtool.Recorder;
 import de.uni_freiburg.es.sensorrecordingtool.RecorderStatus;
+import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.ConnectionTechnology;
 import de.uni_freiburg.es.sensorrecordingtool.sensors.Sensor;
 
+public class SRTDiscoveryAdapter extends DiscoveryResponseAdapter {
 
-public class DiscoveryResponderReceiver extends BroadcastReceiver {
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        Log.e("DiscoveryResponder", intent.getAction());
-        if (intent.getAction().equals(Recorder.DISCOVERY_ACTION)) {
-            respond(context);
-        }
+    private static SRTDiscoveryAdapter sInstance;
+
+    SRTDiscoveryAdapter(Context context) {
+        super(context);
     }
 
+    @Override
+    public void discover() {
 
-    /**
-     * Respond to a incoming discovery intent. Will include Sensors, Android_ID, Platform and send a DISCOVERY_RESPONSE_ACTION Broadcast.
-     */
-    private void respond(Context context) {
+        /**
+         * Respond to a incoming discovery intent. Will include Sensors, Android_ID, Platform and send a DISCOVERY_RESPONSE_ACTION Broadcast.
+         */
+
         Intent response = new Intent();
         response.setAction(Recorder.DISCOVERY_RESPONSE_ACTION);
 
@@ -60,6 +60,9 @@ public class DiscoveryResponderReceiver extends BroadcastReceiver {
         context.sendBroadcast(response);
     }
 
-
-
+    public static DiscoveryResponseAdapter getInstance(Context context) {
+        if(sInstance == null)
+            sInstance = new SRTDiscoveryAdapter(context);
+        return sInstance;
+    }
 }

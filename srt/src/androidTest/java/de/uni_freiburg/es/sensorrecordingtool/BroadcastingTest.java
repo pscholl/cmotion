@@ -10,7 +10,7 @@ import org.junit.Before;
 import org.junit.runner.RunWith;
 
 import de.uni_freiburg.es.intentforwarder.IntentForwarder;
-import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.DiscoveryResponderReceiver;
+import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.responder.DiscoveryResponderReceiver;
 import de.uni_freiburg.es.sensorrecordingtool.merger.MergeService;
 
 import static android.support.test.InstrumentationRegistry.getInstrumentation;
