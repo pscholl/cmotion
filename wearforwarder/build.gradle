@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         minSdkVersion 22
-        targetSdkVersion 23
+        targetSdkVersion project.properties.TargetSDKNonGlass
         versionCode 1
         versionName "1.0"
     }
@@ -20,9 +20,9 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.google.android.gms:play-services:8.4+'
+    compile 'com.google.android.gms:play-services:8.3.0'
     compile 'com.google.android.support:wearable:1.3.0'
-    compile 'com.google.android.gms:play-services-wearable:8+'
+    compile 'com.google.android.gms:play-services-wearable:8.3.0'
     compile 'com.android.support:appcompat-v7:25+'
 
     compile project(':intentforwarder')

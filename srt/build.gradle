@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 22
+        targetSdkVersion project.properties.TargetSDKGlass
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -28,7 +28,7 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'com.google.android.gms:play-services-location:8.4.0'
+
     androidTestCompile 'junit:junit:4+'
     androidTestCompile 'com.android.support.test:runner:0.5+'
     androidTestCompile 'com.android.support.test:rules:0.5+'
@@ -36,5 +36,10 @@ dependencies {
     compile 'commons-net:commons-net:3.3'
     compile 'org.jetbrains:annotations-java5:15.0'
     compile project(path: ':btclocksync')
-    compile 'com.google.android.gms:play-services-wearable:8.4.0'
+
+    /**
+     * Google Play stuff needs to stay at 8.3 to be complied with API 19
+     */
+    compile 'com.google.android.gms:play-services-location:8.3.0'
+    compile 'com.google.android.gms:play-services-wearable:8.3.0'
 }

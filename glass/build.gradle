@@ -9,12 +9,12 @@ repositories {
 
 android {
     compileSdkVersion 'Google Inc.:Glass Development Kit Preview:19'
-    buildToolsVersion '25'
+    buildToolsVersion project.properties.BuildToolsVersion
 
     defaultConfig {
         applicationId "es.uni_freiburg.de.cmotion"
         minSdkVersion 19
-        targetSdkVersion 19
+        targetSdkVersion project.properties.TargetSDKGlass
         versionCode 1
         versionName "1.0"
     }
