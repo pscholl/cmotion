@@ -4,16 +4,15 @@ import android.content.Context;
 import android.support.wearable.view.WearableListView;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
+import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
 
 
-public class HeadWearableListView extends RelativeLayout implements WearableListView.OnScrollListener {
+public class HeadWearableListView<T extends View> extends RelativeLayout implements WearableListView.OnScrollListener {
 
 
-    private TextView mHeader;
+    private T mHeader;
     private WearableListView mList;
 
     public HeadWearableListView(Context context) {
@@ -36,13 +35,17 @@ public class HeadWearableListView extends RelativeLayout implements WearableList
                 .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         inflater.inflate(R.layout.compound_headwearablelistview, this);
 
-        mHeader = (TextView) getChildAt(0);
-        mList = (WearableListView) getChildAt(1);
+        mList = (WearableListView) findViewById(R.id.wearable_list);
 
         mList.addOnScrollListener(this);
     }
 
-    public TextView getHeader() {
+    public void setHeader(T view) {
+        ((FrameLayout) findViewById(R.id.layout)).addView(view, 0);
+        mHeader = view;
+    }
+
+    public T getHeader() {
         return mHeader;
     }
 
@@ -50,20 +53,21 @@ public class HeadWearableListView extends RelativeLayout implements WearableList
         return mList;
     }
 
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        if(hasFocus){
-            final Animation slide = AnimationUtils.loadAnimation(getContext().getApplicationContext(), R.anim.slidein_top);
-            // find the header or cache it elsewhere
-            getChildAt(0).startAnimation(slide);
-        }
-    }
+//    @Override
+//    public void onWindowFocusChanged(boolean hasFocus) {
+//        if (hasFocus) {
+//            final Animation slide = AnimationUtils.loadAnimation(getContext().getApplicationContext(), R.anim.slidein_top);
+//            // find the header or cache it elsewhere
+//            getChildAt(0).startAnimation(slide);
+//        }
+//    }
 
 
     @Override
     public void onScroll(int i) {
-        mHeader.setY(mHeader.getY() - i);
+        if (mHeader != null ) mHeader.setY(mHeader.getY() - i);
     }
+
     @Override
     public void onAbsoluteScrollChange(int i) {
 

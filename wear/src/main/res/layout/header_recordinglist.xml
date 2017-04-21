@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--<TextView xmlns:android="http://schemas.android.com/apk/res/android"-->
+    <!--android:layout_width="wrap_content"-->
+    <!--android:layout_height="wrap_content"-->
+    <!--android:layout_gravity="center"-->
+    <!--android:background="@color/grey"-->
+    <!--android:padding="@dimen/abc_action_bar_content_inset_material"-->
+    <!--android:text="Which Sensors shall we record?"-->
+    <!--android:textStyle="italic" />-->
+
+
+<RelativeLayout android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:background="#338a3e"
+    android:layout_height="match_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <es.uni_freiburg.de.cmotion.shared_ui.TimedProgressBar
+        android:id="@+id/timedProgressBar"
+        android:padding="0dp"
+        android:layout_margin="0dp"
+        android:layout_width="match_parent"
+        android:minHeight="4dp"
+        android:maxHeight="4dp"
+        android:layout_height="wrap_content"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_alignParentTop="true"/>
+
+    <es.uni_freiburg.de.cmotion.shared_ui.RecordFloatingActionButton
+        android:id="@+id/recordingFab"
+        app:backgroundTint="#98ee99"
+        android:elevation="0dp"
+        android:layout_margin="8dp"
+        android:layout_centerInParent="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+</RelativeLayout>

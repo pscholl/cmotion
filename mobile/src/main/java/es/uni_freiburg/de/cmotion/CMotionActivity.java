@@ -1,12 +1,10 @@
 package es.uni_freiburg.de.cmotion;
 
-import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
-import android.preference.PreferenceManager;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -20,27 +18,36 @@ import android.widget.CompoundButton;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 import es.uni_freiburg.de.cmotion.adapter.SensorAdapter;
-import es.uni_freiburg.de.cmotion.model.SensorModel;
+import es.uni_freiburg.de.cmotion.shared_ui.AutoDiscoveryWrapper;
+import es.uni_freiburg.de.cmotion.shared_ui.CMotionBroadcastReceiver;
+import es.uni_freiburg.de.cmotion.shared_ui.RecordFloatingActionButton;
+import es.uni_freiburg.de.cmotion.shared_ui.RecordingIntentFilter;
+import es.uni_freiburg.de.cmotion.shared_ui.SRTHelper;
+import es.uni_freiburg.de.cmotion.shared_ui.TimedProgressBar;
+import es.uni_freiburg.de.cmotion.shared_ui.model.SensorModel;
 import es.uni_freiburg.de.cmotion.ui.DigitEditDialog;
-import es.uni_freiburg.de.cmotion.ui.RecordFloatingActionButton;
 
 
-public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener {
+public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener, CMotionBroadcastReceiver.OnRecordingStateChangedListener {
 
 
     private static final IntentFilter INTENTFILTER = new RecordingIntentFilter();
     private RecyclerView mRecyclerView;
     private RecordFloatingActionButton mRecFab;
-    SensorAdapter mRecyclerViewAdapter;
-    private BroadcastReceiver mReceiver;
+    private SensorAdapter mRecyclerViewAdapter;
+    private CMotionBroadcastReceiver mReceiver;
     private AutoDiscoveryWrapper mAutoDiscovery;
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private SlidingUpPanelLayout mSlidingUpPanelLayout;
+
+    public static DigitEditDialog.OnTextChangedListener mDurationListener = new DigitEditDialog.OnTextChangedListener() {
+        @Override
+        public void onTextChanged(Object tag, String newText) {
+            SRTHelper.sRecordingDurationSec = Double.parseDouble(newText);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,16 +59,16 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         mRecyclerViewAdapter = new SensorAdapter(this, new ArrayList<SensorModel>());
         mRecyclerView.setAdapter(mRecyclerViewAdapter);
-        mReceiver = new CMotionBroadcastReceiver(this);
+        mReceiver = new CMotionBroadcastReceiver(this, (TimedProgressBar) findViewById(R.id.progressBar), mRecFab, (CoordinatorLayout) findViewById(R.id.coordinatorLayout));
+        mReceiver.setListener(this);
         mAutoDiscovery = new AutoDiscoveryWrapper(this, mRecyclerViewAdapter);
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipeContainer);
         mSwipeRefreshLayout.setOnRefreshListener(this);
         mSlidingUpPanelLayout = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
-
         mRecyclerViewAdapter.setExternalCheckListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                persistCheckedSensors();
+                SRTHelper.persistCheckedSensors(CMotionActivity.this, mRecyclerViewAdapter.getSelectedItems());
             }
         });
         mAutoDiscovery.refresh();
@@ -87,7 +94,7 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
             startActivity(new Intent(this, SettingsActivity.class));
             return true;
         } else if (id == R.id.action_recordingtime) {
-            DigitEditDialog.build(this, "Enter Recording Duration", SRTHelper.sRecordingDurationSec + "", null, SRTHelper.mDurationListener).show();
+            DigitEditDialog.build(this, "Enter Recording Duration", SRTHelper.sRecordingDurationSec + "", null, mDurationListener).show();
             return true;
         }
 
@@ -142,16 +149,7 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
         mAutoDiscovery.close();
     }
 
-    private void persistCheckedSensors() {
-        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
 
-        List<SensorModel> selected = mRecyclerViewAdapter.getSelectedItems();
-        Set<String> sensors = new HashSet<>();
-        for (SensorModel model : selected)
-            sensors.add(model.getName());
-
-        pref.edit().putStringSet("checked", sensors).commit();
-    }
 
     @Override
     public void onRefresh() {
@@ -162,5 +160,10 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
                 mSwipeRefreshLayout.setRefreshing(false);
             }
         }, 100);
+    }
+
+    @Override
+    public void onStateChanged(boolean isRecording) {
+        mRecyclerViewAdapter.setFrozen(isRecording);
     }
 }

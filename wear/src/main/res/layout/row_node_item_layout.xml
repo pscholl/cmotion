@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!--<ImageView-->
+        <!--android:id="@+id/imageView"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:tint="@color/white"-->
+        <!--android:layout_gravity="center_vertical|left"-->
+        <!--android:src="@drawable/abc_btn_check_to_on_mtrl_015" />-->
+
+    <RadioButton
+        android:clickable="false"
+        android:checked="false"
+        android:id="@+id/radioButton"
+        android:layout_gravity="center_vertical|left"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+   <LinearLayout
+       android:layout_gravity="center_vertical|left"
+       android:orientation="vertical"
+       android:layout_width="match_parent"
+       android:layout_height="wrap_content">
+
+       <TextView
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content"
+           android:layout_gravity="center_vertical|left"
+           android:maxLines="1"
+           android:ellipsize="marquee"
+           android:textAppearance="?android:attr/textAppearanceMedium"
+           android:text="Ambient Sensor"
+           android:id="@+id/nameTextView" />
+
+       <TextView
+           android:id="@+id/platformTextView"
+           android:layout_width="wrap_content"
+           android:ellipsize="marquee"
+           android:layout_height="wrap_content"
+           android:layout_gravity="center_vertical|left"
+           android:maxLines="1"
+           android:text="[bullhead, tetra, glass]" />
+
+   </LinearLayout>
+</LinearLayout>

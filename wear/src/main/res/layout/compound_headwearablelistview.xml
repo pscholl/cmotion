@@ -1,12 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <merge xmlns:android="http://schemas.android.com/apk/res/android">
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textStyle="italic"
-        android:padding="@dimen/abc_action_bar_content_inset_material"
-        android:background="@color/background_material_dark" />
-
+    
     <android.support.wearable.view.WearableListView
         android:id="@+id/wearable_list"
         android:layout_width="match_parent"
@@ -14,4 +8,10 @@
         android:dividerHeight="0dp"
         android:scrollbars="none" />
 
+    <FrameLayout
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:id="@+id/layout">
+
+    </FrameLayout>
 </merge>

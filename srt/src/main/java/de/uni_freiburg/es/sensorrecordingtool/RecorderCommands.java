@@ -88,6 +88,8 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
         } catch (Exception e) {
             e.printStackTrace();
             Intent i = new Intent(RecorderStatus.ERROR_ACTION);
+            i.putExtra(RecorderStatus.ANDROID_ID, Settings.Secure.getString(context.getContentResolver(),
+                    Settings.Secure.ANDROID_ID));
             i.putExtra(RecorderStatus.ERROR_REASON, e.getMessage());
             context.sendBroadcast(i);
         }

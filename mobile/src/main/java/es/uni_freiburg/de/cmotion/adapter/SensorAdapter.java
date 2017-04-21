@@ -15,10 +15,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import es.uni_freiburg.de.cmotion.R;
-import es.uni_freiburg.de.cmotion.model.SensorModel;
+import es.uni_freiburg.de.cmotion.shared_ui.adapter.AbstractDataAdapter;
+import es.uni_freiburg.de.cmotion.shared_ui.model.SensorModel;
 import es.uni_freiburg.de.cmotion.ui.DigitEditDialog;
 
-public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder> {
+public class SensorAdapter extends RecyclerView.Adapter implements AbstractDataAdapter<SensorModel> {
 
     private final Context context;
     private List<SensorModel> mCollection = null;
@@ -38,6 +39,8 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
         this.context = context;
         setData(data);
     }
+
+
 
     public void setExternalCheckListener(CompoundButton.OnCheckedChangeListener listener) {
         this.externalListener = listener;
@@ -81,12 +84,15 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
         return viewHolder;
     }
 
+
     @Override
-    public void onBindViewHolder(final ViewHolder holder, final int position) {
+    public void onBindViewHolder(final RecyclerView.ViewHolder h, final int position) {
         final SensorModel model = mCollection.get(position);
         String name = model.getName().contains(".") ?
                       model.getName().substring(model.getName().lastIndexOf(".")+1).replace("_", " ") :
                       model.getName();
+
+        ViewHolder holder = (ViewHolder) h;
 
         holder.nameTextView.setText(name);
         holder.nameTextView.append("\n");

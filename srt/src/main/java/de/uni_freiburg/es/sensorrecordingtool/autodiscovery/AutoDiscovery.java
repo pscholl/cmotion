@@ -29,6 +29,8 @@ public class AutoDiscovery {
     private ArrayList<Node> mDiscoveredList = new ArrayList<>();
     private List<OnNodeSensorsDiscoveredListener> mListeners = new ArrayList<>();
 
+    private boolean isReceiverRegistered = false;
+
     /**
      * Listens for Responses.
      */
@@ -95,16 +97,18 @@ public class AutoDiscovery {
     public static AutoDiscovery getInstance(Context context) {
         if (sInstance == null)
             sInstance = new AutoDiscovery(context);
+        if(!sInstance.isReceiverRegistered)
+            sInstance.bind();
         return sInstance;
-    }
-
-    private void bind() {
-        mContext.registerReceiver(mMasterReceiver, new IntentFilter(Recorder.DISCOVERY_RESPONSE_ACTION));
     }
 
     private AutoDiscovery(Context context) {
         mContext = context;
-        bind();
+    }
+
+    private void bind() {
+        mContext.registerReceiver(mMasterReceiver, new IntentFilter(Recorder.DISCOVERY_RESPONSE_ACTION));
+        isReceiverRegistered = true;
     }
 
     /**
@@ -123,6 +127,7 @@ public class AutoDiscovery {
     public void close() {
         try {
             mContext.unregisterReceiver(mMasterReceiver);
+            isReceiverRegistered = false;
         } catch (IllegalArgumentException e) {
         }
     }
