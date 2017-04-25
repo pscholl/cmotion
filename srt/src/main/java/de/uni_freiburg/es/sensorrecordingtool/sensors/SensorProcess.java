@@ -46,6 +46,7 @@ public abstract class SensorProcess implements SensorEventListener {
     long mLastTimestamp = -1;
     public double mElapsed = 0;
     double mDiff = 0;
+    private boolean isClosed = false;
 
     public SensorProcess(Context context, String sensor, double rate, String format, double dur,
                          OutputStream bf, Handler h) throws Exception {
@@ -194,9 +195,11 @@ public abstract class SensorProcess implements SensorEventListener {
         if(Thread.currentThread() == Looper.getMainLooper().getThread())
             Log.wtf("SensorProcess", "Terminate called on UI Thread!!!");
 
-        if (mDur < mElapsed || mDur < 0)
+        if (mDur < mElapsed || mDur < 0) {
             mSensor.flush(SensorProcess.this);
-        else
+            while(!isClosed) Thread.currentThread().yield();
+
+        } else
             onFlushCompleted();
     }
 
@@ -206,6 +209,7 @@ public abstract class SensorProcess implements SensorEventListener {
         mSensor.unregisterListener(this);
         try {
             mOut.close();
+            isClosed = true;
         } catch (IOException e) {
         }
     }
