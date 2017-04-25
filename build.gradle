@@ -5,7 +5,7 @@ buildscript {
     dependencies { classpath 'com.android.tools.build:gradle:2.3.0' }
     ext {
         BuildToolsVersion = '25.0.2'
-        TargetSDKNonGlass = '25'
+        TargetSDKNonGlass = '23'
         TargetSDKGlass = '19'
     }
 }
