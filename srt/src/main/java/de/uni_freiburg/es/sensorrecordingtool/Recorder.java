@@ -480,7 +480,7 @@ public class Recorder extends InfiniteIntentService {
 
         if (mClockSyncServerThread != null)
             mClockSyncServerThread.interrupt();
-
+        status.finishing();
         new Thread() {
 
             @Override
@@ -508,7 +508,6 @@ public class Recorder extends InfiniteIntentService {
 
                 spawnProvider();
                 status.finished(output);
-
 
                 sensorProcesses = null;
                 ffmpeg = null;

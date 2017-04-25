@@ -203,6 +203,16 @@ public class RecorderStatus {
         sendStatusIntent(extra);
     }
 
+
+    /**
+     * to be called before waiting for (potential) sensor flushes.
+     *
+     */
+    public void finishing() {
+        mSrtStatus = NodeStatus.FINISHING;
+        sendStatusIntent();
+    }
+
     private void includeIdentifier(Intent i) {
         i.putExtra(ANDROID_ID, Settings.Secure.getString(c.getContentResolver(),
                 Settings.Secure.ANDROID_ID));

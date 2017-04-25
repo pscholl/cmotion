@@ -1,6 +1,7 @@
 package de.uni_freiburg.es.sensorrecordingtool.merger.provider;
 
 import android.content.Context;
+import android.util.Log;
 
 import java.io.File;
 
@@ -8,6 +9,7 @@ import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.ConnectionTechnology
 
 public class MergeProviderSession extends Thread {
 
+    private static final String TAG = MergeProviderSession.class.getSimpleName();
     private Context mContext;
     private String mRecordUUID;
     private File mInputFile;
@@ -24,6 +26,7 @@ public class MergeProviderSession extends Thread {
         super.run();
         ConnectionTechnology tech = ConnectionTechnology.pickBestConnectionTechnology(ConnectionTechnology.gatherConnectionList(mContext));
         DataProvider provider = pickProvider(tech);
+        Log.i(TAG, "serving "+mRecordUUID+" via "+provider.getClass().getSimpleName());
         provider.serve(mRecordUUID, mInputFile);
     }
 

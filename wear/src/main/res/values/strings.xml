@@ -5,4 +5,5 @@
     <string name="set_position">Set Position</string>
     <string name="title_activity_select_position">SelectPositionActivity</string>
     <string name="wear_location_question">Where is this Wear worn?</string>
+    <string name="discovered_nodes">Discovered Nodes</string>
 </resources>

@@ -44,6 +44,9 @@ public class BTDataProvider extends DataProvider {
             sendProviderReadyIntent(recordingUUID); // notify the master about our MAC
             clientSocket = serverSocket.accept();
 
+            Log.i(TAG, clientSocket.toString()+" connected");
+
+
             IOUtils.transport(new FileInputStream(file), clientSocket.getOutputStream());
             Log.i(TAG, "Wrote " + file.length() + "bytes over Bluetooth");
         } catch (Exception e) {

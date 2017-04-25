@@ -5,6 +5,8 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.ViewPager;
 import android.view.WindowManager;
 
+import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.AutoDiscovery;
+
 public class CMotionWearActivity extends FragmentActivity {
 
     private static final String TAG = CMotionWearActivity.class.getName();
@@ -21,5 +23,11 @@ public class CMotionWearActivity extends FragmentActivity {
         mPagerAdapter = new NavigationDrawerAdapter(getSupportFragmentManager());
         mViewPager.setAdapter(mPagerAdapter);
         mViewPager.setOffscreenPageLimit(mPagerAdapter.getCount()-1);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        AutoDiscovery.getInstance(this).close();
     }
 }

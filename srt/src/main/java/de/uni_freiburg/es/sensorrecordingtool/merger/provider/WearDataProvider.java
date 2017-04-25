@@ -41,8 +41,7 @@ public class WearDataProvider extends DataProvider implements GoogleApiClient.Co
 
     public void serve(String recordingUUID, File file) {
 
-        if (file == null || !file.canRead() || !file.exists() || file.isDirectory())
-            throw new Error("Fileaccess error");
+        assert file != null && file.canRead() && file.exists() && !file.isDirectory();
 
         try {
             FileInputStream fis = new FileInputStream(file);

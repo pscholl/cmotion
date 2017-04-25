@@ -115,6 +115,9 @@ public class AutoDiscovery {
      * Starts the autodiscovery asynchronously. Will remove all previously discovered devices.
      */
     public void discover() {
+        if(!sInstance.isReceiverRegistered)
+            sInstance.bind();
+
         Intent intent = new Intent();
         intent.setAction(Recorder.DISCOVERY_ACTION);
         mContext.sendBroadcast(intent);

@@ -68,10 +68,6 @@ public class NodeAdapter extends RecyclerView.Adapter<NodeAdapter.ViewHolder> {
         holder.nodeTechTextView.setText(Arrays.toString(node.getConnectionTechnologies()));
 
 
-
-//        holder.arrayAdapter.clear();
-//        holder.arrayAdapter.addAll(value.toArray(new String[value.size()]));
-
         holder.nodeListTextView.setText("");
         if (node.getReadySensors() != null)
             for (String s : node.getReadySensors())
