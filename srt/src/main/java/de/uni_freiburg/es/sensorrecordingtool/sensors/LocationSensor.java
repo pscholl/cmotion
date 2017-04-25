@@ -127,6 +127,7 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     @Override
     public void flush(SensorEventListener l) {
         onLocationChanged(mLastLocation);
+        super.flush(l);
     }
 
     @Override

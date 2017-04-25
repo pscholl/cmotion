@@ -209,9 +209,9 @@ public abstract class SensorProcess implements SensorEventListener {
         mSensor.unregisterListener(this);
         try {
             mOut.close();
-            isClosed = true;
         } catch (IOException e) {
         }
+        isClosed = true;
     }
 
     public static int getSampleSize(Context context, String sensor) throws Exception {
