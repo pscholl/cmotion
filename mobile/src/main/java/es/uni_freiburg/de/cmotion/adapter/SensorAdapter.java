@@ -88,13 +88,11 @@ public class SensorAdapter extends RecyclerView.Adapter implements AbstractDataA
     @Override
     public void onBindViewHolder(final RecyclerView.ViewHolder h, final int position) {
         final SensorModel model = mCollection.get(position);
-        String name = model.getName().contains(".") ?
-                      model.getName().substring(model.getName().lastIndexOf(".")+1).replace("_", " ") :
-                      model.getName();
+
 
         ViewHolder holder = (ViewHolder) h;
 
-        holder.nameTextView.setText(name);
+        holder.nameTextView.setText(model.getEasyName());
         holder.nameTextView.append("\n");
         holder.nameTextView.append(model.getAvailablePlatforms().toString());
 

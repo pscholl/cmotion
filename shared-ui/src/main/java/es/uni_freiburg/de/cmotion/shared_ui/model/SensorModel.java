@@ -38,7 +38,7 @@ public class SensorModel implements Comparable<SensorModel>{
 
     @Override
     public int compareTo(SensorModel another) {
-        return getName().compareTo(another.getName());
+        return getEasyName().compareTo(another.getEasyName());
     }
 
     public void setSamplingRate(int samplingRate) {
@@ -56,5 +56,11 @@ public class SensorModel implements Comparable<SensorModel>{
     public void addAvailablePlatform(String availableOnPlatform) {
         if(!mAvailableOnPlatforms.contains(availableOnPlatform))
             this.mAvailableOnPlatforms.add(availableOnPlatform);
+    }
+
+    public String getEasyName() {
+        return  getName().contains(".") ?
+                getName().substring(getName().lastIndexOf(".")+1).replace("_", " ") :
+                getName();
     }
 }
