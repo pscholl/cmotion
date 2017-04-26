@@ -147,6 +147,8 @@ public class Recorder extends InfiniteIntentService {
     private String output;
     public static long OFFSET;
     private double duration;
+    private boolean error = false;
+
 
     public static String mRecordUUID;
 
@@ -194,7 +196,6 @@ public class Recorder extends InfiniteIntentService {
         isMaster = !isIntentForwarded(intent);
         Log.e(TAG, "We are " + (isMaster ? "Master" : "Slave"));
 
-        boolean error = false;
 
         try {
 
@@ -480,7 +481,8 @@ public class Recorder extends InfiniteIntentService {
 
         if (mClockSyncServerThread != null)
             mClockSyncServerThread.interrupt();
-        status.finishing();
+        if(!error)
+            status.finishing();
         new Thread() {
 
             @Override
@@ -506,8 +508,10 @@ public class Recorder extends InfiniteIntentService {
 
                 }
 
-                spawnProvider();
-                status.finished(output);
+                if(!error) {
+                    spawnProvider();
+                    status.finished(output);
+                }
 
                 sensorProcesses = null;
                 ffmpeg = null;
