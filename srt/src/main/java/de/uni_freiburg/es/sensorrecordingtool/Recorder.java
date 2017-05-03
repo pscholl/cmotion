@@ -141,7 +141,7 @@ public class Recorder extends InfiniteIntentService {
     /* members when a recording is ongoing, stored here for cleanup from
      * onDestroy */
     private List<SensorProcess> sensorProcesses;
-    private PowerManager.WakeLock mWl;
+    private PowerManager.WakeLock mWl = null;
     private RecorderStatus status;
     private FFMpegProcess ffmpeg;
     private String output;
@@ -230,9 +230,9 @@ public class Recorder extends InfiniteIntentService {
             startForeground(status.NOTIFICATION_ID, status.mNotification.build());
 
             /** acquire a wake lock to avoid the sensor data generators to suspend */
-            mWl = ((PowerManager) getSystemService(POWER_SERVICE))
-                    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
-            mWl.acquire();
+//            mWl = ((PowerManager) getSystemService(POWER_SERVICE))
+//                    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
+//            mWl.acquire();
 
             /** wait for all local sensors */
             for (boolean ready = false; !ready; ready = true) {
@@ -406,10 +406,10 @@ public class Recorder extends InfiniteIntentService {
                 .addOutputArgument("-preset", "ultrafast")
                 .setLoglevel("debug");
 
-        if(isMaster)
+        if (isMaster)
             fp.setTag("recording_id", mRecordUUID);
 
-        if(context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH))
+        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH))
             fp.setTag("wear_location", WearPositionManager.getPosition(context).name());
 
 
@@ -481,7 +481,7 @@ public class Recorder extends InfiniteIntentService {
 
         if (mClockSyncServerThread != null)
             mClockSyncServerThread.interrupt();
-        if(!error)
+        if (!error)
             status.finishing();
         new Thread() {
 
@@ -500,7 +500,8 @@ public class Recorder extends InfiniteIntentService {
                     }
 
                     /** release the wakelock again */
-                    mWl.release();
+                    if (mWl != null)
+                        mWl.release();
 
                     /** notify the system that a sensor recording is finished, stopForeground
                      * to remove the service-bound notification and display the finished one */
@@ -508,7 +509,7 @@ public class Recorder extends InfiniteIntentService {
 
                 }
 
-                if(!error) {
+                if (!error) {
                     spawnProvider();
                     status.finished(output);
                 }

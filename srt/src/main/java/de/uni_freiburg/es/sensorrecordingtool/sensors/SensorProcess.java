@@ -39,7 +39,7 @@ public abstract class SensorProcess implements SensorEventListener {
     final double mRate;
     final OutputStream mOut;
     public final double mDur;
-    private final PowerManager.WakeLock mWl;
+    private final PowerManager.WakeLock mWl = null;
     private final String mFormat;
     private final Handler mHandler;
     ByteBuffer mBuf;
@@ -59,9 +59,9 @@ public abstract class SensorProcess implements SensorEventListener {
         mSensor = getMatchingSensor(context, sensor);
         mSensor.prepareSensor();
 
-        mWl = ((PowerManager) context.getSystemService(Context.POWER_SERVICE))
-                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
-        mWl.acquire();
+//        mWl = ((PowerManager) context.getSystemService(Context.POWER_SERVICE))
+//                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
+//        mWl.acquire();
     }
 
     public Sensor getSensor() {
@@ -192,12 +192,12 @@ public abstract class SensorProcess implements SensorEventListener {
 
     public void terminate() {
 
-        if(Thread.currentThread() == Looper.getMainLooper().getThread())
+        if (Thread.currentThread() == Looper.getMainLooper().getThread())
             Log.wtf("SensorProcess", "Terminate called on UI Thread!!!");
 
         if (mDur < mElapsed || mDur < 0) {
             mSensor.flush(SensorProcess.this);
-            while(!isClosed) Thread.currentThread().yield();
+            while (!isClosed) Thread.currentThread().yield();
 
         } else
             onFlushCompleted();
@@ -205,7 +205,7 @@ public abstract class SensorProcess implements SensorEventListener {
 
     @Override
     public void onFlushCompleted() {
-        if (mWl.isHeld()) mWl.release();
+        if (mWl != null && mWl.isHeld()) mWl.release();
         mSensor.unregisterListener(this);
         try {
             mOut.close();
