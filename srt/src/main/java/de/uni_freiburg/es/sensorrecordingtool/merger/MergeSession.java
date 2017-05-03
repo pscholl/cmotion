@@ -1,7 +1,10 @@
 package de.uni_freiburg.es.sensorrecordingtool.merger;
 
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
@@ -27,8 +30,27 @@ public class MergeSession {
     private final String TAG = MergeSession.class.getSimpleName();
     private int mNodeDataCount = 0;
     private Handler mTimeoutHandler = new Handler();
-    private long TIMEOUT_AFTER_LAST_FILE_MS = 6000 * 1000;
+    private long TIMEOUT_AFTER_LAST_FILE_MS = 1200 * 1000;
     private boolean mIsFinished = false;
+    public static final String ACTION_MERGE_CANCEL = "merge_cancel";
+    private boolean isRegistered = false;
+
+    private final BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            if (!ACTION_MERGE_CANCEL.equals(intent.getAction()))
+                return;
+
+            unregisterReceiver(this);
+
+            for (Thread t : mThreadPool)
+                t.interrupt();
+            mTimeoutHandler.removeCallbacksAndMessages(null); // remove all scheduled runnables
+            mMergeStatus.error(new InterruptedException("cancelled by user"));
+            mIsFinished = true;
+        }
+    };
 
     private MergeStatus mMergeStatus;
 
@@ -37,6 +59,8 @@ public class MergeSession {
         this.mNodeDataCount = nodes.size();
         this.mRecordingUUID = recordingUUID;
         this.mMergeStatus = new MergeStatus(context, recordingUUID, nodes.size());
+
+        registerReceiver(mBroadcastReceiver, new IntentFilter(ACTION_MERGE_CANCEL));
 
         for (Node node : nodes) {
             final String aid = node.getAid();
@@ -48,14 +72,28 @@ public class MergeSession {
 
     }
 
+    private void registerReceiver(BroadcastReceiver receiver, IntentFilter filter) {
+        mContext.getApplicationContext().registerReceiver(mBroadcastReceiver, filter);
+        isRegistered = true;
+    }
+
+    private void unregisterReceiver(BroadcastReceiver receiver) {
+        if (isRegistered)
+            try {
+                mContext.getApplicationContext().unregisterReceiver(mBroadcastReceiver);
+            } catch (Exception e) {
+            }
+        isRegistered = false;
+    }
+
     public boolean isFinished() {
         return mIsFinished;
     }
 
     public boolean isThreadPoolFinished() {
         boolean b = true;
-        for(Thread t : mThreadPool)
-            if(t.isAlive())
+        for (Thread t : mThreadPool)
+            if (t.isAlive())
                 b = false;
         return b;
     }
@@ -70,7 +108,7 @@ public class MergeSession {
                 input.add(file.getAbsolutePath());
 
         try {
-
+            unregisterReceiver(mBroadcastReceiver);
             String output = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
                     .getAbsolutePath() + "/" + mRecordingUUID + ".merged.mkv";
 
@@ -79,12 +117,11 @@ public class MergeSession {
                     .setOutput(output)
                     .build(mContext);
             copyProcess.waitFor();
-
+            Log.i(TAG, "merged to: " + output);
             mMergeStatus.finished(output);
-
-//            for (File file : mFiles) // cleanup
-//                if (file != null && file.exists())
-//                    file.delete();
+            for (File file : mFiles) // cleanup
+                if (file != null && file.exists())
+                    file.delete();
 
             mIsFinished = true;
         } catch (Exception e) {
@@ -130,23 +167,30 @@ public class MergeSession {
         @Override
         public void run() {
             this.retriever = pickRetriever(node);
-            File file = retriever.getFile();
-            mMergeStatus.incrementProgress();
-            mFiles.add(file);
-            mTimeoutHandler.removeCallbacksAndMessages(null); // remove all scheduled runanbles
-            mNodeDataCount--;
-            if (!isInterrupted()) {
-                if (mNodeDataCount == 0) {
-                    mergeAllRecordings();
-                } else
-                    startTimeoutTimer();
+            File file = null;
+            try {
+                file = retriever.getFile();
+                mFiles.add(file);
+                mMergeStatus.incrementProgress();
+                mTimeoutHandler.removeCallbacksAndMessages(null); // remove all scheduled runanbles
+                mNodeDataCount--;
+                if (!isInterrupted()) {
+                    if (mNodeDataCount == 0) {
+                        mergeAllRecordings();
+                    } else
+                        startTimeoutTimer();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
+
             retriever.destroy();
         }
 
     }
 
     private void startTimeoutTimer() {
+        mTimeoutHandler.removeCallbacksAndMessages(null);
         mTimeoutHandler.postDelayed(new Runnable() {
             @Override
             public void run() {

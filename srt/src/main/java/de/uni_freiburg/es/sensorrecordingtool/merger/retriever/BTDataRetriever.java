@@ -91,14 +91,9 @@ public class BTDataRetriever extends DataRetriever {
     }
 
     @Override
-    public File getFile() {
-        try {
-            latch.await();
-            return getDestinationFile();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return null;
+    public File getFile() throws InterruptedException {
+        latch.await();
+        return getDestinationFile();
     }
 
 

@@ -21,10 +21,10 @@ public class LocalDataRetriever extends DataRetriever {
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(intent == null || !intent.getStringExtra(RecorderStatus.RECORDING_UUID).equals(mRecordingUUID))
+            if (intent == null || !intent.getStringExtra(RecorderStatus.RECORDING_UUID).equals(mRecordingUUID))
                 return;
             String path = intent.getStringExtra(RecorderStatus.FINISH_PATH);
-            if(path == null)
+            if (path == null)
                 return;
             mFile = new File(path);
             mReceiverRegistered = false;
@@ -44,18 +44,13 @@ public class LocalDataRetriever extends DataRetriever {
 
     @Override
     public void destroy() {
-        if(mReceiverRegistered && mReceiver != null)
+        if (mReceiverRegistered && mReceiver != null)
             super.mContext.unregisterReceiver(mReceiver);
     }
 
     @Override
-    public File getFile() {
-        try {
-            latch.await();
-            return mFile;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return null;
+    public File getFile() throws InterruptedException {
+        latch.await();
+        return mFile;
     }
 }

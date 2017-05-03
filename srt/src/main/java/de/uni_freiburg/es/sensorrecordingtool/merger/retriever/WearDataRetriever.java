@@ -62,14 +62,9 @@ public class WearDataRetriever extends DataRetriever implements
 
 
     @Override
-    public File getFile() {
-        try {
-            latch.await();
-            return getDestinationFile();
-        } catch (InterruptedException e) {
-            Log.w(TAG, TAG + " for " + mRecordingUUID + " interrupted!");
-        }
-        return null;
+    public File getFile() throws InterruptedException {
+        latch.await();
+        return getDestinationFile();
     }
 
 
@@ -123,7 +118,6 @@ public class WearDataRetriever extends DataRetriever implements
             e.printStackTrace();
         }
     }
-
 
 
     private void mergeChunks() throws IOException {

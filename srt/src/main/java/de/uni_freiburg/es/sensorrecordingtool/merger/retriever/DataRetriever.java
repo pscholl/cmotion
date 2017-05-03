@@ -23,7 +23,7 @@ public abstract class DataRetriever {
 
     public abstract void destroy();
 
-    public abstract File getFile();
+    public abstract File getFile() throws InterruptedException;
 
     public String getFileName() {
         return fileName;

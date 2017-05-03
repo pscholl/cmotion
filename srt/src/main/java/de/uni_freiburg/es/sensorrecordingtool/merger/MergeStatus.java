@@ -1,6 +1,8 @@
 package de.uni_freiburg.es.sensorrecordingtool.merger;
 
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
@@ -30,9 +32,8 @@ public class MergeStatus {
     public MergeStatus(Context context, String recordUUID, int maxThreads) {
         c = context;
         mService = (NotificationManagerCompat) NotificationManagerCompat.from(c);
-
         mMax = maxThreads;
-
+        mRecordUUID = recordUUID;
         mNotification = new NotificationCompat.Builder(c)
                 .setContentTitle("Merging "+recordUUID)
                 .setContentText("Waiting for inputs")
@@ -41,6 +42,10 @@ public class MergeStatus {
                 .setOngoing(true)
         ;
 
+        Intent intent = new Intent();
+        intent.setAction(MergeSession.ACTION_MERGE_CANCEL);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(c, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        mNotification.addAction(R.drawable.ic_stop_white_24dp, c.getString(android.R.string.cancel), pendingIntent);
 
         if (!isRunningOnGlass())
             mService.notify(NOTIFICATION_ID, mNotification.build());
@@ -53,10 +58,14 @@ public class MergeStatus {
 //        mNotification.mActions.clear(); // remove cancel button
 
         mNotification
-                .setContentTitle("Merging Error")
+                .setContentTitle("Merging "+mRecordUUID)
+                .setContentText("failed: "+exception.getMessage())
                 .setProgress(0, 0, false)
                 .setOngoing(false)
         ;
+
+        mNotification.mActions.clear();
+
 
         if (!isRunningOnGlass())
             mService.notify(NOTIFICATION_ID, mNotification.build());
@@ -75,11 +84,13 @@ public class MergeStatus {
 
     public void finished(String output) {
         mNotification
-                .setContentTitle("Merging finished")
+                .setContentTitle("Merging "+mRecordUUID)
                 .setContentText(output)
                 .setProgress(0, 0, false)
                 .setOngoing(false)
         ;
+
+        mNotification.mActions.clear();
 
         if (!isRunningOnGlass())
             mService.notify(NOTIFICATION_ID, mNotification.build());
@@ -88,7 +99,8 @@ public class MergeStatus {
     public void incrementProgress() {
         mCounter++;
         mNotification
-                .setContentTitle("Merging in progress")
+                .setContentTitle("Merging "+mRecordUUID)
+                .setContentText("in progress")
                 .setProgress(mMax, mCounter, false)
                 .setOngoing(false)
         ;
