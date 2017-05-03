@@ -26,7 +26,7 @@ public class FFMpegCopyProcess {
             try {
                 byte buf[] = new byte[4096];
 
-                while(true) {
+                while(!isCancelled()) {
                     int n = is.read(buf);
                     System.err.write(buf, 0, n);
                 }
@@ -58,6 +58,7 @@ public class FFMpegCopyProcess {
 
     public int waitFor() throws InterruptedException {
         int ret = p.waitFor();
+        verboseMonitor.cancel(true);
         return ret;
     }
 

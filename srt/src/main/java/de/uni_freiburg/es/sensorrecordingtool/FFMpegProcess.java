@@ -46,7 +46,7 @@ public class FFMpegProcess {
             try {
                 byte buf[] = new byte[4096];
 
-                while(true) {
+                while(!isCancelled()) {
                     int n = is.read(buf);
                     System.err.write(buf, 0, n);
                 }
@@ -119,7 +119,6 @@ public class FFMpegProcess {
 
     public int waitFor() throws InterruptedException {
         int ret = p.waitFor();
-
         for (OutputStream s : sockets)
             try { s.close(); }
             catch (IOException e) {}
@@ -134,7 +133,9 @@ public class FFMpegProcess {
             try { s.close(); }
             catch (IOException e) {  }
 
-        return p.waitFor();
+        int i = p.waitFor();
+        verboseMonitor.cancel(true);
+        return i;
     }
 
     public InputStream getInputStream() {

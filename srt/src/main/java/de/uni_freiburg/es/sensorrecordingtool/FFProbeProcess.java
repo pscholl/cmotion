@@ -4,7 +4,6 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Environment;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -12,10 +11,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedList;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /** A wrapper for the ffprobe command.
  *
@@ -33,7 +30,7 @@ public class FFProbeProcess {
                     try {
                         byte buf[] = new byte[4096];
 
-                        while(true) {
+                        while(!isCancelled()) {
                             int n = is.read(buf);
                             if (n<=0) break;
                             System.err.write(buf, 0, n);
