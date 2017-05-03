@@ -78,16 +78,25 @@ public class IntentForwarderService extends Service {
     @Override
     public void onDestroy() {
         if (mServerThread != null)
-            mServerThread.running = false;
+            mServerThread.interrupt();
         super.onDestroy();
     }
 
     protected class ServerThread extends Thread {
         protected BluetoothServerSocket mServerSocket;
-        protected boolean running = true;
 
         public ServerThread()  {
             start();
+        }
+
+        @Override
+        public void interrupt() {
+            super.interrupt();
+            if(mServerSocket!= null)
+                try {
+                    mServerSocket.close();
+                } catch (IOException ignored) {
+                }
         }
 
         @Override
@@ -98,7 +107,7 @@ public class IntentForwarderService extends Service {
 
                 mServerSocket = a.listenUsingRfcommWithServiceRecord(NAME, uuid);
 
-                while (running) // TODO: should be pooled!
+                while (!isInterrupted()) // TODO: should be pooled!
                     new ReceiverThread(mServerSocket.accept());
             } catch(Exception e) {
               e.printStackTrace();
