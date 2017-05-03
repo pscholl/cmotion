@@ -60,6 +60,17 @@ public class ClockSyncServerThread extends Thread {
         pfd.close();
     }
 
+    @Override
+    public void interrupt() {
+        super.interrupt();
+        if(serverSocket != null)
+            try {
+                serverSocket.close();
+            } catch (IOException e) {
+
+            }
+    }
+
     /**
      * Loops forever waiting for clients, if a client connects, we will send it the current
      * timestamp and close the link. We are waiting for {@link #WAIT_TIME} ms after each connection before sending
