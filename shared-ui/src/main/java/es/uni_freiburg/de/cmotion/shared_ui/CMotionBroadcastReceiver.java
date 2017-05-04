@@ -20,6 +20,7 @@ import java.io.File;
 
 import de.uni_freiburg.es.sensorrecordingtool.RecorderStatus;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.NodeStatus;
+import de.uni_freiburg.es.sensorrecordingtool.merger.MergeStatus;
 
 
 public class CMotionBroadcastReceiver extends BroadcastReceiver {
@@ -61,7 +62,9 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
                 stopRecordingAnimations();
                 break;
             case RecorderStatus.FINISH_ACTION:
-
+                stopRecordingAnimations();
+                break;
+            case MergeStatus.FINISH_ACTION:
                 if (intent.hasExtra(RecorderStatus.FINISH_PATH) && mCoordinatorLayout != null) {
                     final String path = intent.getStringExtra(RecorderStatus.FINISH_PATH);
                     Snackbar
@@ -74,10 +77,7 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
                             })
                             .show();
                 }
-                stopRecordingAnimations();
-
                 break;
-
             default:
         }
     }

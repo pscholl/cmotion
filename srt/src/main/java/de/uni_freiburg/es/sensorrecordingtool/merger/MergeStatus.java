@@ -4,12 +4,14 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 
 import java.util.Random;
 
 import de.uni_freiburg.es.sensorrecordingtool.R;
+import de.uni_freiburg.es.sensorrecordingtool.RecorderStatus;
 
 /**
  * Notify the system about the current recorder stats, as well as the user.
@@ -17,6 +19,7 @@ import de.uni_freiburg.es.sensorrecordingtool.R;
  */
 public class MergeStatus {
     private static final String TAG = MergeStatus.class.getSimpleName();
+    public static final String FINISH_ACTION = "merge_status_finished";
     public final Context c;
     public final NotificationManagerCompat mService;
     public final NotificationCompat.Builder mNotification;
@@ -58,7 +61,7 @@ public class MergeStatus {
 //        mNotification.mActions.clear(); // remove cancel button
 
         mNotification
-                .setContentTitle("Merging "+mRecordUUID)
+                .setContentTitle("Merge failed "+mRecordUUID)
                 .setContentText("failed: "+exception.getMessage())
                 .setProgress(0, 0, false)
                 .setOngoing(false)
@@ -84,13 +87,19 @@ public class MergeStatus {
 
     public void finished(String output) {
         mNotification
-                .setContentTitle("Merging "+mRecordUUID)
+                .setContentTitle("Merged finished "+mRecordUUID)
                 .setContentText(output)
                 .setProgress(0, 0, false)
                 .setOngoing(false)
         ;
 
         mNotification.mActions.clear();
+
+        Intent intent = new Intent(MergeStatus.FINISH_ACTION);
+        intent.putExtra(RecorderStatus.FINISH_PATH, output);
+        intent.putExtra(RecorderStatus.ANDROID_ID, Settings.Secure.getString(c.getContentResolver(),
+                Settings.Secure.ANDROID_ID));
+        c.sendBroadcast(intent);
 
         if (!isRunningOnGlass())
             mService.notify(NOTIFICATION_ID, mNotification.build());
