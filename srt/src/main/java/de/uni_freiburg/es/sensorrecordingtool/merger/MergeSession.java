@@ -137,6 +137,7 @@ public class MergeSession {
         private Node node;
 
         public RetrieverThread(Node node) {
+            super(RetrieverThread.class.getSimpleName());
             this.node = node;
         }
 

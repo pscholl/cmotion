@@ -149,6 +149,7 @@ public class IntentForwarderService extends Service {
         protected final BluetoothDevice mDevice;
 
         public SenderThread(BluetoothDevice d, JSONObject extras) {
+            super(SenderThread.class.getSimpleName());
             mDevice = d;
             mExtras = extras;
             Log.d(TAG, "sending msg " + extras +  " to " + d.toString());

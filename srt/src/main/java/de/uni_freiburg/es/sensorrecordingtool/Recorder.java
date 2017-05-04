@@ -167,13 +167,17 @@ public class Recorder extends InfiniteIntentService {
         HandlerThread h = new HandlerThread("sensorprocess " + sensor);
         h.start();
 
+        SensorProcess process;
+
         if (sensor.contains("video") || sensor.contains("audio"))
-            return new BlockSensorProcess(c, sensor, rate, format, dur, os,
+            process =  new BlockSensorProcess(c, sensor, rate, format, dur, os,
                     new Handler(h.getLooper()));
         else
-            return new NonBlockSensorProcess(c, sensor, rate, format, dur, os,
+            process = new NonBlockSensorProcess(c, sensor, rate, format, dur, os,
                     new Handler(h.getLooper()));
 
+        process.setHandlerThread(h);
+        return process;
     }
 
 
@@ -324,6 +328,10 @@ public class Recorder extends InfiniteIntentService {
 
         if (isMaster) { // wait for everyone to send prepared
             Log.e(TAG, "all nodes are ready - sending steady");
+
+            if (mClockSyncServerThread != null) // we can stop BT timesync hosting
+                mClockSyncServerThread.interrupt();
+
             long correctTime = System.currentTimeMillis() + Recorder.OFFSET;
             status.steady(correctTime + DEFAULT_STEADY_TIME);
             new CountDownLatch(1).await(DEFAULT_STEADY_TIME, TimeUnit.MILLISECONDS);

@@ -32,6 +32,8 @@ public class ClockSyncServerThread extends Thread {
      */
     public ClockSyncServerThread() throws Exception {
 
+        super(ClockSyncServerThread.class.getSimpleName());
+
         mBtAdapter = BluetoothAdapter.getDefaultAdapter();
         // Phone does not support Bluetooth so let the user know and exit.
         if (mBtAdapter == null) {

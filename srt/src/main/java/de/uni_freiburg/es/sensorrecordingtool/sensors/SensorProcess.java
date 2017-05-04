@@ -3,6 +3,7 @@ package de.uni_freiburg.es.sensorrecordingtool.sensors;
 import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.util.Log;
@@ -47,6 +48,8 @@ public abstract class SensorProcess implements SensorEventListener {
     public double mElapsed = 0;
     double mDiff = 0;
     private boolean isClosed = false;
+
+    private HandlerThread mHandlerThread;
 
     public SensorProcess(Context context, String sensor, double rate, String format, double dur,
                          OutputStream bf, Handler h) throws Exception {
@@ -211,6 +214,8 @@ public abstract class SensorProcess implements SensorEventListener {
             mOut.close();
         } catch (IOException e) {
         }
+        mHandlerThread.getLooper().quit();
+        mHandlerThread.interrupt();
         isClosed = true;
     }
 
@@ -231,5 +236,9 @@ public abstract class SensorProcess implements SensorEventListener {
     public void join() {
         while (mWl.isHeld())
             ;
+    }
+
+    public void setHandlerThread(HandlerThread handlerThread) {
+        this.mHandlerThread = handlerThread;
     }
 }
