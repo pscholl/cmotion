@@ -233,10 +233,13 @@ public class Recorder extends InfiniteIntentService {
              * destroyed (wtf). */
             startForeground(status.NOTIFICATION_ID, status.mNotification.build());
 
-            /** acquire a wake lock to avoid the sensor data generators to suspend */
-//            mWl = ((PowerManager) getSystemService(POWER_SERVICE))
-//                    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
-//            mWl.acquire();
+            /** make sure the screen is turning on for some time, otherwise sensors won't start.
+             * They keep running though, once the screen turns off again. */
+            mWl = ((PowerManager) getSystemService(POWER_SERVICE))
+                    .newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK |
+                                 PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                                 "sensorlock");
+            mWl.acquire();
 
             /** wait for all local sensors */
             for (boolean ready = false; !ready; ready = true) {
@@ -291,6 +294,7 @@ public class Recorder extends InfiniteIntentService {
             if (status != null)
                 status.error(e);
         }
+
         if (error)
         /** close down the ffmpeg process and all sensorprocesses */
             stopSelf();
@@ -306,12 +310,13 @@ public class Recorder extends InfiniteIntentService {
             Log.d(TAG, "recording status");
             status.recording((System.currentTimeMillis() - mRecordingSince) * 1000, (long) duration * 1000 * 1000);
             long timeLeft = Double.valueOf(duration).longValue() - (System.currentTimeMillis() - mRecordingSince);
+            if (mWl.isHeld()) mWl.release();
             handler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     waitUntilEnd();
                 }
-            }, Math.min(500, duration <= 0 ? Integer.MAX_VALUE : timeLeft));
+            }, Math.min(2500, duration <= 0 ? Integer.MAX_VALUE : timeLeft));
         } else
             stopSelf();
 
