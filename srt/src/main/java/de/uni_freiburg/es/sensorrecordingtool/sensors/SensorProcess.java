@@ -8,12 +8,15 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.util.Log;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.LinkedList;
+
+import de.uni_freiburg.es.sensorrecordingtool.FFMpegProcess;
 
 
 /**
@@ -35,10 +38,10 @@ public abstract class SensorProcess implements SensorEventListener {
      * when no duration is set this constant is used for the maximum delay to report
      * on new sensor data. We chose ten minutes for no specific reason.
      */
-    public static final int DEFAULT_LATENCY_US = 10 * 60 * 1000 * 1000;
+    public static final int DEFAULT_LATENCY_US = 10 * 1000 * 1000;
     final Sensor mSensor;
     final double mRate;
-    final OutputStream mOut;
+    OutputStream mOut = null;
     public final double mDur;
     private final PowerManager.WakeLock mWl = null;
     private final String mFormat;
@@ -61,10 +64,28 @@ public abstract class SensorProcess implements SensorEventListener {
 
         mSensor = getMatchingSensor(context, sensor);
         mSensor.prepareSensor();
+    }
 
-//        mWl = ((PowerManager) context.getSystemService(Context.POWER_SERVICE))
-//                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sensorlock");
-//        mWl.acquire();
+    public SensorProcess(Context c, String sensor, double rate, String format, double dur, final FFMpegProcess p, final int j, Handler handler) throws Exception {
+        mRate = rate;
+        mDur = dur;
+        mFormat = format;
+        mHandler = handler;
+
+        mSensor = getMatchingSensor(c, sensor);
+        mSensor.prepareSensor();
+
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    mOut = p.getOutputStream(j);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
     }
 
     public Sensor getSensor() {
@@ -72,15 +93,11 @@ public abstract class SensorProcess implements SensorEventListener {
     }
 
     public void startRecording() {
-        int maxreportdelay_us = DEFAULT_LATENCY_US;
-        if (mDur - 1 > 0) // make it one second shorter
-            maxreportdelay_us = (int) (mDur - 1.) * 1000 * 1000;
-
         /** XXX flushing the sensor is not working reliably at the moment, so we
-         * completly avoid the reporting latency in favor of having the correct
+         * completely avoid the reporting latency in favor of having the correct
          * number of samples in the output. */
-        maxreportdelay_us = 0;
-        mSensor.registerListener(this, (int) (1 / mRate * 1000 * 1000), maxreportdelay_us, mFormat, mHandler);
+        //maxreportdelay_us = 0;
+        mSensor.registerListener(this, (int) (1 / mRate * 1000 * 1000), DEFAULT_LATENCY_US, mFormat, mHandler);
     }
 
     /**
@@ -147,6 +164,9 @@ public abstract class SensorProcess implements SensorEventListener {
             mLastTimestamp = sensorEvent.timestamp;
             return;
         }
+
+        if (mOut == null)
+            return;
 
         try {
             /*

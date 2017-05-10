@@ -1,16 +1,21 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
+import android.bluetooth.le.ScanFilter;
 import android.content.Context;
+import android.net.LocalSocket;
+import android.net.LocalSocketAddress;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.ServerSocket;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -18,25 +23,18 @@ import java.util.concurrent.Executors;
 
 /**
  * This is a wrapper for FFMpeg that allows to run ffmpeg executable and returns Process
- * object to interact with the running ffmpeg process. As java cannot do pipes, we use tcp
- * streams to handle multiple input files. For this ffmpeg and ffprobe can be called with
- * a %port special string that will be replaced with a free port on the system. I.e.
- *
- * FFMpegProcess p = new FFMpegProcess.Builder()
- *   .addInputArgument("-i", "tcp://localhost:%port?listen")
- *   .build();
- *
- * will replace %port with a free TCP port on the system prior to execution.
+ * object to interact with the running process. Data with ffmpeg can be exchanged via named
+ * pipes which are created with addPipedInput(). The connected OutputStream which writes to
+ * ffmpeg can be obtained with getOutputStream().
  *
  * Created by phil on 8/26/16.
  */
 public class FFMpegProcess {
+    protected Process p;
+    protected LinkedList<File> mFiles = new LinkedList<>();
+    protected HashMap<Integer,OutputStream> mStreams = new HashMap<>();
     protected FFMpegProcess.ExitCallback exit;
     protected static final ExecutorService THREAD_POOL_EXECUTOR = Executors.newCachedThreadPool();
-    protected final Process p;
-    protected final ProcessBuilder pb;
-    protected final LinkedList<OutputStream> sockets;
-    protected final LinkedList<Integer> ports;
     protected final AsyncTask<InputStream, Void, Void> verboseMonitor =
         new AsyncTask<InputStream, Void, Void>() {
         @Override
@@ -68,58 +66,17 @@ public class FFMpegProcess {
     }};
 
 
-    protected FFMpegProcess(ProcessBuilder process) throws IOException {
-
-        boolean isinputarg = false;
-        LinkedList<String> newargs;
-
-        pb = process;
-        ports = new LinkedList<Integer>();
-        sockets = new LinkedList<OutputStream>();
-        newargs = new LinkedList<String>();
-
-        for (String arg : pb.command()) {
-            if (isinputarg && arg.contains("%port")) {
-                Integer port = getFreeTCPPort();
-                arg = arg.replaceFirst("%port", port.toString());
-                ports.add(port);
-
-                sockets.add(new EventualSocketOutputStream("localhost", port));
-            }
-
-            isinputarg = arg.contentEquals("-i");
-            if (arg.trim().length() !=0 )
-                newargs.add(arg.trim());
-        }
-
-        pb.command(newargs);
-        p = pb.start();
-
-        System.err.println("executing " + pb.command().toString());
+    protected FFMpegProcess(ProcessBuilder b, LinkedList<File> files) throws IOException {
+        p = b.start();
+        mFiles = files;
+        System.err.println("executing " + b.command().toString());
         verboseMonitor.executeOnExecutor(THREAD_POOL_EXECUTOR, p.getErrorStream());
         exitMonitor.executeOnExecutor(THREAD_POOL_EXECUTOR, p);
     }
 
-
-    public int getPort(int j) {
-        return ports.get(j);
-    }
-
-    private Integer getFreeTCPPort() {
-        int port = 0;
-
-        try {
-            ServerSocket s = new ServerSocket(0);
-            port = s.getLocalPort();
-            s.close();
-        } catch (IOException e) {e.printStackTrace();}
-
-        return port;
-    }
-
     public int waitFor() throws InterruptedException {
         int ret = p.waitFor();
-        for (OutputStream s : sockets)
+        for (OutputStream s : mStreams.values())
             try { s.close(); }
             catch (IOException e) {}
 
@@ -129,7 +86,7 @@ public class FFMpegProcess {
     public InputStream getErrorStream() { return p.getErrorStream();  }
 
     public int terminate() throws InterruptedException {
-        for (OutputStream s : sockets)
+        for (OutputStream s : mStreams.values())
             try { s.close(); }
             catch (IOException e) {  }
 
@@ -146,7 +103,16 @@ public class FFMpegProcess {
         this.exit = cb;
     }
 
-    public OutputStream getOutputStream(int j) { return sockets.get(j); }
+    public OutputStream getOutputStream(int j) throws FileNotFoundException {
+        OutputStream s = mStreams.get(j);
+        if (s == null) {
+            File f = mFiles.get(j);
+            FileOutputStream fos = new FileOutputStream(f);
+            f.delete();
+            mStreams.put(j, fos);
+        }
+        return mStreams.get(j);
+    }
 
     /** This is a helper class to build what my common usages for the FFMpeg tool will be, feel
      * free to add additional stuff here. You can always add your own command line switches with
@@ -155,21 +121,28 @@ public class FFMpegProcess {
     protected static class Builder {
         LinkedList<String> inputopts = new LinkedList<String>(),
                           outputopts = new LinkedList<String>();
+        LinkedList<File> mInputPipes = new LinkedList<>();
+
         int numinputs  = 0;
         private String output_fmt;
         private String output;
+        private Context mContext;
+
+        public Builder(Context c) {
+            mContext = c;
+        }
 
         /** add an audio stream to the ffmpeg input
          * @param format sample format, list them with ffmpeg -formats or documentation
          * @param rate   sample rate in Hz
          * @param channels number of channels
          */
-        public Builder addAudio(String format, double rate, int channels) {
-            Collections.addAll(inputopts, String.format(Locale.ROOT,
-                "-f %s -ar %f -ac %d -i tcp://localhost:%%port?listen",format, rate, channels).split(" "));
-
-            numinputs ++;
-            return this;
+        public Builder addAudio(String format, double rate, int channels) throws IOException, InterruptedException {
+            return
+             addInputArgument("-f", format)
+            .addInputArgument("-ar", new Double(rate).toString())
+            .addInputArgument("-ac", new Double(channels).toString())
+            .addPipedInput();
         }
 
         /** add a video stream to the ffmpeg input
@@ -182,16 +155,14 @@ public class FFMpegProcess {
          *                set to null if specified by the input format. The default for Android is
          *                NV21.
          */
-        public Builder addVideo(int width, int height, double rate, String fmt, String pixfmt) {
+        public Builder addVideo(int width, int height, double rate, String fmt, String pixfmt) throws IOException, InterruptedException {
             String optarg = pixfmt == null ? "" : String.format("-pix_fmt %s", pixfmt);
-
-            Collections.addAll(inputopts,
-                String.format(Locale.ROOT,
-                        "-r %f -s %d:%d -f %s %s -i tcp://localhost:%%port?listen",
-                       rate, width, height, fmt, optarg).split(" "));
-
-            numinputs ++;
-            return this;
+            return
+             addInputArgument("-r", new Double(rate).toString())
+            .addInputArgument("-s", String.format("%d:%d", width, height))
+            .addInputArgument("-f", fmt)
+            .addInputArgument(pixfmt == null ? "" : "-pix_fmt", pixfmt == null ? "" : pixfmt)
+            .addPipedInput();
         }
 
         /** set a metadata tag for the last defined input stream
@@ -270,6 +241,35 @@ public class FFMpegProcess {
             inputopts.add(option);
             inputopts.add(value);
 
+            if ("-i".equals(option))
+                numinputs++;
+
+            return this;
+        }
+
+        /** add a piped input, i.e. an OutputStream which writes into the ffmpeg process
+         */
+        public Builder addPipedInput() throws IOException, InterruptedException {
+            File dir = mContext.getFilesDir().getParentFile();
+            File f = File.createTempFile("ffmpeg", "", dir);
+
+            inputopts.add("-i");
+            inputopts.add(f.getAbsolutePath());
+
+            /** create named pipe */
+            f.delete();
+            Process p = new ProcessBuilder().command("mknod", f.getAbsolutePath(), "p").start();
+            int result = p.waitFor();
+
+            if (result != 0)
+                throw new IOException("mknod failed");
+
+            /** open and store for later use */
+            f = new File(f.getAbsolutePath());
+            f.deleteOnExit();
+            mInputPipes.add( f );
+            numinputs ++;
+
             return this;
         }
 
@@ -298,9 +298,10 @@ public class FFMpegProcess {
             return this;
         }
 
-        public FFMpegProcess build(Context c) throws IOException {
+        public FFMpegProcess build() throws IOException {
             LinkedList<String> cmdline = new LinkedList<String>();
-            File path = new File(new File(c.getFilesDir().getParentFile(), "lib"), "libffmpeg.so");
+            File dir = mContext.getFilesDir().getParentFile();
+            File path = new File(new File(dir, "lib"), "libffmpeg.so");
 
             Log.e("PATH", path.toString());
 
@@ -321,13 +322,13 @@ public class FFMpegProcess {
             cmdline.add("-nostdin");
             cmdline.addAll(outputopts);
 
-
             ProcessBuilder pb = new ProcessBuilder(cmdline);
 
-
-
             pb.directory(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM));
-            return new FFMpegProcess(pb);
+
+            FFMpegProcess p = new FFMpegProcess(pb, mInputPipes);
+
+            return p;
         }
     }
 

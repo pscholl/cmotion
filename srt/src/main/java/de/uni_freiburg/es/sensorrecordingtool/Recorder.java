@@ -159,7 +159,7 @@ public class Recorder extends InfiniteIntentService {
     }
 
     private SensorProcess newSensorProcess(String sensor, String format, double rate,
-                                           double dur, OutputStream os) throws Exception {
+                                           double dur, FFMpegProcess p, int j) throws Exception {
         Context c = this.getApplicationContext();
 
         /** one thread for each sensor to make sure that they can block on write on their
@@ -170,10 +170,10 @@ public class Recorder extends InfiniteIntentService {
         SensorProcess process;
 
         if (sensor.contains("video") || sensor.contains("audio"))
-            process =  new BlockSensorProcess(c, sensor, rate, format, dur, os,
+            process =  new BlockSensorProcess(c, sensor, rate, format, dur, p, j,
                     new Handler(h.getLooper()));
         else
-            process = new NonBlockSensorProcess(c, sensor, rate, format, dur, os,
+            process = new NonBlockSensorProcess(c, sensor, rate, format, dur, p, j,
                     new Handler(h.getLooper()));
 
         process.setHandlerThread(h);
@@ -224,7 +224,7 @@ public class Recorder extends InfiniteIntentService {
             /** create sensorprocess for each input and wire it to the ffmpeg process */
             for (int j = 0; j < sensors.length; j++)
                 sensorProcesses.add(newSensorProcess(
-                        sensors[j], formats[j], rates[j], duration, ffmpeg.getOutputStream(j)));
+                        sensors[j], formats[j], rates[j], duration, ffmpeg, j));
 
             /** notify the system that a new recording was started, and make
              * sure that the service does not get called when an activity is
@@ -253,7 +253,6 @@ public class Recorder extends InfiniteIntentService {
             boolean driftCalculated = true;
             if (!isMaster) {
                 try {
-//                    OFFSET = 0;
                     OFFSET = new ClockSyncManager(this).getOffsetSafe();
                 } catch (TimeoutException e) {
                     // TODO come up with something clever here.
@@ -261,6 +260,7 @@ public class Recorder extends InfiniteIntentService {
                     driftCalculated = false;
                     OFFSET = 0;
                 }
+
             } else OFFSET = 0; // since we provide the time in this case ...
 
             Log.e(TAG, String.format("Clock drift: %s ms - valid computation: %s", OFFSET, driftCalculated));
@@ -406,7 +406,8 @@ public class Recorder extends InfiniteIntentService {
 
         /** create an ffmpeg process that will demux all sensor recordings into
          * a single file on one time axis. */
-        FFMpegProcess.Builder fp = new FFMpegProcess.Builder();
+        FFMpegProcess.Builder fp = new FFMpegProcess.Builder(context);
+
         fp.setOutput(output, "matroska")
                 .setCodec("a", "wavpack")
                 .setCodec("v", "libx264")
@@ -417,7 +418,7 @@ public class Recorder extends InfiniteIntentService {
                 .setTag("fingerprint", Build.FINGERPRINT)
                 .setTag("beginning", getCurrentDataAsIso())
                 .addOutputArgument("-preset", "ultrafast")
-                .setLoglevel("debug");
+                .setLoglevel("error");
 
         if (isMaster)
             fp.setTag("recording_id", mRecordUUID);
@@ -426,8 +427,7 @@ public class Recorder extends InfiniteIntentService {
             fp.setTag("wear_location", WearPositionManager.getPosition(context).name());
 
 
-        /** create a SensorProcess for each input and wire it to ffmpeg
-         * accordingly */
+        /** create a SensorProcess for each input and wire it to ffmpeg accordingly */
         for (int j = 0; j < sensors.length; j++) {
             Sensor matched = SensorProcess.getMatchingSensor(this, sensors[j]);
 
@@ -455,7 +455,7 @@ public class Recorder extends InfiniteIntentService {
             fp.setStreamTag("platform", platform);
         }
 
-        return fp.build(context);
+        return fp.build();
     }
 
     private boolean isIntentForwarded(Intent intent) {
@@ -513,7 +513,7 @@ public class Recorder extends InfiniteIntentService {
                     }
 
                     /** release the wakelock again */
-                    if (mWl != null)
+                    if (mWl != null && mWl.isHeld())
                         mWl.release();
 
                     /** notify the system that a sensor recording is finished, stopForeground
