@@ -418,7 +418,7 @@ public class Recorder extends InfiniteIntentService {
                 .setTag("fingerprint", Build.FINGERPRINT)
                 .setTag("beginning", getCurrentDataAsIso())
                 .addOutputArgument("-preset", "ultrafast")
-                .setLoglevel("error");
+                .setLoglevel("debug");
 
         if (isMaster)
             fp.setTag("recording_id", mRecordUUID);
