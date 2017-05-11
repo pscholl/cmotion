@@ -24,7 +24,7 @@ public class IntentForwarder extends BroadcastReceiver {
         int state = intent.getIntExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE, -1);
         boolean doforward = intent.getBooleanExtra(IntentForwarder.EXTRA_DOBLUETOOTHFORWARD, true);
 
-        Log.d(TAG, "got intent " + intent + " " + state + " " + doforward);
+        // Log.d(TAG, "got intent " + intent + " " + state + " " + doforward);
 
         if (intent == null || intent.getAction() == null)
             return;
