@@ -1,5 +1,6 @@
 package de.uni_freiburg.es.sensorrecordingtool.sensors;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.hardware.SensorManager;
 import android.os.Build;
@@ -40,6 +41,7 @@ public class SensorWrapper extends Sensor {
         return mSensor.getName();
     }
 
+    @SuppressLint("NewApi")
     @Override
     public String getStringType() {
         try {
@@ -139,6 +141,11 @@ public class SensorWrapper extends Sensor {
     @Override
     public void unregisterListener(SensorEventListener l) {
         mSensorMgr.unregisterListener(pop(l));
+    }
+
+    @Override
+    public int getFifoSize() {
+        return mSensor.getFifoMaxEventCount();
     }
 
     /** Determine whethe the code is runnong on Google Glass

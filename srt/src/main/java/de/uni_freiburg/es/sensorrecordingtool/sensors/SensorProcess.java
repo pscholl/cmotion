@@ -96,8 +96,11 @@ public abstract class SensorProcess implements SensorEventListener {
         /** XXX flushing the sensor is not working reliably at the moment, so we
          * completely avoid the reporting latency in favor of having the correct
          * number of samples in the output. */
-        //maxreportdelay_us = 0;
-        mSensor.registerListener(this, (int) (1 / mRate * 1000 * 1000), DEFAULT_LATENCY_US, mFormat, mHandler);
+        int ms = (int) (1. / mRate * 1000 * 1000),
+            md = (mSensor.getFifoSize() - 2 ) * ms;
+        md = md > 0 ? md : 0;
+
+        mSensor.registerListener(this, ms, md, mFormat, mHandler);
     }
 
     /**
@@ -190,6 +193,12 @@ public abstract class SensorProcess implements SensorEventListener {
             /*
              * store it or multiple copies of the same, close when done.
              */
+            int tointerpolate = (int) Math.floor( mDiff * mRate ) - 1;
+
+            if (tointerpolate > 1)
+                Log.d("SensorProcess", String.format("%s interpolating %d frames", mSensor.getStringName(), tointerpolate));
+
+
             while (mDiff >= 1. / mRate) {
                 mOut.write(arr);
                 mDiff -= 1. / mRate;

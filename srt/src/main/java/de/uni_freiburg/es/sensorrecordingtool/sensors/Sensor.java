@@ -4,6 +4,7 @@ import android.content.Context;
 import android.hardware.Camera;
 import android.hardware.SensorManager;
 import android.media.AudioFormat;
+import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
 
@@ -68,7 +69,11 @@ public abstract class Sensor {
         SensorManager mgr = (SensorManager) c.getSystemService(Context.SENSOR_SERVICE);
 
         for (android.hardware.Sensor s : mgr.getSensorList(android.hardware.Sensor.TYPE_ALL))
-            result.add(new SensorWrapper(c, s));
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                if (s.isWakeUpSensor());
+                    result.add(new SensorWrapper(c, s));
+            } else
+                result.add(new SensorWrapper(c, s));
 
         result.add(new LocationSensor(c));
         result.addAll(getAllVideoSensors(c));
@@ -123,6 +128,8 @@ public abstract class Sensor {
             if (pl.l.equals(l)) it.remove();
         }
     }
+
+    public abstract int getFifoSize();
 
     protected class ParameterizedListener {
         public ParameterizedListener(SensorEventListener li, int r, int d) {

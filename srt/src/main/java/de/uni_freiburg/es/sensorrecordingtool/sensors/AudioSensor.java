@@ -74,6 +74,11 @@ public class AudioSensor extends Sensor {
             mRecorderThread.stopRecording();
     }
 
+    @Override
+    public int getFifoSize() {
+        return 0;
+    }
+
 
     /*
      * Valid Audio Sample rates

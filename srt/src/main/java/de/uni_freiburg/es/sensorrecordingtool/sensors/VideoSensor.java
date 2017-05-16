@@ -91,6 +91,11 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
         }
     }
 
+    @Override
+    public int getFifoSize() {
+        return 0;
+    }
+
 
     private void oldOpenCamera() {
         try {

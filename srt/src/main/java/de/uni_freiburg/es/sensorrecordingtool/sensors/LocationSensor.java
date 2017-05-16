@@ -80,6 +80,11 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     }
 
     @Override
+    public int getFifoSize() {
+        return 0;
+    }
+
+    @Override
     public void registerListener(SensorEventListener l, int rate, int delay, String format, Handler h) {
         super.registerListener(l, rate, delay, format, h);
         this.handler = h;
