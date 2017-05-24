@@ -193,6 +193,7 @@ public abstract class SensorProcess implements SensorEventListener {
             if (tointerpolate > 1 && !(mSensor instanceof  AudioSensor))
                 Log.d("SensorProcess", String.format("%s interpolating %d frames", mSensor.getStringName(), tointerpolate));
 
+
             while (mDiff >= 1. / mRate) {
                 mOut.write(arr);
                 mDiff -= 1. / mRate;
@@ -202,9 +203,8 @@ public abstract class SensorProcess implements SensorEventListener {
                     terminate();
                     return;
                 }
-
                 /** audio sensor does not provide timestamps, so interpolating can not work */
-                if (mSensor instanceof AudioSensor)
+                if (mSensor instanceof AudioSensor || mSensor instanceof VideoSensor)
                     break;
             }
 

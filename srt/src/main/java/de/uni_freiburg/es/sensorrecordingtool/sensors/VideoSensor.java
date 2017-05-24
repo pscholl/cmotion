@@ -8,7 +8,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
-import android.view.SurfaceView;
+import android.view.Surface;
 
 /**
  * Grabs frames at the specified videorate and returns them in raw format at maximum
@@ -23,14 +23,15 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
     private int facing;
     private Camera mCamera;
     private int mRateInMilliHz = 0;
-    private SurfaceView mSurface;
+    private SurfaceTexture mSurfaceTexture;
+    private Camera.CameraInfo info;
 
     public VideoSensor(Context c, int id) {
         super(c, 1);
         context = c;
         this.id = id;
 
-        Camera.CameraInfo info = new Camera.CameraInfo();
+        info = new Camera.CameraInfo();
         Camera.getCameraInfo(id, info);
         this.facing = info.facing;
         mEvent = new SensorEvent(0);
@@ -65,16 +66,16 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
             Log.d(TAG, "starting recording with pixel format " + params.getPictureFormat());
             Log.d(TAG, "resolution " + params.getPreviewSize().width + "x" + params.getPreviewSize().height);
 
+            params.setRotation(getCorrectCameraOrientation(info, mCamera));
             mCamera.setParameters(params);
-
-            setCameraDisplayOrientation(mCamera);
+            mCamera.setDisplayOrientation(getCorrectCameraOrientation(info, mCamera));
 
             int bytesPerBuffer = (int) Math.ceil(
                     ImageFormat.getBitsPerPixel(params.getPreviewFormat()) / 8.
                             * mSize.width * mSize.height);
 
-            mCamera.addCallbackBuffer(new byte[bytesPerBuffer]);
-            mCamera.addCallbackBuffer(new byte[bytesPerBuffer]);
+//            mCamera.addCallbackBuffer(new byte[bytesPerBuffer]);
+//            mCamera.addCallbackBuffer(new byte[bytesPerBuffer]);
 
             startRecording();
         }
@@ -83,6 +84,8 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
     }
 
     @Override
+
+
     public void unregisterListener(SensorEventListener l) {
         super.unregisterListener(l);
 
@@ -106,7 +109,7 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
     }
 
     /**
-     * Determine whether the code is running on Google Glass
+     * Determine whethe the code is running on Google Glass
      *
      * @return True if and only if Manufacturer is Google and Model begins with Glass
      */
@@ -145,8 +148,9 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
         } catch (Exception e) {
             Log.d(TAG, String.format(
                     "unable to parse format '%s', using default resolution %dx%d",
-                    (format != null ? format : ""), mSize.width, mSize.height));
+                    (format != null ? format : ""), mSize == null ? 0 : mSize.width, mSize == null ? 0 : mSize.height));
         }
+
         return mSize;
     }
 
@@ -165,8 +169,12 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
     public void startRecording() {
 
         try {
-            mCamera.setPreviewTexture(new SurfaceTexture(10));
-            mCamera.setPreviewCallbackWithBuffer(preview);
+
+            Camera.Parameters params = mCamera.getParameters();
+
+            mSurfaceTexture = new SurfaceTexture(10);
+            mCamera.setPreviewTexture(mSurfaceTexture);
+            mCamera.setPreviewCallback(preview);
             mCamera.setErrorCallback(this);
             mCamera.startPreview();
         } catch (Exception e) {
@@ -186,40 +194,40 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
     }
 
 
-    public void setCameraDisplayOrientation(android.hardware.Camera camera) {
-//        Camera.Parameters parameters = camera.getParameters();
-//
-//        android.hardware.Camera.CameraInfo camInfo =
-//                new android.hardware.Camera.CameraInfo();
-//        android.hardware.Camera.getCameraInfo(getBackFacingCameraId(), camInfo);
-//
-//
-//        Display display = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
-//        int rotation = display.getRotation();
-//        int degrees = 0;
-//        switch (rotation) {
-//            case Surface.ROTATION_0:
-//                degrees = 0;
-//                break;
-//            case Surface.ROTATION_90:
-//                degrees = 90;
-//                break;
-//            case Surface.ROTATION_180:
-//                degrees = 180;
-//                break;
-//            case Surface.ROTATION_270:
-//                degrees = 270;
-//                break;
-//        }
-//
-//        int result;
-//        if (camInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-//            result = (camInfo.orientation + degrees) % 360;
-//            result = (360 - result) % 360;  // compensate the mirror
-//        } else {  // back-facing
-//            result = (camInfo.orientation - degrees + 360) % 360;
-//        }
-//        camera.setDisplayOrientation(180);
+    public int getCorrectCameraOrientation(Camera.CameraInfo info, Camera camera) {
+
+//        int rotation = context..getWindowManager().getDefaultDisplay().getRotation();
+        int rotation = 180;
+        int degrees = 0;
+
+        switch (rotation) {
+            case Surface.ROTATION_0:
+                degrees = 0;
+                break;
+
+            case Surface.ROTATION_90:
+                degrees = 90;
+                break;
+
+            case Surface.ROTATION_180:
+                degrees = 180;
+                break;
+
+            case Surface.ROTATION_270:
+                degrees = 270;
+                break;
+
+        }
+
+        int result;
+        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            result = (info.orientation + degrees) % 360;
+            result = (360 - result) % 360;
+        } else {
+            result = (info.orientation - degrees + 360) % 360;
+        }
+
+        return result;
     }
 
     private int getBackFacingCameraId() {
@@ -240,7 +248,7 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
 
     @Override
     public void onError(int error, Camera camera) {
-        Log.e(TAG, "ERROR: "+error);
+        Log.e(TAG, "ERROR: " + error);
     }
 
 
@@ -263,20 +271,26 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
         }
     }
 
+
+    int frames = 0;
+
     protected Camera.PreviewCallback preview = new Camera.PreviewCallback() {
         @Override
         public void onPreviewFrame(byte[] bytes, Camera camera) {
+
+
+            Log.e(TAG, "frame #" + frames++);
 
             mEvent.timestamp = System.currentTimeMillis() * 1000 * 1000;
             mEvent.rawdata = bytes;
             notifyListeners();
 
-            try {
-                /** add the buffer again to the queue */
-                mCamera.addCallbackBuffer(bytes);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+//            try {
+//                /** add the buffer again to the queue */
+//                mCamera.addCallbackBuffer(bytes);
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
         }
 
         // Default format is YCbCr'NV21
