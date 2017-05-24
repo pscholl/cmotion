@@ -10,6 +10,7 @@ import android.os.Handler;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
 import de.uni_freiburg.es.sensorrecordingtool.FFMpegCopyProcess;
@@ -117,8 +118,13 @@ public class MergeSession {
                     .setOutput(output)
                     .build(mContext);
             copyProcess.waitFor();
-            Log.i(TAG, "merged to: " + output);
-            mMergeStatus.finished(output);
+
+            if(new File(output).exists()) {
+                Log.i(TAG, "merged to: " + output);
+                mMergeStatus.finished(output);
+            } else
+                mMergeStatus.error(new FileNotFoundException("file not written"));
+
             for (File file : mFiles) // cleanup
                 if (file != null && file.exists())
                     file.delete();

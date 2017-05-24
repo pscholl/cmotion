@@ -209,7 +209,7 @@ public abstract class SensorProcess implements SensorEventListener {
                     return;
                 }
 
-                if (mSensor instanceof AudioSensor) // we dont need repetition for audio
+                if (mSensor instanceof AudioSensor || mSensor instanceof VideoSensor) // we dont need repetition for AV
                     break;
             }
 
