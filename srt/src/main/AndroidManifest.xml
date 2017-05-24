@@ -36,7 +36,9 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".autodiscovery.responder.DiscoveryResponderReceiver" android:enabled="true">
+        <receiver
+            android:name=".autodiscovery.responder.DiscoveryResponderReceiver"
+            android:enabled="true">
             <intent-filter>
                 <action android:name="senserec_discovery" />
             </intent-filter>

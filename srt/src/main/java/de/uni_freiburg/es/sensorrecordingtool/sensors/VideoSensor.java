@@ -106,7 +106,7 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
     }
 
     /**
-     * Determine whethe the code is runnong on Google Glass
+     * Determine whether the code is running on Google Glass
      *
      * @return True if and only if Manufacturer is Google and Model begins with Glass
      */

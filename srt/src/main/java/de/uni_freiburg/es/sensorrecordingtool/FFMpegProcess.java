@@ -8,6 +8,7 @@ import android.os.AsyncTask;
 import android.os.Environment;
 import android.util.Log;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -109,7 +110,7 @@ public class FFMpegProcess {
             File f = mFiles.get(j);
             FileOutputStream fos = new FileOutputStream(f);
             f.delete();
-            mStreams.put(j, fos);
+            mStreams.put(j, new BufferedOutputStream(fos));
         }
         return mStreams.get(j);
     }
