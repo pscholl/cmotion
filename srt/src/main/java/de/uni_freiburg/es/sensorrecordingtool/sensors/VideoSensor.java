@@ -284,13 +284,6 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
             mEvent.timestamp = System.currentTimeMillis() * 1000 * 1000;
             mEvent.rawdata = bytes;
             notifyListeners();
-
-//            try {
-//                /** add the buffer again to the queue */
-//                mCamera.addCallbackBuffer(bytes);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
         }
 
         // Default format is YCbCr'NV21
