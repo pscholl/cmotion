@@ -21,9 +21,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".ui.PermissionDialog"
-            android:configChanges="orientation|screenSize" />
 
         <service android:name=".LocalSensorService" />
         <service android:name=".WearSensorService" />
@@ -39,9 +36,6 @@
         <activity
             android:name=".SettingsActivity"
             android:label="@string/title_activity_settings" />
-
-        <activity
-            android:name=".permissions.PermissionHelperActivity" />
 
     </application>
 

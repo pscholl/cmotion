@@ -1,4 +1,4 @@
-package es.uni_freiburg.de.cmotion.ui;
+package de.uni_freiburg.es.sensorrecordingtool;
 
 import android.Manifest;
 import android.app.Activity;
@@ -11,7 +11,8 @@ import android.support.v4.content.ContextCompat;
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
 
 /** Just ask for the permission and restart the Recorder, now with hopefully
- * enabled permissions.
+ * enabled permissions. The original recording intent is used to start this Activity
+ * which is subsequently repeated if the permission were granted.
  *
  * Created by phil on 2/28/16.
  */

@@ -46,6 +46,7 @@
 
         <service android:name=".Recorder" />
         <service android:name=".merger.MergeService" />
+        <activity android:name=".PermissionDialog"/>
 
     </application>
 

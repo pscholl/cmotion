@@ -1,10 +1,13 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Environment;
 import android.os.Handler;
 import android.provider.Settings;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 import java.io.File;
@@ -29,7 +32,16 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
     public void onReceive(final Context context, final Intent intent) {
         if (intent == null)
             return;
-        if (intent.getAction().equals(Recorder.READY_ACTION) && Recorder.isMaster) {
+
+        if (PermissionDialog.needToAskForPermission(context)) {
+            intent.setClass(context, PermissionDialog.class);
+            context.startActivity(intent);
+
+            /* PermissionDialog will re-broadcast the original intent, if
+             * necessary permissions are granted. So we will end up here
+             * again if the user pushed the right button.
+             */
+        } else if (intent.getAction().equals(Recorder.READY_ACTION) && Recorder.isMaster) {
             receivedReady(intent);
         } else if (intent.getAction().equals(Recorder.STEADY_ACTION) && !Recorder.isMaster && Recorder.isReady) {
             Recorder.mRecordUUID = intent.getStringExtra(RecorderStatus.RECORDING_UUID);
