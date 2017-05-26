@@ -305,18 +305,24 @@ public class Recorder extends InfiniteIntentService {
     private Handler handler = new Handler();
 
     private void waitUntilEnd() {
-        if (mIsRecording && (duration <= 0 ||
-                System.currentTimeMillis() - mRecordingSince < (long) duration * 1000 + 1000)) {
+        long ms_elapsed  = System.currentTimeMillis() - mRecordingSince,
+             ms_duration = (long) duration * 1000;
+
+        if (mIsRecording && (ms_duration <= 0 || ms_elapsed < ms_duration)) {
             Log.d(TAG, "recording status");
-            status.recording((System.currentTimeMillis() - mRecordingSince) * 1000, (long) duration * 1000 * 1000);
-            long timeLeft = Double.valueOf(duration).longValue() - (System.currentTimeMillis() - mRecordingSince);
-            if (mWl.isHeld()) mWl.release();
+            status.recording(ms_elapsed, ms_duration);
+
+            if (mWl.isHeld())  // make sure to not hold this forever
+                mWl.release();
+
+            // call this function again, every 2.5secs or
             handler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     waitUntilEnd();
                 }
-            }, Math.min(2500, duration <= 0 ? Integer.MAX_VALUE : timeLeft));
+            }, 2500);
+
         } else
             stopSelf();
 
