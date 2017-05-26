@@ -393,20 +393,6 @@ public class Recorder extends InfiniteIntentService {
         getApplicationContext().startService(startServiceIntent);
     }
 
-    private String getBuildDate() {
-        try {
-            ApplicationInfo ai = getPackageManager().getApplicationInfo(getPackageName(), 0);
-            ZipFile zf = new ZipFile(ai.sourceDir);
-            ZipEntry ze = zf.getEntry("classes.dex");
-            long time = ze.getTime();
-            String s = SimpleDateFormat.getInstance().format(new java.util.Date(time));
-            zf.close();
-            return s;
-        } catch (Exception e) {
-            return "unknown";
-        }
-    }
-
     private FFMpegProcess buildFFMPEG(Context context, String[] sensors, String[] formats,
                                       double[] rates, double duration) throws Exception {
 
@@ -419,9 +405,9 @@ public class Recorder extends InfiniteIntentService {
         fp.setOutput(output, "matroska")
                 .setCodec("a", "wavpack")
                 .setCodec("v", "libx264")
-                .setTag("recorder", "cmotion v" + getBuildDate())
+                .setTag("recorder", "cmotion (" + new Date(BuildConfig.TIMESTAMP).toString()+")")
                 .setTag("android_id", Settings.Secure.getString(getContentResolver(),
-                        Settings.Secure.ANDROID_ID))
+                                      Settings.Secure.ANDROID_ID))
                 .setTag("platform", platform)
                 .setTag("fingerprint", Build.FINGERPRINT)
                 .setTag("beginning", getCurrentDataAsIso())
