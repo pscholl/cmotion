@@ -138,8 +138,7 @@ public class Recorder extends InfiniteIntentService {
 
     private ClockSyncServerThread mClockSyncServerThread = null;
 
-    /* members when a recording is ongoing, stored here for cleanup from
-     * onDestroy */
+    /* members when a recording is ongoing, stored here for cleanup from onDestroy */
     private List<SensorProcess> sensorProcesses;
     private PowerManager.WakeLock mWl = null;
     private RecorderStatus status;
@@ -218,7 +217,7 @@ public class Recorder extends InfiniteIntentService {
 
             initSynchronization(isMaster);
 
-            ffmpeg = buildFFMPEG(this, sensors, formats, rates);
+            ffmpeg = buildFFMPEG(this, sensors, formats, rates, duration);
             sensorProcesses = new LinkedList<>();
 
             /** create sensorprocess for each input and wire it to the ffmpeg process */
@@ -308,7 +307,9 @@ public class Recorder extends InfiniteIntentService {
         long ms_elapsed  = System.currentTimeMillis() - mRecordingSince,
              ms_duration = (long) duration * 1000;
 
-        if (mIsRecording && (ms_duration <= 0 || ms_elapsed < ms_duration)) {
+        // XXX +1000ms to hope that all recordings have recorded enough, actually we should
+        //     wait on a clock provided by ffmpeg instead of the wall clock!
+        if (mIsRecording && (ms_duration <= 0 || ms_elapsed < ms_duration + 1000)) {
             Log.d(TAG, "recording status");
             status.recording(ms_elapsed, ms_duration);
 
@@ -406,7 +407,8 @@ public class Recorder extends InfiniteIntentService {
         }
     }
 
-    private FFMpegProcess buildFFMPEG(Context context, String[] sensors, String[] formats, double[] rates) throws Exception {
+    private FFMpegProcess buildFFMPEG(Context context, String[] sensors, String[] formats,
+                                      double[] rates, double duration) throws Exception {
 
         String platform = Build.BOARD + " " + Build.DEVICE + " " + Build.VERSION.SDK_INT;
 
@@ -424,7 +426,10 @@ public class Recorder extends InfiniteIntentService {
                 .setTag("fingerprint", Build.FINGERPRINT)
                 .setTag("beginning", getCurrentDataAsIso())
                 .addOutputArgument("-preset", "ultrafast")
-                .setLoglevel("error");
+                .setLoglevel("debug");
+
+        if (duration > 0)
+            fp.addOutputArgument("-t", new Double(duration).toString());
 
         if (isMaster)
             fp.setTag("recording_id", mRecordUUID);

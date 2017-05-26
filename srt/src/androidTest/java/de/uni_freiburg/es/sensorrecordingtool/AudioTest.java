@@ -10,6 +10,8 @@ import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 import android.test.suitebuilder.annotation.MediumTest;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -18,6 +20,7 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -48,7 +51,7 @@ public class AudioTest extends BroadcastingTest {
     public void delete(File f) throws FileNotFoundException {
         if (f.isDirectory()) {
             for (File c : f.listFiles())
-                delete(c);
+               delete(c);
         }
         if (!f.delete())
             throw new FileNotFoundException("Failed to delete file: " + f);
@@ -63,13 +66,14 @@ public class AudioTest extends BroadcastingTest {
 
 
     @Test
-    public void doAudioRecording() throws InterruptedException {
+    public void doAudioRecording() throws InterruptedException, IOException, JSONException {
         double recDuration = 5;
         i.putExtra("-i", "audio");
         i.putExtra("-d", recDuration);
+        i.putExtra("-r", 8000);
         String result = callForResult(i);
         Assert.assertNotNull("timeout before completion", result);
-        assertRecording(result, recDuration * AudioSensor.getAudioSampleRate());
+        assertRecording(result, "00:00:05.000000000");
     }
 
 //    public void doVideoAndOtherSensor() throws InterruptedException {
@@ -97,19 +101,31 @@ public class AudioTest extends BroadcastingTest {
         return i;
     }
 
-    public void assertRecording(String f, double size) {
+    public void assertRecording(String f, String duration) throws IOException, JSONException, InterruptedException {
         File path = new File(f);
-
         Assert.assertTrue("no output file " + path.toString(), path.exists());
-        Assert.assertTrue("wrong size", size <= path.length());
+
+        FFProbeProcess ffp = new FFProbeProcess.Builder()
+                .addInput(f)
+                .addShowOption("streams")
+                .build(c);
+
+        String dur = ffp
+                .getJSONResult()
+                .getJSONArray("streams")
+                .getJSONObject(0)
+                .getJSONObject("tags")
+                .getString("DURATION");
+
+        Assert.assertEquals("wrong duration",duration, dur);
     }
 
     private String callForError(Intent i) throws InterruptedException {
-        return callForResult(i, 15000, RecorderStatus.ERROR_ACTION, RecorderStatus.ERROR_REASON);
+        return callForResult(i, 15000 * 1000, RecorderStatus.ERROR_ACTION, RecorderStatus.ERROR_REASON);
     }
 
     private String callForResult(Intent i) throws InterruptedException {
-        return callForResult(i, 15000, RecorderStatus.FINISH_ACTION, RecorderStatus.FINISH_PATH);
+        return callForResult(i, 15000 * 1000, RecorderStatus.FINISH_ACTION, RecorderStatus.FINISH_PATH);
     }
 
     private String callForResult(Intent i, int ms, String action, final String extra)

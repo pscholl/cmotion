@@ -37,7 +37,7 @@ public class FFMpegTest extends BroadcastingTest {
     }
 
     @Test public void callFFMpeg() throws IOException, InterruptedException {
-        FFMpegProcess p = new FFMpegProcess.Builder().build(c);
+        FFMpegProcess p = new FFMpegProcess.Builder(c).build();
         int e = p.waitFor();
         Assert.assertTrue("return code is correct", e==1);
     }
@@ -50,12 +50,12 @@ public class FFMpegTest extends BroadcastingTest {
 
     @Test public void encodeSomeNumbersIntoSingleChannelWavpacked() throws Exception {
         byte b[] = new byte[4096];
-        FFMpegProcess p = new FFMpegProcess.Builder()
+        FFMpegProcess p = new FFMpegProcess.Builder(c)
                 .addInputArgument("-f", "u8")
                 .addInputArgument("-i", "tcp://localhost:%port?listen")
                 .addOutputArgument("-f", "wv")
                 .addOutputArgument("-y", filename)
-                .build(c);
+                .build();
 
         Thread.sleep(50);
 
@@ -81,13 +81,13 @@ public class FFMpegTest extends BroadcastingTest {
 
     @Test public void encodeSomeNumbersIntoSingleChannelMatroska() throws IOException, InterruptedException, JSONException {
         byte b[] = new byte[4096];
-        FFMpegProcess p = new FFMpegProcess.Builder()
+        FFMpegProcess p = new FFMpegProcess.Builder(c)
                 .addInputArgument("-f", "u8")
                 .addInputArgument("-i", "tcp://localhost:%port?listen")
                 .setCodec("a", "wavpack")
                 .addOutputArgument("-f", "matroska")
                 .addOutputArgument("-y", filename)
-                .build(c);
+                .build();
 
         Thread.sleep(250);
 
@@ -112,13 +112,13 @@ public class FFMpegTest extends BroadcastingTest {
 
     @Test public void encodeMultipleIntoMatroska() throws Exception {
         byte[] b = new byte[4096];
-        FFMpegProcess p = new FFMpegProcess.Builder()
+        FFMpegProcess p = new FFMpegProcess.Builder(c)
                 .addAudio("u8", 50, 1)
                 .addAudio("u8", 1, 1)
                 .addAudio("u8", 100, 1)
                 .setCodec("a", "wavpack")
                 .setOutput(filename, "matroska")
-                .build(c);
+                .build();
 
         p.getOutputStream(0).write(b);
         p.getOutputStream(0).write(b);
@@ -163,7 +163,7 @@ public class FFMpegTest extends BroadcastingTest {
 
     @Test public void encodeWithBuilder() throws Exception {
         byte[] b = new byte[4096];
-        FFMpegProcess p = new FFMpegProcess.Builder()
+        FFMpegProcess p = new FFMpegProcess.Builder(c)
             .addAudio("u8", 50, 1)
                 .setStreamTag("name", "acceleration")
                 .setStreamTag("location", "hip")
@@ -172,7 +172,7 @@ public class FFMpegTest extends BroadcastingTest {
                 .setStreamTag("location", "hip")
             .setCodec("a", "wavpack")
             .setOutput(new File(filepath, filename).toString(), "matroska")
-            .build(c);
+            .build();
 
         p.getOutputStream(0).write(b);
         p.getOutputStream(1).write(b);
@@ -191,7 +191,7 @@ public class FFMpegTest extends BroadcastingTest {
                a = new byte[10*320*240*12/8]; // nv21 has 12bit per pixel
         new Random().nextBytes(a);
 
-        FFMpegProcess p = new FFMpegProcess.Builder()
+        FFMpegProcess p = new FFMpegProcess.Builder(c)
             .addAudio("u8", 50, 1)
                 .setStreamTag("name", "acceleration")
                 .setStreamTag("location", "hip")
@@ -204,7 +204,7 @@ public class FFMpegTest extends BroadcastingTest {
             .setCodec("v", "libtheora")
             .addOutputArgument("-qscale:v", "7")
             .setOutput(new File(filepath, filename).toString(), "matroska")
-            .build(c);
+            .build();
 
         Thread.sleep(250); p.getOutputStream(0).write(b);
         Thread.sleep(250); p.getOutputStream(1).write(b);

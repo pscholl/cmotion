@@ -196,7 +196,7 @@ public abstract class SensorProcess implements SensorEventListener {
              */
             int tointerpolate = (int) Math.floor( mDiff * mRate ) - 1;
 
-            if (tointerpolate > 1)
+            if (tointerpolate > 1 && !(mSensor instanceof  AudioSensor))
                 Log.d("SensorProcess", String.format("%s interpolating %d frames", mSensor.getStringName(), tointerpolate));
 
             while (mDiff >= 1. / mRate) {
@@ -209,14 +209,15 @@ public abstract class SensorProcess implements SensorEventListener {
                     return;
                 }
 
-                if (mSensor instanceof AudioSensor) // we dont need repetition for audio
+                /** audio sensor does not provide timestamps, so interpolating can not work */
+                if (mSensor instanceof AudioSensor)
                     break;
             }
 
             mLastTimestamp = sensorEvent.timestamp;
         } catch (IOException e) {
             e.printStackTrace();
-            terminate();
+            //terminate();
         }
     }
 
@@ -260,11 +261,6 @@ public abstract class SensorProcess implements SensorEventListener {
             return 4;
 
         throw new Exception("unknown sensor: " + sensor);
-    }
-
-    public void join() {
-        while (mWl.isHeld())
-            ;
     }
 
     public void setHandlerThread(HandlerThread handlerThread) {

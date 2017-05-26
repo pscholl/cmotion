@@ -20,7 +20,6 @@ public class AudioSensor extends Sensor {
     protected final Context context;
     private int mRateinMus = 0;
 
-
     private int mChannelConfig;
     private static int mAudioFormat = AudioFormat.ENCODING_PCM_16BIT;
 

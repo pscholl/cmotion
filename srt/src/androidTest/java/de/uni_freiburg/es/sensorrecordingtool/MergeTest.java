@@ -153,7 +153,7 @@ public class MergeTest extends BroadcastingTest {
 
 
     @Test
-    public void testLocalRetriever() {
+    public void testLocalRetriever() throws InterruptedException {
 
         LocalDataRetriever retriever = new LocalDataRetriever(c, null, "testLocal");
 
@@ -229,7 +229,7 @@ public class MergeTest extends BroadcastingTest {
 
     }
 
-    private void assertFile(DataRetriever retriever) {
+    private void assertFile(DataRetriever retriever) throws InterruptedException {
         File file = retriever.getFile();
         Assert.assertTrue(file != null);
         Assert.assertTrue(file.exists());

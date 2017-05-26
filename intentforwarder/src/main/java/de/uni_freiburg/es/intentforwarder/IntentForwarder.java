@@ -38,6 +38,6 @@ public class IntentForwarder extends BroadcastReceiver {
         /** try and start the service, this makes sure that we're actually listening or
          * forwarding the currently rx'ed action intent. */
         intent.setClass(context, IntentForwarderService.class);
-        context.startService(intent);
+        //context.startService(intent);
     }
 }

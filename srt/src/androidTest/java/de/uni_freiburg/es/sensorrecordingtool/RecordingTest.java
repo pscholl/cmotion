@@ -147,11 +147,11 @@ public class RecordingTest extends BroadcastingTest {
 
     private void assertRecording(String f, String sensor, int size, boolean b) throws Exception {
         byte buf[] = new byte[size];
-        FFMpegProcess p = new FFMpegProcess.Builder()
+        FFMpegProcess p = new FFMpegProcess.Builder(c)
                 .addInputArgument("-i", "file:"+f)
                 .addInputArgument("-map", String.format("m:name:%s",sensor))
                 .setOutput("-", "f32le")
-                .build(c);
+                .build();
         p.waitFor();
         if (b) {
             int n = p.getInputStream().read(buf);
