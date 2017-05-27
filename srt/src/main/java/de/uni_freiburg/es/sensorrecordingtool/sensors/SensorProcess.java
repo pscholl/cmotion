@@ -67,7 +67,8 @@ public abstract class SensorProcess implements SensorEventListener {
         mSensor.prepareSensor();
     }
 
-    public SensorProcess(Context c, String sensor, double rate, String format, double dur, final FFMpegProcess p, final int j, Handler handler) throws Exception {
+    public SensorProcess(Context c, String sensor, double rate, String format, double dur,
+                         final FFMpegProcess p, final int j, Handler handler) throws Exception {
         mRate = rate;
         mDur = dur;
         mFormat = format;
@@ -228,23 +229,27 @@ public abstract class SensorProcess implements SensorEventListener {
         if (Thread.currentThread() == Looper.getMainLooper().getThread())
             Log.wtf("SensorProcess", "Terminate called on UI Thread!!!");
 
-        if (mDur < mElapsed || mDur < 0) {
-            mSensor.flush(SensorProcess.this);
-            while (!isClosed) Thread.currentThread().yield();
-
-        } else
+        // XXX avoid flushing completly, as on LOLLIPOP no onFlushCompleted() is called?
+        //if (mElapsed < mDur || mDur < 0) {
+        //    mSensor.flush(SensorProcess.this);
+        //    while (!isClosed) Thread.currentThread().yield();
+        //} else
             onFlushCompleted();
     }
 
     @Override
     public void onFlushCompleted() {
-        if (mWl != null && mWl.isHeld()) mWl.release();
+        if (mWl != null && mWl.isHeld())
+            mWl.release();
+
         mSensor.unregisterListener(this);
-        try {
-            mOut.close();
-        } catch (IOException e) {
-        }
-        mHandlerThread.getLooper().quit();
+        try { mOut.close(); }
+        catch (IOException e) {}
+
+        Looper wtf = mHandlerThread.getLooper();
+        if (wtf != null)
+            wtf.quit();
+
         mHandlerThread.interrupt();
         isClosed = true;
     }
