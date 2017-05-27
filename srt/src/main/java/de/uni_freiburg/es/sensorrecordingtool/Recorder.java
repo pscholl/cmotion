@@ -199,9 +199,8 @@ public class Recorder extends InfiniteIntentService {
         isMaster = !isIntentForwarded(intent);
         Log.e(TAG, "We are " + (isMaster ? "Master" : "Slave"));
 
-
         try {
-
+            long tick = System.currentTimeMillis();
             intent = RecorderCommands.parseRecorderIntent(this, intent);
             output = intent.getStringExtra(RECORDER_OUTPUT);
             String[] sensors = intent.getStringArrayExtra(RECORDER_INPUT);
@@ -210,9 +209,9 @@ public class Recorder extends InfiniteIntentService {
             duration = intent.getDoubleExtra(RECORDER_DURATION, -1);
             isReady = false;
 
-
             if (isMaster)
                 mRecordUUID = UUID.randomUUID().toString();
+
             status = new RecorderStatus(getApplicationContext(), sensors.length, duration, mRecordUUID);
 
             initSynchronization(isMaster);
@@ -220,7 +219,7 @@ public class Recorder extends InfiniteIntentService {
             ffmpeg = buildFFMPEG(this, sensors, formats, rates, duration);
             sensorProcesses = new LinkedList<>();
 
-            /** create sensorprocess for each input and wire it to the ffmpeg process */
+            /** create a sensorprocess for each input and wire it to the ffmpeg process */
             for (int j = 0; j < sensors.length; j++)
                 sensorProcesses.add(newSensorProcess(
                         sensors[j], formats[j], rates[j], duration, ffmpeg, j));
@@ -269,15 +268,13 @@ public class Recorder extends InfiniteIntentService {
 
             readySteady(isMaster, sensors, OFFSET, driftCalculated);
 
-            if (isMaster) {
-                startMergeService();
-            }
-
             for (SensorProcess process : sensorProcesses)
                 process.startRecording();
+
             mRecordingSince = System.currentTimeMillis();
             ((Vibrator) getApplicationContext().getSystemService(VIBRATOR_SERVICE)).vibrate(100);
-            Log.e(TAG, "RECORDING");
+            Log.e(TAG, String.format("RECORDING (time-to-start: %.2f secs)",
+                       (mRecordingSince - tick) / 1000. ));
 
             waitUntilEnd();
         } catch (InterruptedException ie) {
@@ -294,11 +291,10 @@ public class Recorder extends InfiniteIntentService {
                 status.error(e);
         }
 
-        if (error)
-        /** close down the ffmpeg process and all sensorprocesses */
+        if (error) /** close down the ffmpeg process and all sensorprocesses */
             stopSelf();
-
-
+        else if (isMaster && mAutoDiscovery.getConnectedNodes() > 1)
+            startMergeService();
     }
 
     private Handler handler = new Handler();
@@ -367,8 +363,9 @@ public class Recorder extends InfiniteIntentService {
             if (mAutoDiscovery.getNonAutonomousConnectedNodes() <= 1 || true) {
                 Log.e(TAG, "Running discovery to find nodes");
                 mAutoDiscovery.discover();
-                Thread.sleep(5000);
-                Log.e(TAG, String.format("We have at least %s nodes (including us)", mAutoDiscovery.getNonAutonomousConnectedNodes()));
+                Thread.sleep(Recorder.DEFAULT_STEADY_TIME);
+                Log.e(TAG, String.format("We have at least %s nodes (including us)",
+                        mAutoDiscovery.getNonAutonomousConnectedNodes()));
             }
 
             int readyNodes = Integer.MAX_VALUE - (int) (SEMAPHORE.getCount());
@@ -472,12 +469,9 @@ public class Recorder extends InfiniteIntentService {
     }
 
     public static String getCurrentDataAsIso() {
-        /** from
-         * https://stackoverflow.com/questions/3914404/how-to-get-current-moment-in-iso-8601-format
-         * */
-        TimeZone tz = TimeZone.getTimeZone("UTC");
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'"); // Quoted "Z" to indicate UTC, no timezone offset
-        df.setTimeZone(tz);
+        // see https://stackoverflow.com/questions/3914404/how-to-get-current-moment-in-iso-8601-format
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
+        df.setTimeZone(TimeZone.getTimeZone("UTC"));
         return df.format(new Date());
     }
 
@@ -493,6 +487,7 @@ public class Recorder extends InfiniteIntentService {
             mClockSyncServerThread.interrupt();
         if (!error)
             status.finishing();
+
         new Thread() {
 
             @Override
