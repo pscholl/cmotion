@@ -52,7 +52,7 @@ public class FFMpegTest extends BroadcastingTest {
         byte b[] = new byte[4096];
         FFMpegProcess p = new FFMpegProcess.Builder(c)
                 .addInputArgument("-f", "u8")
-                .addInputArgument("-i", "tcp://localhost:%port?listen")
+                .addPipedInput()
                 .addOutputArgument("-f", "wv")
                 .addOutputArgument("-y", filename)
                 .build();
@@ -83,7 +83,7 @@ public class FFMpegTest extends BroadcastingTest {
         byte b[] = new byte[4096];
         FFMpegProcess p = new FFMpegProcess.Builder(c)
                 .addInputArgument("-f", "u8")
-                .addInputArgument("-i", "tcp://localhost:%port?listen")
+                .addPipedInput()
                 .setCodec("a", "wavpack")
                 .addOutputArgument("-f", "matroska")
                 .addOutputArgument("-y", filename)
@@ -123,9 +123,9 @@ public class FFMpegTest extends BroadcastingTest {
         p.getOutputStream(0).write(b);
         p.getOutputStream(0).write(b);
         p.getOutputStream(0).write(b);
-        p.getOutputStream(0).write(b);
+        p.getOutputStream(0).write(b); p.getOutputStream(0).flush();
 
-        p.getOutputStream(1).write(b);
+        p.getOutputStream(1).write(b); p.getOutputStream(1).flush();
 
         p.getOutputStream(2).write(b);
         p.getOutputStream(2).write(b);
@@ -134,7 +134,7 @@ public class FFMpegTest extends BroadcastingTest {
         p.getOutputStream(2).write(b);
         p.getOutputStream(2).write(b);
         p.getOutputStream(2).write(b);
-        p.getOutputStream(2).write(b);
+        p.getOutputStream(2).write(b); p.getOutputStream(2).flush();
 
         Thread.sleep(250); p.getOutputStream(0).close();
         Thread.sleep(250); p.getOutputStream(1).close();
@@ -174,7 +174,7 @@ public class FFMpegTest extends BroadcastingTest {
             .setOutput(new File(filepath, filename).toString(), "matroska")
             .build();
 
-        p.getOutputStream(0).write(b);
+        p.getOutputStream(0).write(b); p.getOutputStream(0).flush();
         p.getOutputStream(1).write(b);
 
         Thread.sleep(250); p.getOutputStream(0).close();
@@ -206,9 +206,9 @@ public class FFMpegTest extends BroadcastingTest {
             .setOutput(new File(filepath, filename).toString(), "matroska")
             .build();
 
-        Thread.sleep(250); p.getOutputStream(0).write(b);
-        Thread.sleep(250); p.getOutputStream(1).write(b);
-        Thread.sleep(250); p.getOutputStream(2).write(a);
+        Thread.sleep(250); p.getOutputStream(0).write(b); p.getOutputStream(0).flush();
+        Thread.sleep(250); p.getOutputStream(1).write(b); p.getOutputStream(1).flush();
+        Thread.sleep(250); p.getOutputStream(2).write(a); p.getOutputStream(2).flush();
 
         int e = p.terminate();
 

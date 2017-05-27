@@ -121,11 +121,11 @@ public class AudioTest extends BroadcastingTest {
     }
 
     private String callForError(Intent i) throws InterruptedException {
-        return callForResult(i, 15000 * 1000, RecorderStatus.ERROR_ACTION, RecorderStatus.ERROR_REASON);
+        return callForResult(i, 25000, RecorderStatus.ERROR_ACTION, RecorderStatus.ERROR_REASON);
     }
 
     private String callForResult(Intent i) throws InterruptedException {
-        return callForResult(i, 15000 * 1000, RecorderStatus.FINISH_ACTION, RecorderStatus.FINISH_PATH);
+        return callForResult(i, 25000, RecorderStatus.FINISH_ACTION, RecorderStatus.FINISH_PATH);
     }
 
     private String callForResult(Intent i, int ms, String action, final String extra)

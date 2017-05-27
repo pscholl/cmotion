@@ -21,28 +21,6 @@ import java.net.Socket;
 @RunWith(AndroidJUnit4.class)
 @LargeTest
 public class FuckingSockets extends BroadcastingTest {
-    @Test
-    public void testSocket() throws IOException {
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ServerSocket ss = null;
-                try {
-                    ss = new ServerSocket(1992);
-                    ss.accept();
-                    System.err.println("success");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-
-        t.start();
-
-        Socket s = new Socket();
-        s.connect(new InetSocketAddress("localhost", 1992), 500);
-        Assert.assertTrue( s.isConnected() );
-    }
 
     @Test
     public void testUnixSocket() throws Exception {

@@ -51,8 +51,8 @@ public class RecordingTest extends BroadcastingTest {
 
     @After public void teardown() {
         // not every test generates a directory.
-        //try { delete(new File(o));
-        //} catch (FileNotFoundException e) {}
+        try { delete(new File(o));
+        } catch (FileNotFoundException e) {}
     }
 
 
@@ -65,7 +65,7 @@ public class RecordingTest extends BroadcastingTest {
     @Test public void doARecordingWithRates() throws Exception {
         i.putExtra("-i", "accelerometer");
         i.putExtra("-r", 100.);
-        i.putExtra("-d", 5.0);
+        i.putExtra("-d", 25.0);
 
         String result = callForResult(i);
         Assert.assertNotNull("timeout before completion", result);
@@ -80,8 +80,6 @@ public class RecordingTest extends BroadcastingTest {
         });
         i.putExtra("-d", 6.0f);
         i.putExtra("-r", 40);
-
-        String x = Build.MODEL;
 
         String result = callForResult(i);
         Assert.assertNotNull("timeout", result);
@@ -123,8 +121,9 @@ public class RecordingTest extends BroadcastingTest {
     @Test public void doInfiniteRecordingTest() throws Exception {
         i.putExtra("-d", -1);
         i.putExtra("-i", "acc");
+        i.putExtra("-r", 50);
 
-        /* send a cancel request after five seconds */
+        /* send a cancel request after 20 seconds */
         Handler h = new Handler(c.getMainLooper());
         h.postDelayed(new Runnable() {
             @Override
@@ -132,7 +131,7 @@ public class RecordingTest extends BroadcastingTest {
                 Intent cancel = new Intent(Recorder.CANCEL_ACTION);
                 c.sendBroadcast(cancel);
             }
-        }, Recorder.DEFAULT_STEADY_TIME + 2500);
+        }, Recorder.DEFAULT_STEADY_TIME + 20*1000);
 
         String result = callForResult(i);
         Assert.assertNotNull("timed out", result);
@@ -162,11 +161,11 @@ public class RecordingTest extends BroadcastingTest {
 
 
     private String callForError(Intent i) throws InterruptedException {
-        return callForResult(i, 25000, RecorderStatus.ERROR_ACTION, RecorderStatus.ERROR_REASON);
+        return callForResult(i, 50 * 1000, RecorderStatus.ERROR_ACTION, RecorderStatus.ERROR_REASON);
     }
 
     private String callForResult(Intent i) throws InterruptedException {
-        return callForResult(i, 25000, RecorderStatus.FINISH_ACTION, RecorderStatus.FINISH_PATH);
+        return callForResult(i, 50 * 1000, RecorderStatus.FINISH_ACTION, RecorderStatus.FINISH_PATH);
     }
 
     private String callForResult(Intent i, int ms, String action, final String extra)
