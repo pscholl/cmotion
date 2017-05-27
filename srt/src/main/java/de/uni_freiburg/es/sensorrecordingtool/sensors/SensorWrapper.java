@@ -145,7 +145,7 @@ public class SensorWrapper extends Sensor {
 
     @Override
     public int getFifoSize() {
-        return mSensor.getFifoMaxEventCount();
+        return mSensor.getFifoReservedEventCount();
     }
 
     /** Determine whethe the code is runnong on Google Glass
