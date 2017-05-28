@@ -95,14 +95,11 @@ public abstract class SensorProcess implements SensorEventListener {
     }
 
     public void startRecording() {
-        /** XXX flushing the sensor is not working reliably at the moment, so we
-         * completely avoid the reporting latency in favor of having the correct
-         * number of samples in the output. */
-        int ms = (int) (1. / mRate * 1000 * 1000),
-            md = (mSensor.getFifoSize() - 2 ) * ms;
+        int us = (int) (1e6 / mRate),
+            md = (mSensor.getFifoSize() - 2 ) * us;
         md = md > 0 ? md : 0;
 
-        mSensor.registerListener(this, ms, md, mFormat, mHandler);
+        mSensor.registerListener(this, us, md, mFormat, mHandler);
     }
 
     /**

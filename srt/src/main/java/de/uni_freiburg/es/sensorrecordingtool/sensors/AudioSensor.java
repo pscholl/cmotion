@@ -3,12 +3,18 @@ package de.uni_freiburg.es.sensorrecordingtool.sensors;
 import android.content.Context;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
+import android.media.AudioTimestamp;
 import android.media.MediaRecorder;
+import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
 
+import java.nio.ByteBuffer;
+import java.nio.ShortBuffer;
 import java.util.ArrayList;
 import java.util.List;
+
+import de.uni_freiburg.es.sensorrecordingtool.PermissionDialog;
 
 /**
  * Not wokring at all.
@@ -51,8 +57,12 @@ public class AudioSensor extends Sensor {
 
     @Override
     public void registerListener(SensorEventListener l, int rate_in_mus, int delay, String format, Handler h) {
-        //if (!PermissionDialog.microphone(context))
-        //    return;
+        if (!PermissionDialog.audio(context)) {
+            Log.e(TAG, "no permission to record microphone");
+            return;
+        }
+
+        Log.d(TAG, String.format("default rate is %d", getAudioSampleRate()));
 
         if (mListeners.size() == 0) {
             mRateinMus = rate_in_mus;
@@ -140,32 +150,48 @@ public class AudioSensor extends Sensor {
 
     class RecorderThread extends Thread {
 
-        private int sampleRate = (int) ((1000 * 1000f) / mRateinMus);
-        private AudioRecord mAudioRecorder;
-
-        private int minBufSize = AudioRecord.getMinBufferSize(sampleRate, mChannelConfig, mAudioFormat);
-
+        private int sampleRate = (int) (1e6 / mRateinMus);
         private boolean status = true;
-
-
-        RecorderThread() {
-            mAudioRecorder = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate, mChannelConfig, mAudioFormat, minBufSize);
-        }
 
         @Override
         public void run() {
-            super.run();
-            mAudioRecorder.startRecording();
+            int minBufSize = AudioRecord.getMinBufferSize(sampleRate, mChannelConfig, mAudioFormat);
+            AudioRecord aud = new AudioRecord(MediaRecorder.AudioSource.DEFAULT,
+                    sampleRate, mChannelConfig, mAudioFormat, minBufSize);
+            AudioTimestamp ts = new AudioTimestamp();
+            byte buf[] = new byte[minBufSize];
 
-            while (status) {
-                byte[] buffer = new byte[minBufSize]; // TODO use short[] and only half of the buffer
-                if (mAudioRecorder.read(buffer, 0, buffer.length) > 0) {
-                    mEvent.timestamp = System.currentTimeMillis() * 1000 * 1000;
-                    mEvent.rawdata = buffer;
-                    // Log.e(TAG, mEvent.timestamp + ", " + Arrays.toString(mEvent.rawdata));
-                    notifyListeners();
+            for (aud.startRecording();
+                 aud.getState() == AudioRecord.STATE_UNINITIALIZED;
+                 aud.startRecording())
+                _sleep(200);
+
+            for (int err = aud.read(buf,0, minBufSize);
+                 err >= 0 && status;
+                 err = aud.read(buf, 0, minBufSize))
+            {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    aud.getTimestamp(ts, AudioTimestamp.TIMEBASE_MONOTONIC);
+                    mEvent.timestamp = ts.nanoTime;
                 } else
-                    Log.e(TAG, "skipped block");
+                    mEvent.timestamp = System.currentTimeMillis() * 1000 * 1000;
+
+                mEvent.rawdata = buf;
+                notifyListeners();
+
+                if (err == 0)
+                    Log.d(TAG, "skipped block");
+            }
+
+            aud.stop();
+            aud.release();
+        }
+
+        private void _sleep(int i) {
+            try {
+                Thread.sleep(i);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
 
@@ -176,8 +202,6 @@ public class AudioSensor extends Sensor {
 
         public void stopRecording() {
             status = false;
-            mAudioRecorder.stop();
-            mAudioRecorder.release();
         }
 
 
