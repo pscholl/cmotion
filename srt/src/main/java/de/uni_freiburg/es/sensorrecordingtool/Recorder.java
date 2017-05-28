@@ -209,7 +209,6 @@ public class Recorder extends InfiniteIntentService {
                 mRecordUUID = UUID.randomUUID().toString();
 
             status = new RecorderStatus(getApplicationContext(), sensors.length, duration, mRecordUUID);
-
             initSynchronization(isMaster);
 
             ffmpeg = buildFFMPEG(this, sensors, formats, rates, duration);
@@ -337,7 +336,6 @@ public class Recorder extends InfiniteIntentService {
             long correctTime = System.currentTimeMillis() + Recorder.OFFSET;
             status.steady(correctTime + DEFAULT_STEADY_TIME);
             new CountDownLatch(1).await(DEFAULT_STEADY_TIME, TimeUnit.MILLISECONDS);
-
         }
     }
 
@@ -352,20 +350,14 @@ public class Recorder extends InfiniteIntentService {
                 e.printStackTrace();
             }
 
-            SEMAPHORE = new CountDownLatch(Integer.MAX_VALUE);
             mAutoDiscovery = AutoDiscovery.getInstance(this);
-            if (mAutoDiscovery.getNonAutonomousConnectedNodes() <= 1 || true) {
-                Log.e(TAG, "Running discovery to find nodes");
-                mAutoDiscovery.discover();
-                Thread.sleep(Recorder.DEFAULT_STEADY_TIME);
-                Log.e(TAG, String.format("We have at least %s nodes (including us)",
-                        mAutoDiscovery.getNonAutonomousConnectedNodes()));
-            }
+            Log.e(TAG, "Running discovery to find nodes");
+            mAutoDiscovery.discover();
+            Thread.sleep(Recorder.DEFAULT_STEADY_TIME);
+            Log.e(TAG, String.format("We have at least %s nodes (including us)",
+                        mAutoDiscovery.getConnectedNodes()));
 
-            int readyNodes = Integer.MAX_VALUE - (int) (SEMAPHORE.getCount());
-            if (readyNodes > 0)
-                Log.e(TAG, readyNodes + " nodes are already ready");
-            SEMAPHORE = new CountDownLatch(Math.max(0, mAutoDiscovery.getNonAutonomousConnectedNodes() - readyNodes)); // do not init Latch with negative number
+            SEMAPHORE = new CountDownLatch(Math.max(0, mAutoDiscovery.getConnectedNodes())); // do not init Latch with negative number
             Log.e(TAG, "Latch at " + SEMAPHORE.getCount());
 
         } else
