@@ -2,7 +2,6 @@ package de.uni_freiburg.es.sensorrecordingtool;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
@@ -14,7 +13,6 @@ import android.util.Log;
 
 import java.io.File;
 import java.io.InterruptedIOException;
-import java.io.OutputStream;
 import java.nio.ByteOrder;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -27,8 +25,6 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import de.uni_freiburg.es.intentforwarder.ForwardedUtils;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.AutoDiscovery;
@@ -293,8 +289,6 @@ public class Recorder extends InfiniteIntentService {
 
         if (error) /** close down the ffmpeg process and all sensorprocesses */
             stopSelf();
-        else if (isMaster && mAutoDiscovery.getConnectedNodes() > 1)
-            startMergeService();
     }
 
     private Handler handler = new Handler();
@@ -326,8 +320,8 @@ public class Recorder extends InfiniteIntentService {
     }
 
     private void readySteady(boolean isMaster, String[] sensors, long drift, boolean driftSet) throws InterruptedException {
-        status.ready(sensors, drift, driftSet);
         isReady = true;
+        status.ready(sensors, drift, driftSet);
 
         if (!isMaster)
             SEMAPHORE.await(); // wait and die
@@ -514,10 +508,12 @@ public class Recorder extends InfiniteIntentService {
 
                 }
 
-                if (!error) {
-                    spawnProvider();
+                spawnMerging();
+
+                if (!error)
                     status.finished(output);
-                }
+                else
+                    status.error(new Exception("fail"));
 
                 sensorProcesses = null;
                 ffmpeg = null;
@@ -527,8 +523,10 @@ public class Recorder extends InfiniteIntentService {
         }.start();
     }
 
-    private void spawnProvider() {
+    private void spawnMerging() {
         if (!isMaster) // masters dont have providers
             new MergeProviderSession(Recorder.this, mRecordUUID, new File(output));
+        else if (mAutoDiscovery.getConnectedNodes() > 1)
+            startMergeService();
     }
 }

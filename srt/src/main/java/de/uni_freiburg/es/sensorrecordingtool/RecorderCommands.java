@@ -33,17 +33,19 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
         if (intent == null)
             return;
 
-        if (PermissionDialog.needToAskForPermission(context)) {
+        if (Recorder.RECORD_ACTION.equals(intent.getAction()) &&
+            PermissionDialog.needToAskForPermission(context)) {
             intent.setClass(context, PermissionDialog.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(intent);
 
             /* PermissionDialog will re-broadcast the original intent, if
              * necessary permissions are granted. So we will end up here
              * again if the user pushed the right button.
              */
-        } else if (intent.getAction().equals(Recorder.READY_ACTION) && Recorder.isMaster) {
+        } else if (Recorder.READY_ACTION.equals(intent.getAction()) && Recorder.isMaster) {
             receivedReady(intent);
-        } else if (intent.getAction().equals(Recorder.STEADY_ACTION) && !Recorder.isMaster && Recorder.isReady) {
+        } else if (Recorder.STEADY_ACTION.equals(intent.getAction()) && !Recorder.isMaster && Recorder.isReady) {
             Recorder.mRecordUUID = intent.getStringExtra(RecorderStatus.RECORDING_UUID);
             receivedSteady(intent);
         } else if (Recorder.RECORD_ACTION.equals(intent.getAction())) {
