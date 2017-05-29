@@ -100,6 +100,10 @@ public class AudioSensor extends Sensor {
             96000, 176400, 192000, 352800, 2822400, 5644800};
 
     public static int getAudioSampleRate() {
+        for (int rate : getSupportedAudioSampleRates())
+            if (rate == 44100)
+                return rate;
+        
         return getSupportedAudioSampleRates().get(0);
     }
 

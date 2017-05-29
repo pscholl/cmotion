@@ -120,7 +120,7 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
     public static Intent parseRecorderIntent(Context context, Intent intent) throws Exception {
         String output = intent.getStringExtra(Recorder.RECORDER_OUTPUT);
         String[] sensors = getStringOrArray(intent, Recorder.RECORDER_INPUT);
-        double[] rates = getIntFloatOrDoubleArray(intent, Recorder.RECORDER_RATE, 50.);
+        double[] rates = getIntFloatOrDoubleArray(intent, Recorder.RECORDER_RATE, 50);
         String[] formats = getStringOrArray(intent, Recorder.RECORDER_FORMAT);
         double duration = getDoubleOrFloat(intent, Recorder.RECORDER_DURATION, -1.f);
         Intent call = new Intent();
