@@ -132,10 +132,13 @@ public class SensorWrapper extends Sensor {
         }
     }
 
-    @Override
-    public void registerListener(SensorEventListener l, int rate, int delay, String format, Handler h) {
+    public void registerListener(SensorEventListener l, float rate, String format, Handler h) {
+        int us = (int) (1e6 / rate),
+                md = (getFifoSize() - 2 ) * us;
+        md = md > 0 ? md : 0;
+
         SensorEventListenerWrapper wl = new SensorEventListenerWrapper(l);
-        mSensorMgr.registerListener(get(l), mSensor, rate, delay, h);
+        mSensorMgr.registerListener(get(l), mSensor, us, md, h);
     }
 
     @Override

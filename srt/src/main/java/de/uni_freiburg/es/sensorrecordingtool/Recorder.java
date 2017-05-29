@@ -500,7 +500,8 @@ public class Recorder extends InfiniteIntentService {
 
                 }
 
-                spawnMerging();
+                // XXX disabled, borked
+                // spawnMerging();
 
                 if (!error)
                     status.finished(output);

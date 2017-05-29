@@ -47,13 +47,13 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
     }
 
     @Override
-    public void registerListener(SensorEventListener l, int rate_in_mus, int delay, String format, Handler h) {
+    public void registerListener(SensorEventListener l, double rate, String format, Handler h) {
         //if (!PermissionDialog.camera(context))
         //    return;
 
         if (mListeners.size() == 0) {
 
-            mRateInMilliHz = (int) (1000 * 1000 / rate_in_mus) * 1000;
+            mRateInMilliHz = (int) (1e3 / rate);
 
             /** open the camera if we are just creating the first listeners, otherwise just
              * add a new listener. */
@@ -79,7 +79,7 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
             startRecording();
         }
 
-        super.registerListener(l, rate_in_mus, delay, format, h);
+        super.registerListener(l, rate, format, h);
     }
 
     @Override

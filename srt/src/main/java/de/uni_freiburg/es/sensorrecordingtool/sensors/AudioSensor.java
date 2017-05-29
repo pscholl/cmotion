@@ -24,9 +24,8 @@ import de.uni_freiburg.es.sensorrecordingtool.PermissionDialog;
 public class AudioSensor extends Sensor {
     protected static final String TAG = AudioSensor.class.getName();
     protected final Context context;
-    private int mRateinMus = 0;
 
-    private int mChannelConfig;
+    private int mChannelConfig, mSampleRate;
     private static int mAudioFormat = AudioFormat.ENCODING_PCM_16BIT;
 
     private RecorderThread mRecorderThread;
@@ -56,7 +55,7 @@ public class AudioSensor extends Sensor {
     }
 
     @Override
-    public void registerListener(SensorEventListener l, int rate_in_mus, int delay, String format, Handler h) {
+    public void registerListener(SensorEventListener l, double rate, String format, Handler h) {
         if (!PermissionDialog.audio(context)) {
             Log.e(TAG, "no permission to record microphone");
             return;
@@ -65,13 +64,13 @@ public class AudioSensor extends Sensor {
         Log.d(TAG, String.format("default rate is %d", getAudioSampleRate()));
 
         if (mListeners.size() == 0) {
-            mRateinMus = rate_in_mus;
+            mSampleRate = (int) rate;
             if (mRecorderThread == null)
                 mRecorderThread = new RecorderThread();
             mRecorderThread.startRecording();
         }
 
-        super.registerListener(l, rate_in_mus, delay, format, h);
+        super.registerListener(l, rate, format, h);
     }
 
 
@@ -101,47 +100,27 @@ public class AudioSensor extends Sensor {
             96000, 176400, 192000, 352800, 2822400, 5644800};
 
     public static int getAudioSampleRate() {
-
-    /*
-     * Selecting default audio input source for recording since
-     * AudioFormat.CHANNEL_CONFIGURATION_DEFAULT is deprecated and selecting
-     * default encoding format.
-     */
-        for (int i = 0; i < validSampleRates.length; i++) {
-            int result = AudioRecord.getMinBufferSize(validSampleRates[i],
-                    AudioFormat.CHANNEL_IN_MONO,
-                    mAudioFormat);
-            if (result > 0) {
-                // return the mininum supported audio sample rate
-                return validSampleRates[i];
-            }
-        }
-        // If none of the sample rates are supported return -1 handle it in
-        // calling method
-        return -1;
-
+        return getSupportedAudioSampleRates().get(0);
     }
 
     public static List<Integer> getSupportedAudioSampleRates() {
         List<Integer> list = new ArrayList<>();
-    /*
-     * Selecting default audio input source for recording since
-     * AudioFormat.CHANNEL_CONFIGURATION_DEFAULT is deprecated and selecting
-     * default encoding format.
-     */
-        for (int i = 0; i < validSampleRates.length; i++) {
-            int result = AudioRecord.getMinBufferSize(validSampleRates[i],
-                    AudioFormat.CHANNEL_IN_MONO,
-                    mAudioFormat);
-            if (result > 0) {
-                // return the mininum supported audio sample rate
-                list.add(validSampleRates[i]);
-            }
-        }
-        // If none of the sample rates are supported return -1 handle it in
-        // calling method
-        return list;
+        /*
+        * Selecting default audio input source for recording since
+        * AudioFormat.CHANNEL_CONFIGURATION_DEFAULT is deprecated and selecting
+        * default encoding format.
+         */
 
+        for (int samplingRate : validSampleRates)
+        try {
+            int minBufSize = AudioRecord.getMinBufferSize(samplingRate,
+                    AudioFormat.CHANNEL_IN_MONO, mAudioFormat);
+            AudioRecord aud = new AudioRecord(MediaRecorder.AudioSource.DEFAULT,
+                    samplingRate, AudioFormat.CHANNEL_IN_MONO, mAudioFormat, minBufSize);
+            list.add(samplingRate);
+        } catch (Exception e) {}
+
+        return list;
     }
 
     public int getChannels() {
@@ -150,14 +129,13 @@ public class AudioSensor extends Sensor {
 
     class RecorderThread extends Thread {
 
-        private int sampleRate = (int) (1e6 / mRateinMus);
         private boolean status = true;
 
         @Override
         public void run() {
-            int minBufSize = AudioRecord.getMinBufferSize(sampleRate, mChannelConfig, mAudioFormat);
+            int minBufSize = AudioRecord.getMinBufferSize(mSampleRate, mChannelConfig, mAudioFormat);
             AudioRecord aud = new AudioRecord(MediaRecorder.AudioSource.DEFAULT,
-                    sampleRate, mChannelConfig, mAudioFormat, minBufSize);
+                    mSampleRate, mChannelConfig, mAudioFormat, minBufSize);
             AudioTimestamp ts = new AudioTimestamp();
             byte buf[] = new byte[minBufSize];
 

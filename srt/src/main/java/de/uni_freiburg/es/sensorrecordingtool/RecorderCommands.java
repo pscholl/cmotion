@@ -250,6 +250,6 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
         df.setTimeZone(tz);
         String aid = Settings.Secure.getString(context.getContentResolver(),
                 Settings.Secure.ANDROID_ID);
-        return df.format(new Date()) + "_" + aid;
+        return df.format(new Date()) + "_" + aid + ".mkv";
     }
 }

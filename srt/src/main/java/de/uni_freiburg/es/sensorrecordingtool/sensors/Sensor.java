@@ -118,8 +118,8 @@ public abstract class Sensor {
             pl.l.onSensorChanged(mEvent);
     }
 
-    public void registerListener(SensorEventListener l, int rate, int delay, String format, Handler h) {
-        mListeners.add(new ParameterizedListener(l, rate / 1000, delay / 1000));
+    public void registerListener(SensorEventListener l, double rate, String format, Handler h) {
+        mListeners.add(new ParameterizedListener(l, rate));
     }
 
     public void unregisterListener(SensorEventListener l) {
@@ -132,13 +132,12 @@ public abstract class Sensor {
     public abstract int getFifoSize();
 
     protected class ParameterizedListener {
-        public ParameterizedListener(SensorEventListener li, int r, int d) {
+        public ParameterizedListener(SensorEventListener li, double r) {
             l = li;
             rate = r;
-            delay = d;
         }
 
         SensorEventListener l;
-        int rate, delay;
+        double rate;
     }
 }

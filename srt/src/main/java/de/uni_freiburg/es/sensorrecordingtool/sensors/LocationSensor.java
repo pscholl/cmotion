@@ -43,17 +43,15 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     @Override
     public void startRecording() {
         super.startRecording();
-        int min_rate = Integer.MAX_VALUE, min_delay = Integer.MAX_VALUE;
+        int min_rate = Integer.MAX_VALUE;
 
         for (ParameterizedListener pl : mListeners) {
-            min_rate = Math.min(min_rate, pl.rate);
-            min_delay = Math.min(min_delay, pl.delay);
+            min_rate = Math.min(min_rate, (int) pl.rate);
         }
 
         LocationRequest req = new LocationRequest();
         req.setInterval(min_rate);
         req.setFastestInterval(min_rate);
-        req.setMaxWaitTime(min_delay);
 
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, req, this);
     }
@@ -85,8 +83,8 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     }
 
     @Override
-    public void registerListener(SensorEventListener l, int rate, int delay, String format, Handler h) {
-        super.registerListener(l, rate, delay, format, h);
+    public void registerListener(SensorEventListener l, double rate, String format, Handler h) {
+        super.registerListener(l, rate, format, h);
         this.handler = h;
 
         //if (!PermissionDialog.location(mContext))
@@ -101,17 +99,15 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
         if (!mConnected)
             return;
 
-        int min_rate = Integer.MAX_VALUE, min_delay = Integer.MAX_VALUE;
+        int min_rate = Integer.MAX_VALUE;
 
         for (ParameterizedListener pl : mListeners) {
-            min_rate = Math.min(min_rate, pl.rate);
-            min_delay = Math.min(min_delay, pl.delay);
+            min_rate = Math.min(min_rate, (int) pl.rate);
         }
 
         LocationRequest req = new LocationRequest();
         req.setInterval(min_rate);
         req.setFastestInterval(min_rate);
-        req.setMaxWaitTime(min_delay);
 
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, req, this, handler.getLooper());
     }

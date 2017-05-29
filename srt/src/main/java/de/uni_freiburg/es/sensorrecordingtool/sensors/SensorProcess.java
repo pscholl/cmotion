@@ -95,11 +95,7 @@ public abstract class SensorProcess implements SensorEventListener {
     }
 
     public void startRecording() {
-        int us = (int) (1e6 / mRate),
-            md = (mSensor.getFifoSize() - 2 ) * us;
-        md = md > 0 ? md : 0;
-
-        mSensor.registerListener(this, us, md, mFormat, mHandler);
+        mSensor.registerListener(this, mRate, mFormat, mHandler);
     }
 
     /**
@@ -226,7 +222,7 @@ public abstract class SensorProcess implements SensorEventListener {
         if (Thread.currentThread() == Looper.getMainLooper().getThread())
             Log.wtf("SensorProcess", "Terminate called on UI Thread!!!");
 
-        // XXX avoid flushing completely, as on LOLLIPOP no onFlushCompleted() is called?
+        // XXX avoid flushing completly, as on LOLLIPOP no onFlushCompleted() is called?
         if (mElapsed < mDur || mDur < 0) {
             mSensor.flush(SensorProcess.this);
             while (!isClosed) Thread.currentThread().yield();

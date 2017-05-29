@@ -66,24 +66,39 @@ public class AudioTest extends BroadcastingTest {
 
 
     @Test
-    public void doAudioRecording() throws InterruptedException, IOException, JSONException {
+    public void doDefaultAudioRecording() throws InterruptedException, IOException, JSONException {
         double recDuration = 5;
         i.putExtra("-i", "audio");
         i.putExtra("-d", recDuration);
-        i.putExtra("-r", 8000);
+
         String result = callForResult(i);
         Assert.assertNotNull("timeout before completion", result);
         assertRecording(result, "00:00:05.000000000");
     }
 
-//    public void doVideoAndOtherSensor() throws InterruptedException {
-//        i.putExtra("-i", "video accelerometer".split(" "));
-//        i.putExtra("-r", new double[] {15., 50.});
-//        i.putExtra("-d", 5.0);
-//        String result = callForResult(i);
-//        Assert.assertNotNull("timeout before completion", result);
-//        assertRecording(result, "video", (int) (15*5 * (1920*1080*1.5)));
-//    }
+    @Test
+    public void do44KAudioRecording() throws Exception {
+        double recDuration = 5;
+        i.putExtra("-i", "audio");
+        i.putExtra("-d", recDuration);
+        i.putExtra("-r", 44100);
+
+        String result = callForResult(i);
+        Assert.assertNotNull("timeout before completion", result);
+        assertRecording(result, "00:00:05.000000000");
+    }
+
+    @Test
+    public void do192KAudioRecording() throws Exception {
+        double recDuration = 5;
+        i.putExtra("-i", "audio");
+        i.putExtra("-d", recDuration);
+        i.putExtra("-r", 192000);
+
+        String result = callForResult(i);
+        Assert.assertNotNull("timeout before completion", result);
+        assertRecording(result, "00:00:05.000000000");
+    }
 
 
     /* we assume that some models are residing on their magnetized charging gradle while plugged
