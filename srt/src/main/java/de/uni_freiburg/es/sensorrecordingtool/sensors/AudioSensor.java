@@ -103,7 +103,7 @@ public class AudioSensor extends Sensor {
         for (int rate : getSupportedAudioSampleRates())
             if (rate == 44100)
                 return rate;
-        
+
         return getSupportedAudioSampleRates().get(0);
     }
 
@@ -114,15 +114,22 @@ public class AudioSensor extends Sensor {
         * AudioFormat.CHANNEL_CONFIGURATION_DEFAULT is deprecated and selecting
         * default encoding format.
          */
+        AudioRecord aud  = null;
 
         for (int samplingRate : validSampleRates)
         try {
             int minBufSize = AudioRecord.getMinBufferSize(samplingRate,
                     AudioFormat.CHANNEL_IN_MONO, mAudioFormat);
-            AudioRecord aud = new AudioRecord(MediaRecorder.AudioSource.DEFAULT,
+            aud = new AudioRecord(MediaRecorder.AudioSource.DEFAULT,
                     samplingRate, AudioFormat.CHANNEL_IN_MONO, mAudioFormat, minBufSize);
             list.add(samplingRate);
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        } finally {
+            if (aud != null)
+                aud.release();
+            aud = null;
+        }
+
 
         return list;
     }
@@ -147,7 +154,6 @@ public class AudioSensor extends Sensor {
                  aud.getState() == AudioRecord.STATE_UNINITIALIZED;
                  aud.startRecording())
                 _sleep(200);
-
             for (int err = aud.read(buf,0, minBufSize);
                  err >= 0 && status;
                  err = aud.read(buf, 0, minBufSize))
