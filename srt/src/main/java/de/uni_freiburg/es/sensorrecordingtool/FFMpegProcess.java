@@ -1,9 +1,6 @@
 package de.uni_freiburg.es.sensorrecordingtool;
 
-import android.bluetooth.le.ScanFilter;
 import android.content.Context;
-import android.net.LocalSocket;
-import android.net.LocalSocketAddress;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.util.Log;
@@ -15,10 +12,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -304,7 +299,6 @@ public class FFMpegProcess {
             File dir = mContext.getFilesDir().getParentFile();
             File path = new File(new File(dir, "lib"), "libffmpeg.so");
 
-            Log.e("PATH", path.toString());
 
             boolean hasmap = false;
             for (String opt : inputopts)
@@ -327,6 +321,9 @@ public class FFMpegProcess {
             cmdline.addAll(inputopts);
             cmdline.add("-nostdin");
             cmdline.addAll(outputopts);
+
+            Log.e("FFMPEG", cmdline.toString());
+
 
             ProcessBuilder pb = new ProcessBuilder(cmdline);
 

@@ -395,6 +395,7 @@ public class Recorder extends InfiniteIntentService {
                 .setTag("fingerprint", Build.FINGERPRINT)
                 .setTag("beginning", getCurrentDataAsIso())
                 .addOutputArgument("-preset", "ultrafast")
+                .addOutputArgument("-vf", "transpose=2,transpose=2")
                 .setLoglevel("debug");
 
         if (duration > 0)

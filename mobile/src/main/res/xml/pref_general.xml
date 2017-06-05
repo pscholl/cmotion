@@ -6,11 +6,12 @@
         android:key="output_directory"
         android:title="Output directory" />
 
-    <!--<Preference-->
-        <!--android:id="@+id/filename_pref"-->
-        <!--android:defaultValue="true"-->
-        <!--android:key="file_name"-->
-        <!--android:title="File name" />-->
+    <SwitchPreference
+        android:id="@+id/autoplay"
+        android:defaultValue="true"
+        android:key="autoplay"
+        android:title="@string/autoplay"
+        android:summary="@string/autplay_summary" />
 
 
 </PreferenceScreen>

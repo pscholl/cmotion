@@ -31,6 +31,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
     public static final String PREF_KEY_OUTPUTDIR = "output_directory";
     public static final String PREF_KEY_FILENAME = "file_name";
+    public static final String PREF_KEY_AUTOPLAY = "autoplay";
 
     /**
      * A preference value change listener that updates the preference's summary
@@ -89,6 +90,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         setupActionBar();
         addPreferencesFromResource(R.xml.pref_general);
         bindPreferenceSummaryToValue(findPreference(PREF_KEY_OUTPUTDIR), Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString());
+        bindPreferenceSummaryToValue(findPreference(PREF_KEY_AUTOPLAY), null);
 //        bindPreferenceSummaryToValue(findPreference(PREF_KEY_FILENAME), de.uni_freiburg.es.sensorrecordingtool.RecorderCommands.getDefaultFileName());
 
         findPreference(PREF_KEY_OUTPUTDIR).setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
@@ -132,6 +134,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
     }
+
 
 
     /**

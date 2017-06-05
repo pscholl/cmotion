@@ -34,7 +34,7 @@ public class DigitEditDialog extends AlertDialog {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
                         if (listener != null && !TextUtils.isEmpty(editText.getText()))
-                            listener.onTextChanged(tag, "" + Integer.parseInt(editText.getText().toString()));
+                            listener.onTextChanged(tag, "" + Double.parseDouble(editText.getText().toString()));
                         else
                             Log.w(TAG, "listener or text empty");
                     }

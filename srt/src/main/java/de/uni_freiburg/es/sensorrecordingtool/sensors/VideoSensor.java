@@ -9,6 +9,10 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
 import android.view.Surface;
+import android.view.WindowManager;
+
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * Grabs frames at the specified videorate and returns them in raw format at maximum
@@ -25,6 +29,7 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
     private int mRateInMilliHz = 0;
     private SurfaceTexture mSurfaceTexture;
     private Camera.CameraInfo info;
+    private CameraSize mSize;
 
     public VideoSensor(Context c, int id) {
         super(c, 1);
@@ -58,7 +63,7 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
 
             /** open the camera if we are just creating the first listeners, otherwise just
              * add a new listener. */
-            CameraSize mSize = getCameraSize(format);
+            mSize = getCameraSize(format);
             newOpenCamera();
             Camera.Parameters params = mCamera.getParameters();
             params.setPreviewSize(mSize.width, mSize.height);
@@ -118,9 +123,9 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
     }
 
     public static CameraSize getCameraSize(String format) {
-        CameraSize mSize = null;
+        CameraSize size = null;
 
-        if (isRunningOnGlass()) { // camera impl is flawed
+        if (isRunningOnGlass() || true) { // camera impl is flawed
             return new CameraSize(320, 240);
         }
 
@@ -129,7 +134,7 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
             Camera.Parameters params = cam.getParameters();
             Camera.Size tmpSize = params.getPreviewSize();
 
-            mSize = new CameraSize(tmpSize.width, tmpSize.height);
+            size = new CameraSize(tmpSize.width, tmpSize.height);
 
             cam.unlock();
             cam.release();
@@ -140,18 +145,18 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
                 int w = Integer.parseInt(wh[0]),
                         h = Integer.parseInt(wh[1]);
 
-                mSize.width = w;
-                mSize.height = h;
+                size.width = w;
+                size.height = h;
             }
         } catch (NullPointerException e) {
             Log.d(TAG, "camera not available");
         } catch (Exception e) {
             Log.d(TAG, String.format(
                     "unable to parse format '%s', using default resolution %dx%d",
-                    (format != null ? format : ""), mSize == null ? 0 : mSize.width, mSize == null ? 0 : mSize.height));
+                    (format != null ? format : ""), size == null ? 0 : size.width, size == null ? 0 : size.height));
         }
 
-        return mSize;
+        return size;
     }
 
 
@@ -196,8 +201,8 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
 
     public int getCorrectCameraOrientation(Camera.CameraInfo info, Camera camera) {
 
-//        int rotation = context..getWindowManager().getDefaultDisplay().getRotation();
-        int rotation = 180;
+        int rotation = ((WindowManager) context.getApplicationContext().
+                getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getRotation();
         int degrees = 0;
 
         switch (rotation) {
@@ -274,20 +279,85 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
 
     int frames = 0;
 
+    Executor excecutor = Executors.newFixedThreadPool(1);
+
     protected Camera.PreviewCallback preview = new Camera.PreviewCallback() {
         @Override
-        public void onPreviewFrame(byte[] bytes, Camera camera) {
+        public void onPreviewFrame(final byte[] bytes, Camera camera) {
+//            Log.e(TAG, "frame #" + frames++);
+            final long time = System.currentTimeMillis() * 1000 * 1000;
+            if (bytes != null)
+                excecutor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        mEvent.timestamp = time;
+                        mEvent.rawdata = bytes;
+                        notifyListeners();
+                        mEvent.rawdata = null;
+                        System.gc();
+                    }
+                });
 
-
-            Log.e(TAG, "frame #" + frames++);
-
-            mEvent.timestamp = System.currentTimeMillis() * 1000 * 1000;
-            mEvent.rawdata = bytes;
-            notifyListeners();
         }
 
         // Default format is YCbCr'NV21
     };
+
+    public byte[] rotateNV21(byte[] input, int width, int height, int rotation) {
+        byte[] output = new byte[input.length];
+        boolean swap = (rotation == 90 || rotation == 270);
+        boolean yflip = (rotation == 90 || rotation == 180);
+        boolean xflip = (rotation == 270 || rotation == 180);
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                int xo = x, yo = y;
+                int w = width, h = height;
+                int xi = xo, yi = yo;
+                if (swap) {
+                    xi = w * yo / h;
+                    yi = h * xo / w;
+                }
+                if (yflip) {
+                    yi = h - yi - 1;
+                }
+                if (xflip) {
+                    xi = w - xi - 1;
+                }
+                output[w * yo + xo] = input[w * yi + xi];
+                int fs = w * h;
+                int qs = (fs >> 2);
+                xi = (xi >> 1);
+                yi = (yi >> 1);
+                xo = (xo >> 1);
+                yo = (yo >> 1);
+                w = (w >> 1);
+                h = (h >> 1);
+                // adjust for interleave here
+                int ui = fs + (w * yi + xi) * 2;
+                int uo = fs + (w * yo + xo) * 2;
+                // and here
+                int vi = ui + 1;
+                int vo = uo + 1;
+                output[uo] = input[ui];
+                output[vo] = input[vi];
+            }
+        }
+        return output;
+    }
+
+    public byte[] toPrimitve(Byte[] in) {
+        byte[] out = new byte[in.length];
+        for (int i = 0; i < in.length; i++)
+            out[i] = in[i];
+        return out;
+    }
+
+    public Byte[] toComplex(byte[] in) {
+        Byte[] out = new Byte[in.length];
+        for (int i = 0; i < in.length; i++)
+            out[i] = in[i];
+        return out;
+    }
 
     private CameraHandlerThread mThread = null;
 

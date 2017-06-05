@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.design.widget.CoordinatorLayout;
@@ -67,20 +68,31 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
             case MergeStatus.FINISH_ACTION:
                 if (intent.hasExtra(RecorderStatus.FINISH_PATH) && mCoordinatorLayout != null) {
                     final String path = intent.getStringExtra(RecorderStatus.FINISH_PATH);
-                    Snackbar
-                            .make(mCoordinatorLayout, "Written to: " + path, Snackbar.LENGTH_LONG)
-                            .setAction("Open", new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    openFileIfPossible(path);
-                                }
-                            })
-                            .show();
+
+                    if (isAutoplayEnabled(context))
+                        openFileIfPossible(path);
+                    else
+                        Snackbar
+                                .make(mCoordinatorLayout, "Written to: " + path, Snackbar.LENGTH_LONG)
+                                .setAction("Open", new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        openFileIfPossible(path);
+                                    }
+                                })
+                                .show();
                 }
                 break;
             default:
         }
     }
+
+    public static boolean isAutoplayEnabled(Context c) {
+        return PreferenceManager
+                .getDefaultSharedPreferences(c)
+                .getBoolean("autoplay", false);
+    }
+
 
     private void notify(String message) {
         if (mCoordinatorLayout != null) {
