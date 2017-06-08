@@ -263,6 +263,8 @@ public class Recorder extends InfiniteIntentService {
 
             readySteady(isMaster, sensors, OFFSET, driftCalculated);
 
+//            if (mAutoDiscovery.getConnectedNodes() > 1)
+
             for (SensorProcess process : sensorProcesses)
                 process.startRecording();
 
@@ -374,6 +376,11 @@ public class Recorder extends InfiniteIntentService {
         startServiceIntent.putExtra(RecorderStatus.RECORDING_UUID, mRecordUUID);
         startServiceIntent.putExtra(MergeService.RELEVANT_AIDS, mReadyNodes);
         getApplicationContext().startService(startServiceIntent);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     private FFMpegProcess buildFFMPEG(Context context, String[] sensors, String[] formats,
@@ -501,8 +508,7 @@ public class Recorder extends InfiniteIntentService {
 
                 }
 
-                // XXX disabled, borked
-                // spawnMerging();
+                spawnMerging();
 
                 if (!error)
                     status.finished(output);
@@ -520,7 +526,8 @@ public class Recorder extends InfiniteIntentService {
     private void spawnMerging() {
         if (!isMaster) // masters dont have providers
             new MergeProviderSession(Recorder.this, mRecordUUID, new File(output));
-        else if (mAutoDiscovery.getConnectedNodes() > 1)
+        else
             startMergeService();
+
     }
 }

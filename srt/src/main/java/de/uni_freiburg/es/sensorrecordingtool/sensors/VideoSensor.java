@@ -59,7 +59,7 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
 
         if (mListeners.size() == 0) {
 
-            mRateInMilliHz = (int) (1e3 / rate);
+            mRateInMilliHz = (int) (rate * 1e3);
 
             /** open the camera if we are just creating the first listeners, otherwise just
              * add a new listener. */
@@ -125,7 +125,7 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
     public static CameraSize getCameraSize(String format) {
         CameraSize size = null;
 
-        if (isRunningOnGlass() || true) { // camera impl is flawed
+        if (isRunningOnGlass()) { // camera impl is flawed
             return new CameraSize(320, 240);
         }
 
@@ -284,7 +284,7 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
     protected Camera.PreviewCallback preview = new Camera.PreviewCallback() {
         @Override
         public void onPreviewFrame(final byte[] bytes, Camera camera) {
-//            Log.e(TAG, "frame #" + frames++);
+            Log.e(TAG, "frame #" + frames++);
             final long time = System.currentTimeMillis() * 1000 * 1000;
             if (bytes != null)
                 excecutor.execute(new Runnable() {
@@ -294,7 +294,6 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
                         mEvent.rawdata = bytes;
                         notifyListeners();
                         mEvent.rawdata = null;
-                        System.gc();
                     }
                 });
 
