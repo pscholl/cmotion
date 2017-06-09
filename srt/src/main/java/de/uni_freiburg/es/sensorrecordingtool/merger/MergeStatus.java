@@ -109,10 +109,12 @@ public class MergeStatus {
         mCounter++;
         mNotification
                 .setContentTitle("Merging "+mRecordUUID)
-                .setContentText("in progress")
+                .setContentText("Merge in progress")
                 .setProgress(mMax, mCounter, false)
                 .setOngoing(false)
         ;
 
+        if (!isRunningOnGlass())
+            mService.notify(NOTIFICATION_ID, mNotification.build());
     }
 }

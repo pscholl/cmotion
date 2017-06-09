@@ -153,6 +153,14 @@ public class AutoDiscovery {
         return mDiscoveredList;
     }
 
+    /**
+     * @hide
+     * ONLY FOR TESTING!
+     */
+    public void setDiscoveredSensors(ArrayList<Node> nodes) {
+        mDiscoveredList = nodes;
+    }
+
     public int getConnectedNodes() {
         return mDiscoveredList.size();
     }

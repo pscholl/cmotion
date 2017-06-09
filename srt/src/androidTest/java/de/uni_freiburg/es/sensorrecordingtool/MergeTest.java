@@ -32,10 +32,12 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
+import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.AutoDiscovery;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.ConnectionTechnology;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.Node;
 import de.uni_freiburg.es.sensorrecordingtool.merger.IOUtils;
 import de.uni_freiburg.es.sensorrecordingtool.merger.MergeConst;
+import de.uni_freiburg.es.sensorrecordingtool.merger.MergeService;
 import de.uni_freiburg.es.sensorrecordingtool.merger.MergeSession;
 import de.uni_freiburg.es.sensorrecordingtool.merger.provider.WearDataProvider;
 import de.uni_freiburg.es.sensorrecordingtool.merger.retriever.DataRetriever;
@@ -60,6 +62,55 @@ public class MergeTest extends BroadcastingTest {
                 .addApi(Wearable.API)
                 .build();
         mGoogleApiClient.blockingConnect();
+    }
+
+    @Test public void testMergeSessionTimeout() throws InterruptedException {
+
+        ArrayList<String> readyNodes = new ArrayList<>();
+        final Node n1 = new Node("platform", "someNodeUUID1");
+        final Node n2 = new Node("platform", "someNodeUUID2");
+
+        n1.setConnectionTechnologies(new ConnectionTechnology[] {new ConnectionTechnology(ConnectionTechnology.Type.LOCAL)});
+        n2.setConnectionTechnologies(new ConnectionTechnology[] {new ConnectionTechnology(ConnectionTechnology.Type.BT_CLASSIC)});
+
+        n1.setAvailableSensors(new String[] {"sensor"});
+        n2.setAvailableSensors(new String[] {"sensor"});
+
+        n1.setReadySensors(new String[] {"sensor"});
+        n2.setReadySensors(new String[] {"sensor"});
+
+        n1.setDrift(0);
+        n2.setDrift(0);
+
+
+        AutoDiscovery.getInstance(c).setDiscoveredSensors(new ArrayList<Node>() {
+            {
+                add(n1); add(n2);
+            }
+        });
+
+        readyNodes.add(n1.getAid());
+        readyNodes.add(n2.getAid());
+
+        Intent startServiceIntent = new Intent(c, MergeService.class);
+        startServiceIntent.putExtra(RecorderStatus.RECORDING_UUID, "testUUID");
+        startServiceIntent.putExtra(MergeService.RELEVANT_AIDS, readyNodes);
+        c.startService(startServiceIntent);
+
+        Thread.sleep(5000);
+
+        Intent intent = new Intent(RecorderStatus.FINISH_ACTION);
+        intent.putExtra(RecorderStatus.RECORDING_UUID, "testUUID");
+        intent.putExtra(RecorderStatus.FINISH_PATH, "/sdcard/test.mkv");
+        c.sendBroadcast(intent);
+
+        Thread.sleep(MergeSession.TIMEOUT_AFTER_LAST_FILE_MS);
+        Thread.sleep(500); // give some more time as intents can be a bit delayed
+
+        // assert merge closed.
+
+        while(true);
+
     }
 
     @Test

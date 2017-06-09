@@ -31,7 +31,7 @@ public class MergeSession {
     private final String TAG = MergeSession.class.getSimpleName();
     private int mNodeDataCount = 0;
     private Handler mTimeoutHandler = new Handler();
-    private long TIMEOUT_AFTER_LAST_FILE_MS = 1200 * 1000;
+    public static final long TIMEOUT_AFTER_LAST_FILE_MS = 120 * 1000;
     private boolean mIsFinished = false;
     public static final String ACTION_MERGE_CANCEL = "merge_cancel";
     private boolean isRegistered = false;
@@ -177,6 +177,7 @@ public class MergeSession {
             File file = null;
             try {
                 file = retriever.getFile();
+                Log.i(TAG, node.toString()+" provided "+file.toString());
                 mFiles.add(file);
                 mMergeStatus.incrementProgress();
                 mTimeoutHandler.removeCallbacksAndMessages(null); // remove all scheduled runanbles
