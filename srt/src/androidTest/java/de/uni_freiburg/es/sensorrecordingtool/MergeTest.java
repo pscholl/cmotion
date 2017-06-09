@@ -25,7 +25,6 @@ import org.junit.runner.RunWith;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -156,7 +155,10 @@ public class MergeTest extends BroadcastingTest {
     @Test
     public void testLocalRetriever() throws InterruptedException {
 
-        LocalDataRetriever retriever = new LocalDataRetriever(c, null, "testLocal");
+        Node thisNode = new Node("blah", Settings.Secure.getString(c.getContentResolver(),
+                Settings.Secure.ANDROID_ID));
+
+        LocalDataRetriever retriever = new LocalDataRetriever(c, thisNode, "testLocal");
 
 
         new Thread() {
