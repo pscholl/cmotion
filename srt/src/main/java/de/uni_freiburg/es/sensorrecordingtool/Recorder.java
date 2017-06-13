@@ -14,6 +14,7 @@ import android.util.Log;
 import java.io.File;
 import java.io.InterruptedIOException;
 import java.nio.ByteOrder;
+import java.security.InvalidParameterException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -165,7 +166,7 @@ public class Recorder extends InfiniteIntentService {
         SensorProcess process;
 
         if (sensor.contains("video") || sensor.contains("audio"))
-            process =  new BlockSensorProcess(c, sensor, rate, format, dur, p, j,
+            process = new BlockSensorProcess(c, sensor, rate, format, dur, p, j,
                     new Handler(h.getLooper()));
         else
             process = new NonBlockSensorProcess(c, sensor, rate, format, dur, p, j,
@@ -230,8 +231,8 @@ public class Recorder extends InfiniteIntentService {
              * They keep running though, once the screen turns off again. */
             mWl = ((PowerManager) getSystemService(POWER_SERVICE))
                     .newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK |
-                                 PowerManager.ACQUIRE_CAUSES_WAKEUP,
-                                 "sensorlock");
+                                    PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                            "sensorlock");
             mWl.acquire();
 
             /** wait for all local sensors */
@@ -271,7 +272,7 @@ public class Recorder extends InfiniteIntentService {
             mRecordingSince = System.currentTimeMillis();
             ((Vibrator) getApplicationContext().getSystemService(VIBRATOR_SERVICE)).vibrate(100);
             Log.e(TAG, String.format("RECORDING (time-to-start: %.2f secs)",
-                       (mRecordingSince - tick) / 1000. ));
+                    (mRecordingSince - tick) / 1000.));
 
             waitUntilEnd();
         } catch (InterruptedException ie) {
@@ -295,8 +296,8 @@ public class Recorder extends InfiniteIntentService {
     private Handler handler = new Handler();
 
     private void waitUntilEnd() {
-        long ms_elapsed  = System.currentTimeMillis() - mRecordingSince,
-             ms_duration = (long) duration * 1000;
+        long ms_elapsed = System.currentTimeMillis() - mRecordingSince,
+                ms_duration = (long) duration * 1000;
 
         // XXX +1000ms to hope that all recordings have recorded enough, actually we should
         //     wait on a clock provided by ffmpeg instead of the wall clock!
@@ -357,7 +358,7 @@ public class Recorder extends InfiniteIntentService {
             mAutoDiscovery.discover();
             Thread.sleep(Recorder.DEFAULT_STEADY_TIME);
             Log.e(TAG, String.format("We have at least %s nodes (including us)",
-                        mAutoDiscovery.getConnectedNodes()));
+                    mAutoDiscovery.getConnectedNodes()));
 
             SEMAPHORE = new CountDownLatch(Math.max(0, mAutoDiscovery.getConnectedNodes())); // do not init Latch with negative number
             Log.e(TAG, "Latch at " + SEMAPHORE.getCount());
@@ -392,18 +393,21 @@ public class Recorder extends InfiniteIntentService {
          * a single file on one time axis. */
         FFMpegProcess.Builder fp = new FFMpegProcess.Builder(context);
 
+        int rotation = 0;
+
         fp.setOutput(output, "matroska")
                 .setCodec("a", "wavpack")
                 .setCodec("v", "libx264")
-                .setTag("recorder", "cmotion (" + new Date(BuildConfig.TIMESTAMP).toString()+")")
+                .setTag("recorder", "cmotion (" + new Date(BuildConfig.TIMESTAMP).toString() + ")")
                 .setTag("android_id", Settings.Secure.getString(getContentResolver(),
-                                      Settings.Secure.ANDROID_ID))
+                        Settings.Secure.ANDROID_ID))
                 .setTag("platform", platform)
                 .setTag("fingerprint", Build.FINGERPRINT)
                 .setTag("beginning", getCurrentDataAsIso())
                 .addOutputArgument("-preset", "ultrafast")
-                .addOutputArgument("-vf", "transpose=2,transpose=2")
                 .setLoglevel("debug");
+
+
 
         if (duration > 0)
             fp.addOutputArgument("-t", new Double(duration).toString());
@@ -420,7 +424,9 @@ public class Recorder extends InfiniteIntentService {
             Sensor matched = SensorProcess.getMatchingSensor(this, sensors[j]);
 
             if (matched instanceof VideoSensor) {
-                VideoSensor.CameraSize size = VideoSensor.getCameraSize(formats[j]);
+                VideoSensor vs = ((VideoSensor) matched);
+                rotation = vs.getCameraRotation();
+                VideoSensor.CameraSize size = VideoSensor.getCameraSize(formats[j], vs.getCameraID());
 
                 fp
                         .addVideo(size.width, size.height, rates[j], "rawvideo", "nv21")
@@ -443,7 +449,27 @@ public class Recorder extends InfiniteIntentService {
             fp.setStreamTag("platform", platform);
         }
 
+        String rotationParam = getRotationParam(rotation);
+        if(rotationParam != null)
+            fp.addOutputArgument("-vf", rotationParam);
+
         return fp.build();
+    }
+
+    private String getRotationParam(int rotation) {
+        if (rotation % 90 != 0)
+            throw new InvalidParameterException("Rotation must be a factor of 90");
+
+        switch (rotation) {
+            case 90:
+                return "transpose=1";
+            case 180:
+                return "transpose=1,transpose=1";
+            case 270:
+                return "transpose=1,transpose=1,transpose=1";
+            default:
+                return null;
+        }
     }
 
     private boolean isIntentForwarded(Intent intent) {

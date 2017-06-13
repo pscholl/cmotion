@@ -109,7 +109,7 @@ public class MergeTest extends BroadcastingTest {
 
         // assert merge closed.
 
-        while(true);
+//        while(true);
 
     }
 

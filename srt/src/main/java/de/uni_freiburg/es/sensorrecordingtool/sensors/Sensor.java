@@ -131,6 +131,8 @@ public abstract class Sensor {
 
     public abstract int getFifoSize();
 
+
+
     protected class ParameterizedListener {
         public ParameterizedListener(SensorEventListener li, double r) {
             l = li;

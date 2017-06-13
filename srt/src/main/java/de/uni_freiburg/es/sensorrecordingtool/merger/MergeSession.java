@@ -14,6 +14,7 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
 import de.uni_freiburg.es.sensorrecordingtool.FFMpegCopyProcess;
+import de.uni_freiburg.es.sensorrecordingtool.RecorderStatus;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.ConnectionTechnology;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.Node;
 import de.uni_freiburg.es.sensorrecordingtool.merger.retriever.BTDataRetriever;
@@ -40,7 +41,7 @@ public class MergeSession {
         @Override
         public void onReceive(Context context, Intent intent) {
 
-            if (!ACTION_MERGE_CANCEL.equals(intent.getAction()))
+            if (!ACTION_MERGE_CANCEL.equals(intent.getAction()) || !RecorderStatus.ERROR_ACTION.equals(intent.getAction()))
                 return;
 
             unregisterReceiver(this);
@@ -61,7 +62,11 @@ public class MergeSession {
         this.mRecordingUUID = recordingUUID;
         this.mMergeStatus = new MergeStatus(context, recordingUUID, nodes.size());
 
-        registerReceiver(mBroadcastReceiver, new IntentFilter(ACTION_MERGE_CANCEL));
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(RecorderStatus.ERROR_ACTION);
+        intentFilter.addAction(ACTION_MERGE_CANCEL);
+
+        registerReceiver(mBroadcastReceiver, intentFilter);
 
         for (Node node : nodes) {
             final String aid = node.getAid();

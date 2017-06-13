@@ -75,7 +75,7 @@ public class VideoTest extends BroadcastingTest {
         i.putExtra("-r", 15.);
         i.putExtra("-d", 25.0);
 
-        if (VideoSensor.getCameraSize("") == null) {
+        if (VideoSensor.getCameraSize("", 0) == null) {
             String result = callForError(i);
             Assert.assertTrue("get a cam not available exception", result != null);
         } else {
@@ -90,7 +90,7 @@ public class VideoTest extends BroadcastingTest {
         i.putExtra("-r", new double[] {15., 50.});
         i.putExtra("-d", 5.0);
 
-        if (VideoSensor.getCameraSize("") == null) {
+        if (VideoSensor.getCameraSize("", 0) == null) {
             String result = callForError(i);
             Assert.assertTrue("get a cam not available exception", result != null);
         } else {

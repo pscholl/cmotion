@@ -63,7 +63,7 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
 
             /** open the camera if we are just creating the first listeners, otherwise just
              * add a new listener. */
-            mSize = getCameraSize(format);
+            mSize = getCameraSize(format, id);
             newOpenCamera();
             Camera.Parameters params = mCamera.getParameters();
             params.setPreviewSize(mSize.width, mSize.height);
@@ -78,9 +78,6 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
             int bytesPerBuffer = (int) Math.ceil(
                     ImageFormat.getBitsPerPixel(params.getPreviewFormat()) / 8.
                             * mSize.width * mSize.height);
-
-//            mCamera.addCallbackBuffer(new byte[bytesPerBuffer]);
-//            mCamera.addCallbackBuffer(new byte[bytesPerBuffer]);
 
             startRecording();
         }
@@ -107,7 +104,7 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
 
     private void oldOpenCamera() {
         try {
-            mCamera = Camera.open();
+            mCamera = Camera.open(id);
         } catch (RuntimeException e) {
             Log.e(TAG, "failed to open front camera");
         }
@@ -122,7 +119,7 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
         return "Google".equalsIgnoreCase(Build.MANUFACTURER) && Build.MODEL.startsWith("Glass");
     }
 
-    public static CameraSize getCameraSize(String format) {
+    public static CameraSize getCameraSize(String format, int camerId) {
         CameraSize size = null;
 
         if (isRunningOnGlass()) { // camera impl is flawed
@@ -130,7 +127,7 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
         }
 
         try {
-            Camera cam = Camera.open();
+            Camera cam = Camera.open(camerId);
             Camera.Parameters params = cam.getParameters();
             Camera.Size tmpSize = params.getPreviewSize();
 
@@ -209,19 +206,15 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
             case Surface.ROTATION_0:
                 degrees = 0;
                 break;
-
             case Surface.ROTATION_90:
                 degrees = 90;
                 break;
-
             case Surface.ROTATION_180:
                 degrees = 180;
                 break;
-
             case Surface.ROTATION_270:
                 degrees = 270;
                 break;
-
         }
 
         int result;
@@ -232,28 +225,44 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
             result = (info.orientation - degrees + 360) % 360;
         }
 
+        Log.w(TAG, "Rotate by "+result);
+
         return result;
     }
 
-    private int getBackFacingCameraId() {
-        int cameraId = -1;
-        // Search for the front facing camera
-        int numberOfCameras = Camera.getNumberOfCameras();
-        for (int i = 0; i < numberOfCameras; i++) {
-            Camera.CameraInfo info = new Camera.CameraInfo();
-            Camera.getCameraInfo(i, info);
-            if (info.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
-
-                cameraId = i;
-                break;
-            }
-        }
-        return cameraId;
-    }
+//    private int getBackFacingCameraId() {
+//        int cameraId = -1;
+//        // Search for the front facing camera
+//        int numberOfCameras = Camera.getNumberOfCameras();
+//        for (int i = 0; i < numberOfCameras; i++) {
+//            Camera.CameraInfo info = new Camera.CameraInfo();
+//            Camera.getCameraInfo(i, info);
+//            if (info.facing == this.id) {
+//
+//                cameraId = i;
+//                break;
+//            }
+//        }
+//        return cameraId;
+//    }
 
     @Override
     public void onError(int error, Camera camera) {
         Log.e(TAG, "ERROR: " + error);
+    }
+
+    public int getCameraID() {
+        return id;
+    }
+
+    public int getCameraRotation() {
+        Camera cam = Camera.open(id);
+        Camera.CameraInfo info = new Camera.CameraInfo();
+        Camera.getCameraInfo(id, info);
+        cam.unlock();
+        cam.release();
+
+        return getCorrectCameraOrientation(info, cam);
     }
 
 

@@ -90,7 +90,7 @@ public class CMotionBroadcastReceiver extends BroadcastReceiver {
     public static boolean isAutoplayEnabled(Context c) {
         return PreferenceManager
                 .getDefaultSharedPreferences(c)
-                .getBoolean("autoplay", false);
+                .getBoolean("autoplay", true);
     }
 
 
