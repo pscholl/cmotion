@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.provider.Settings;
 import android.util.Log;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -24,7 +25,7 @@ public class AutoDiscovery {
     private static final String TAG = "AutoDiscovery";
     private static final long DISCOVERY_TIMEOUT = 50000;
     private static AutoDiscovery sInstance;
-    private final Context mContext;
+    private final WeakReference<Context> mContext;
 
     private ArrayList<Node> mDiscoveredList = new ArrayList<>();
     private List<OnNodeSensorsDiscoveredListener> mListeners = new ArrayList<>();
@@ -54,7 +55,7 @@ public class AutoDiscovery {
         String aid = intent.getStringExtra(RecorderStatus.ANDROID_ID);
         String[] sensors = intent.getStringArrayExtra(RecorderStatus.SENSORS);
 
-        boolean isLocalNode = aid.equals(Settings.Secure.getString(mContext.getContentResolver(),
+        boolean isLocalNode = aid.equals(Settings.Secure.getString(mContext.get().getContentResolver(),
                 Settings.Secure.ANDROID_ID));
 
         String[] cts = intent.getStringArrayExtra(RecorderStatus.CONNECTIONTECH);
@@ -103,11 +104,11 @@ public class AutoDiscovery {
     }
 
     private AutoDiscovery(Context context) {
-        mContext = context;
+        mContext = new WeakReference<Context>(context);
     }
 
     private void bind() {
-        mContext.registerReceiver(mMasterReceiver, new IntentFilter(Recorder.DISCOVERY_RESPONSE_ACTION));
+        mContext.get().registerReceiver(mMasterReceiver, new IntentFilter(Recorder.DISCOVERY_RESPONSE_ACTION));
         isReceiverRegistered = true;
     }
 
@@ -120,7 +121,7 @@ public class AutoDiscovery {
 
         Intent intent = new Intent();
         intent.setAction(Recorder.DISCOVERY_ACTION);
-        mContext.sendBroadcast(intent);
+        mContext.get().sendBroadcast(intent);
         Log.e(TAG, "send discover action");
     }
 
@@ -129,7 +130,7 @@ public class AutoDiscovery {
      */
     public void close() {
         try {
-            mContext.unregisterReceiver(mMasterReceiver);
+            mContext.get().unregisterReceiver(mMasterReceiver);
             isReceiverRegistered = false;
         } catch (IllegalArgumentException e) {
         }
