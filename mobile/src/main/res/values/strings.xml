@@ -78,4 +78,8 @@
     <string name="pref_title_vibrate">Vibrate</string>
     <string name="autplay_summary">Automatically start playback after recording</string>
     <string name="autoplay">Autoplay</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="delete_recordings_text">Are you sure you want to delete all recodings? This action cannot be undone.</string>
+    <string name="delete_recordings_head">Delete Recordings</string>
 </resources>

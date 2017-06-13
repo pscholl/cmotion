@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Environment;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import java.io.File;
@@ -55,6 +56,7 @@ public class MergeSession {
     };
 
     private MergeStatus mMergeStatus;
+    private String outputPath;
 
     public MergeSession(Context context, String recordingUUID, ArrayList<Node> nodes) {
         this.mContext = context;
@@ -115,8 +117,7 @@ public class MergeSession {
 
         try {
             unregisterReceiver(mBroadcastReceiver);
-            String output = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
-                    .getAbsolutePath() + "/" + mRecordingUUID + ".merged.mkv";
+            String output = getOutputPath() + "/" + mRecordingUUID + ".merged.mkv";
 
             FFMpegCopyProcess copyProcess = new FFMpegCopyProcess.Builder()
                     .setInput(input.toArray(new String[input.size()]))
@@ -124,7 +125,7 @@ public class MergeSession {
                     .build(mContext);
             copyProcess.waitFor();
 
-            if(new File(output).exists()) {
+            if (new File(output).exists()) {
                 Log.i(TAG, "merged to: " + output);
                 mMergeStatus.finished(output);
             } else
@@ -139,6 +140,12 @@ public class MergeSession {
             mMergeStatus.error(e);
             e.printStackTrace();
         }
+    }
+
+    private String getOutputPath() {
+        return PreferenceManager.getDefaultSharedPreferences(mContext).getString("output_directory",
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString());
+
     }
 
 

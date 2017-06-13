@@ -1,7 +1,9 @@
 package es.uni_freiburg.de.cmotion;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
@@ -13,6 +15,9 @@ import android.preference.PreferenceManager;
 import android.preference.SwitchPreference;
 import android.support.v7.app.ActionBar;
 
+import java.io.File;
+
+import es.uni_freiburg.de.cmotion.shared_ui.SettingsConsts;
 import es.uni_freiburg.de.cmotion.ui.DirectoryChooserDialog;
 
 /**
@@ -28,10 +33,6 @@ import es.uni_freiburg.de.cmotion.ui.DirectoryChooserDialog;
  */
 public class SettingsActivity extends AppCompatPreferenceActivity {
 
-
-    public static final String PREF_KEY_OUTPUTDIR = "output_directory";
-    public static final String PREF_KEY_FILENAME = "file_name";
-    public static final String PREF_KEY_AUTOPLAY = "autoplay";
 
     /**
      * A preference value change listener that updates the preference's summary
@@ -89,30 +90,26 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         super.onCreate(savedInstanceState);
         setupActionBar();
         addPreferencesFromResource(R.xml.pref_general);
-        bindPreferenceSummaryToValue(findPreference(PREF_KEY_OUTPUTDIR), Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString());
-        bindPreferenceSummaryToValue(findPreference(PREF_KEY_AUTOPLAY), null);
+        bindPreferenceSummaryToValue(findPreference(SettingsConsts.PREF_KEY_OUTPUTDIR), Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString());
+        bindPreferenceSummaryToValue(findPreference(SettingsConsts.PREF_KEY_AUTOPLAY), null);
 //        bindPreferenceSummaryToValue(findPreference(PREF_KEY_FILENAME), de.uni_freiburg.es.sensorrecordingtool.RecorderCommands.getDefaultFileName());
 
-        findPreference(PREF_KEY_OUTPUTDIR).setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+        findPreference(SettingsConsts.PREF_KEY_OUTPUTDIR).setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
             public boolean onPreferenceClick(final Preference preference) {
-
-                DirectoryChooserDialog directoryChooserDialog =
-                        new DirectoryChooserDialog(SettingsActivity.this,
-                                new DirectoryChooserDialog.ChosenDirectoryListener() {
-                                    @Override
-                                    public void onChosenDir(String chosenDir) {
-                                        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).edit().putString(PREF_KEY_OUTPUTDIR, chosenDir).commit();
-                                        preference.setSummary(chosenDir);
-                                    }
-                                });
-                directoryChooserDialog.setNewFolderEnabled(true);
-                directoryChooserDialog.chooseDirectory(PreferenceManager.getDefaultSharedPreferences(preference.getContext()).getString(PREF_KEY_OUTPUTDIR, Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString()));
-
+                chooseDirectory(preference);
                 return false;
             }
         });
 
+
+        findPreference(SettingsConsts.PREF_KEY_DELETE).setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(final Preference preference) {
+                shodDeleteAllRecordingsDialog(preference);
+                return false;
+            }
+        });
 
 //        findPreference(PREF_KEY_FILENAME).setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 //            @Override
@@ -122,6 +119,50 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 //                return false;
 //            }
 //        });
+    }
+
+    private void shodDeleteAllRecordingsDialog(final Preference preference) {
+        AlertDialog dialog = new AlertDialog.Builder(preference.getContext())
+                .setTitle(R.string.delete_recordings_head)
+                .setMessage(R.string.delete_recordings_text)
+                .setPositiveButton(R.string.delete, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        deleteRecordings(preference.getContext());
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .create();
+        dialog.show();
+    }
+
+    private void deleteRecordings(Context context) {
+        File outputFolder = new File(getOutputPath(context));
+        for(File file : outputFolder.listFiles()) {
+            if(file.isFile() && file.getName().endsWith(".mkv"))
+                file.delete();
+        }
+    }
+
+    private void chooseDirectory(final Preference preference) {
+        DirectoryChooserDialog directoryChooserDialog =
+                new DirectoryChooserDialog(SettingsActivity.this,
+                        new DirectoryChooserDialog.ChosenDirectoryListener() {
+                            @Override
+                            public void onChosenDir(String chosenDir) {
+                                PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).edit().putString(SettingsConsts.PREF_KEY_OUTPUTDIR, chosenDir).commit();
+                                preference.setSummary(chosenDir);
+                            }
+                        });
+        directoryChooserDialog.setNewFolderEnabled(true);
+        directoryChooserDialog.chooseDirectory(PreferenceManager.getDefaultSharedPreferences(preference.getContext()).getString(SettingsConsts.PREF_KEY_OUTPUTDIR, Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString()));
+
+    }
+
+    private String getOutputPath(Context context) {
+        return PreferenceManager.getDefaultSharedPreferences(context).getString("output_directory",
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString());
+
     }
 
     /**
@@ -134,7 +175,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
     }
-
 
 
     /**

@@ -3,8 +3,10 @@ package es.uni_freiburg.de.cmotion.shared_ui;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Environment;
 import android.preference.PreferenceManager;
 
+import java.io.File;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -29,13 +31,13 @@ public class SRTHelper {
             i++;
         }
 
-//        File target = new File( PreferenceManager
-//                .getDefaultSharedPreferences(context)
-//                .getString(SettingsActivity.PREF_KEY_OUTPUTDIR, Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString()) );
+        File target = new File( PreferenceManager
+                .getDefaultSharedPreferences(context)
+                .getString(SettingsConsts.PREF_KEY_OUTPUTDIR, Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString()) );
 
         intent.putExtra(Recorder.RECORDER_INPUT, sensors); // sensors
         intent.putExtra(Recorder.RECORDER_RATE, rates); // rates
-//        intent.putExtra(Recorder.RECORDER_OUTPUT, new File(target, de.uni_freiburg.es.sensorrecordingtool.RecorderCommands.getDefaultFileName(context)).toString());
+        intent.putExtra(Recorder.RECORDER_OUTPUT, new File(target, de.uni_freiburg.es.sensorrecordingtool.RecorderCommands.getDefaultFileName(context)).toString());
         intent.putExtra(Recorder.RECORDER_DURATION, sRecordingDurationSec * 1d); // duration as doubles
 
         context.sendBroadcast(intent);

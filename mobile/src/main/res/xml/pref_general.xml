@@ -2,7 +2,6 @@
 
     <Preference
         android:id="@+id/directory_pref"
-        android:defaultValue="true"
         android:key="output_directory"
         android:title="Output directory" />
 
@@ -10,8 +9,12 @@
         android:id="@+id/autoplay"
         android:defaultValue="true"
         android:key="autoplay"
-        android:title="@string/autoplay"
-        android:summary="@string/autplay_summary" />
+        android:summary="@string/autplay_summary"
+        android:title="@string/autoplay" />
 
+    <Preference
+        android:id="@+id/delete_pref"
+        android:key="delete"
+        android:title="Delete all recordings" />
 
 </PreferenceScreen>

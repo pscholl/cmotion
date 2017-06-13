@@ -203,6 +203,13 @@ public class FFMpegProcess {
             return this;
         }
 
+        public Builder setSubtitleFile(File subtitleFile) throws Exception{
+            if(!subtitleFile.exists() || !subtitleFile.isFile())
+                throw new Exception("something is wrong with the subtitle file");
+
+            return addInputArgument("-i", subtitleFile.getAbsolutePath());
+        }
+
         /** set the codec to use for a given stream specifier (or all stream if omitted), see the
          * ffmpeg manpage for details.
          *
