@@ -133,7 +133,6 @@ public class SensorWrapper extends Sensor {
     public void registerListener(SensorEventListener l, double rate, String format, Handler h) {
         int us = (int) (1e6 / rate),
             md = (getFifoSize() - 2 ) * us;
-
         md = md > 0 ? md : 0;
 
         SensorEventListenerWrapper wl = new SensorEventListenerWrapper(l);
