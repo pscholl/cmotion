@@ -235,7 +235,7 @@ public abstract class SensorProcess implements SensorEventListener {
             mWl.release();
 
         mSensor.unregisterListener(this);
-        try { mOut.close(); }
+        try { if (mOut!=null) mOut.close(); }
         catch (IOException e) {}
 
         Looper wtf = mHandlerThread.getLooper();

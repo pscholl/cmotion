@@ -7,7 +7,7 @@ public class SensorModel implements Comparable<SensorModel>{
 
     private String mName;
     private boolean mEnabled;
-    private int mSamplingRate = 50; // TODO use constant
+    private float mSamplingRate = 50.f; // TODO use constant
 
     private ArrayList<String> mAvailableOnPlatforms = new ArrayList<>();
 
@@ -41,11 +41,11 @@ public class SensorModel implements Comparable<SensorModel>{
         return getEasyName().compareTo(another.getEasyName());
     }
 
-    public void setSamplingRate(int samplingRate) {
+    public void setSamplingRate(float samplingRate) {
         this.mSamplingRate = samplingRate;
     }
 
-    public int getSamplingRate() {
+    public float getSamplingRate() {
         return mSamplingRate;
     }
 

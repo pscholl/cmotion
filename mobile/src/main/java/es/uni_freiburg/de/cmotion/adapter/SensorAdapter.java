@@ -29,7 +29,7 @@ public class SensorAdapter extends RecyclerView.Adapter implements AbstractDataA
         @Override
         public void onTextChanged(Object tag, String newText) {
             int pos = (int) tag;
-            mCollection.get(pos).setSamplingRate(Integer.parseInt(newText));
+            mCollection.get(pos).setSamplingRate(Float.parseFloat(newText));
             notifyItemChanged(pos);
         }
     };
