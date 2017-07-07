@@ -23,7 +23,7 @@ public class SRTHelper {
         final Intent intent = new Intent(Recorder.RECORD_ACTION);
 
         String[] sensors = new String[selectedList.size()];
-        int[] rates = new int[selectedList.size()];
+        float[] rates = new float[selectedList.size()];
         int i = 0;
         for (SensorModel model : selectedList) {
             sensors[i] = model.getName().toLowerCase();
