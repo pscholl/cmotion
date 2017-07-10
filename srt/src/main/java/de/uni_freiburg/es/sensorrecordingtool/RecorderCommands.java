@@ -194,10 +194,13 @@ public class RecorderCommands extends android.content.BroadcastReceiver {
     }
 
     public static double[] getIntFloatOrDoubleArray(Intent i, String extra, double def) {
-        int iarr[] = i.hasExtra(extra) && i.getExtras().get(extra) instanceof int[] ? i.getIntArrayExtra(extra) : null;
-        float farr[] = i.hasExtra(extra) && i.getExtras().get(extra) instanceof float[] ? i.getFloatArrayExtra(extra) : null;
-        double darr[] = i.hasExtra(extra) && i.getExtras().get(extra) instanceof double[] ? i.getDoubleArrayExtra(extra) : null;
+        int iarr[] = null;
+        float farr[] = null;
+        double darr[] = null;
 
+        try { iarr = i.getIntArrayExtra(extra); } catch (Exception e){};
+        try { farr = i.getFloatArrayExtra(extra); } catch (Exception e){};
+        try { darr = i.getDoubleArrayExtra(extra); } catch (Exception e){};
         if (darr != null)
             return darr;
 
