@@ -20,7 +20,23 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     protected GoogleApiClient mGoogleApiClient;
     protected Location mLastLocation = new Location("empty");
     private boolean mConnected = false;
-    private Handler handler;
+    private Handler mHandler;
+    int mUpdateRate = Integer.MAX_VALUE;
+    private Runnable mOnTime = new Runnable() {
+        @Override
+        public void run() {
+            mEvent.timestamp = System.currentTimeMillis() * 1000 * 1000;
+            mEvent.values[0] = (float) mLastLocation.getLatitude();
+            mEvent.values[1] = (float) mLastLocation.getLongitude();
+            mEvent.values[2] = (float) mLastLocation.getAltitude();
+            mEvent.values[3] = (float) mLastLocation.getAccuracy();
+
+            notifyListeners();
+
+            if (mConnected)
+                mHandler.postDelayed(this, 1000 / mUpdateRate);
+        }
+    };
 
     public LocationSensor(Context c) {
         super(c, 4);
@@ -37,21 +53,19 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
                 .build();
         mGoogleApiClient.connect();
 
-
     }
 
     @Override
     public void startRecording() {
         super.startRecording();
-        int min_rate = Integer.MAX_VALUE;
 
         for (ParameterizedListener pl : mListeners) {
-            min_rate = Math.min(min_rate, (int) pl.rate);
+            mUpdateRate = Math.min(mUpdateRate, (int) pl.rate);
         }
 
         LocationRequest req = new LocationRequest();
-        req.setInterval(min_rate);
-        req.setFastestInterval(min_rate);
+        req.setInterval(mUpdateRate);
+        req.setFastestInterval(mUpdateRate);
 
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, req, this);
     }
@@ -74,6 +88,7 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
             mGoogleApiClient.disconnect();
             mConnected = false;
+            mHandler = null;
         }
     }
 
@@ -85,11 +100,14 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     @Override
     public void registerListener(SensorEventListener l, double rate, String format, Handler h) {
         super.registerListener(l, rate, format, h);
-        this.handler = h;
 
-        //if (!PermissionDialog.location(mContext))
-        //    return;
+        if (mHandler != null && mHandler != h)
+            throw new Error("cannot have multiple different handlers for LocationSensor");
 
+        if (mHandler == null) {
+            mHandler = h;
+            mHandler.post(mOnTime);
+        }
 
         onNewListener();
     }
@@ -109,7 +127,7 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
         req.setInterval(min_rate);
         req.setFastestInterval(min_rate);
 
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, req, this, handler.getLooper());
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, req, this, mHandler.getLooper());
     }
 
     @Override
@@ -117,8 +135,6 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
         Location l = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
         mConnected = true;
         setPrepared();
-//        onNewListener();
-//        if (l != null) onLocationChanged(l);
     }
 
     @Override
@@ -135,13 +151,5 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     public void onLocationChanged(Location location) {
         if (location != null)
             mLastLocation = location;
-
-        mEvent.timestamp = System.currentTimeMillis() * 1000 * 1000;
-        mEvent.values[0] = (float) mLastLocation.getLatitude();
-        mEvent.values[1] = (float) mLastLocation.getLongitude();
-        mEvent.values[2] = (float) mLastLocation.getAltitude();
-        mEvent.values[3] = (float) mLastLocation.getAccuracy();
-
-        notifyListeners();
     }
 }
