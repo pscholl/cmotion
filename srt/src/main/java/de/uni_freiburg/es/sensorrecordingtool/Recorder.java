@@ -555,7 +555,8 @@ public class Recorder extends InfiniteIntentService {
 
                 }
 
-                spawnMerging();
+                // Dsiable until fixed
+                // spawnMerging();
 
                 if (!error)
                     status.finished(output);
