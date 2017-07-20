@@ -63,7 +63,7 @@ public abstract class SensorProcess implements SensorEventListener {
         mHandler = h;
 
         mSensor = getMatchingSensor(context, sensor);
-        mSensor.prepareSensor();
+        mSensor.prepareSensor(mRate, mFormat);
     }
 
     public SensorProcess(Context c, String sensor, double rate, String format, double dur,
@@ -74,7 +74,7 @@ public abstract class SensorProcess implements SensorEventListener {
         mHandler = handler;
 
         mSensor = getMatchingSensor(c, sensor);
-        mSensor.prepareSensor();
+        mSensor.prepareSensor(mRate, mFormat);
 
         handler.post(new Runnable() {
             @Override
@@ -125,8 +125,9 @@ public abstract class SensorProcess implements SensorEventListener {
                 b.append(s.getStringType());
                 b.append("\n");
             }
-            throw new Exception("no matches for " + sensor + " found." +
-                    "Options are: \n" + b.toString());
+            return null;
+//            throw new Exception("no matches for " + sensor + " found." +
+//                    "Options are: \n" + b.toString());
         }
 
         int minimum = Integer.MAX_VALUE;

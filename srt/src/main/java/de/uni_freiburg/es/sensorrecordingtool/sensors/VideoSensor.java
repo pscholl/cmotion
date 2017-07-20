@@ -30,6 +30,7 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
     private SurfaceTexture mSurfaceTexture;
     private Camera.CameraInfo info;
     private CameraSize mSize;
+    private boolean mRecord = false;
 
     public VideoSensor(Context c, int id) {
         super(c, 1);
@@ -58,36 +59,43 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
         //    return;
 
         if (mListeners.size() == 0) {
-
-            mRateInMilliHz = (int) (rate * 1e3);
-
-            /** open the camera if we are just creating the first listeners, otherwise just
-             * add a new listener. */
-            mSize = getCameraSize(format, id);
-            newOpenCamera();
-            Camera.Parameters params = mCamera.getParameters();
-            params.setPreviewSize(mSize.width, mSize.height);
-            params.setPreviewFpsRange(mRateInMilliHz, mRateInMilliHz);
-            Log.d(TAG, "starting recording with pixel format " + params.getPictureFormat());
-            Log.d(TAG, "resolution " + params.getPreviewSize().width + "x" + params.getPreviewSize().height);
-
-            params.setRotation(getCorrectCameraOrientation(info, mCamera));
-            mCamera.setParameters(params);
-            mCamera.setDisplayOrientation(getCorrectCameraOrientation(info, mCamera));
-
-            int bytesPerBuffer = (int) Math.ceil(
-                    ImageFormat.getBitsPerPixel(params.getPreviewFormat()) / 8.
-                            * mSize.width * mSize.height);
-
-            startRecording();
+            mRecord = true;
         }
 
         super.registerListener(l, rate, format, h);
     }
 
+    /**
+     * can't do a recording without a preview surface, which is why a system overlay is created
+     * here that it can seen from anywhere.
+     */
     @Override
+    public void prepareSensor(double rate, String format) {
 
+        mRateInMilliHz = (int) (rate * 1e3);
 
+        /** open the camera if we are just creating the first listeners, otherwise just
+         * add a new listener. */
+        mSize = getCameraSize(format, id);
+        newOpenCamera();
+        Camera.Parameters params = mCamera.getParameters();
+        params.setPreviewSize(mSize.width, mSize.height);
+        params.setPreviewFpsRange(mRateInMilliHz, mRateInMilliHz);
+        Log.d(TAG, "starting recording with pixel format " + params.getPictureFormat());
+        Log.d(TAG, "resolution " + params.getPreviewSize().width + "x" + params.getPreviewSize().height);
+
+        params.setRotation(getCorrectCameraOrientation(info, mCamera));
+        mCamera.setParameters(params);
+        mCamera.setDisplayOrientation(getCorrectCameraOrientation(info, mCamera));
+
+        int bytesPerBuffer = (int) Math.ceil(
+                ImageFormat.getBitsPerPixel(params.getPreviewFormat()) / 8.
+                        * mSize.width * mSize.height);
+
+        startRecording();
+    }
+
+    @Override
     public void unregisterListener(SensorEventListener l) {
         super.unregisterListener(l);
 
@@ -122,7 +130,7 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
     public static CameraSize getCameraSize(String format, int camerId) {
         CameraSize size = null;
 
-        if (isRunningOnGlass()) { // camera impl is flawed
+        if (isRunningOnGlass() || true) { // camera impl is flawed
             return new CameraSize(320, 240);
         }
 
@@ -157,15 +165,7 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
     }
 
 
-    /**
-     * can't do a recording without a preview surface, which is why a system overlay is created
-     * here that it can seen from anywhere.
-     */
-    @Override
-    public void prepareSensor() {
 
-        setPrepared();
-    }
 
     @Override
     public void startRecording() {
@@ -293,7 +293,14 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
     protected Camera.PreviewCallback preview = new Camera.PreviewCallback() {
         @Override
         public void onPreviewFrame(final byte[] bytes, Camera camera) {
-            Log.e(TAG, "frame #" + frames++);
+//            Log.e(TAG, "frame #" + frames++);
+
+            if(!isPrepared())
+                setPrepared();
+
+            if(!mRecord)
+                return;
+
             final long time = System.currentTimeMillis() * 1000 * 1000;
             if (bytes != null)
                 excecutor.execute(new Runnable() {

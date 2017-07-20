@@ -16,7 +16,7 @@ import es.uni_freiburg.de.cmotion.shared_ui.model.SensorModel;
 
 public class SRTHelper {
 
-    public static double sRecordingDurationSec = -1;
+    public static long sRecordingDurationSec = -1;
 
 
     public static void sendRecordIntent(final Context context, List<SensorModel> selectedList) {

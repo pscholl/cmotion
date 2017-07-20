@@ -47,7 +47,7 @@ public class MergeStatus {
 
         Intent intent = new Intent();
         intent.setAction(MergeSession.ACTION_MERGE_CANCEL);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(c, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(c, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
         mNotification.addAction(R.drawable.ic_stop_white_24dp, c.getString(android.R.string.cancel), pendingIntent);
 
         if (!isRunningOnGlass())
@@ -105,12 +105,12 @@ public class MergeStatus {
             mService.notify(NOTIFICATION_ID, mNotification.build());
     }
 
-    public void incrementProgress() {
+    public void setProgress(float progress) {
         mCounter++;
         mNotification
                 .setContentTitle("Merging "+mRecordUUID)
-                .setContentText("Merge in progress")
-                .setProgress(mMax, mCounter, false)
+                .setContentText("Merging in progress")
+                .setProgress(100, Math.round(progress*100), false)
                 .setOngoing(false)
         ;
 

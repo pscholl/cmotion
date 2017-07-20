@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.concurrent.CountDownLatch;
 
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.Node;
@@ -64,6 +63,7 @@ public class WearDataRetriever extends DataRetriever implements
     @Override
     public File getFile() throws InterruptedException {
         latch.await();
+        setProgress(1);
         return getDestinationFile();
     }
 
@@ -104,12 +104,14 @@ public class WearDataRetriever extends DataRetriever implements
     private void writeChunkToDrive(byte[] data, int offset, int total) {
         try {
             File file = getDestinationFile(offset);
-            Log.i(TAG, "writing " + file.getAbsolutePath());
+            Log.i(TAG, String.format("writing %s (%s: %s/%s)", file.getAbsolutePath(), counter, offset, total));
             FileOutputStream fos = new FileOutputStream(file);
             fos.write(data);
             fos.flush();
             fos.close();
             counter++;
+            setProgress(counter / (float) total);
+
             if (counter == total) {
                 destroy();
                 mergeChunks();
@@ -126,12 +128,7 @@ public class WearDataRetriever extends DataRetriever implements
             File chunk = getDestinationFile(i);
             source[i] = chunk;
         }
-        Arrays.sort(source, new Comparator<File>() {
-            @Override
-            public int compare(File a, File b) {
-                return a.getName().compareTo(b.getName());
-            }
-        });
+        Arrays.sort(source, new PartialFileComperator());
 
         if (getDestinationFile().exists())
             getDestinationFile().delete();

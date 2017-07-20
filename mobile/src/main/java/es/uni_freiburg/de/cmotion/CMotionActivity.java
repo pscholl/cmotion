@@ -27,7 +27,8 @@ import es.uni_freiburg.de.cmotion.shared_ui.RecordingIntentFilter;
 import es.uni_freiburg.de.cmotion.shared_ui.SRTHelper;
 import es.uni_freiburg.de.cmotion.shared_ui.TimedProgressBar;
 import es.uni_freiburg.de.cmotion.shared_ui.model.SensorModel;
-import es.uni_freiburg.de.cmotion.ui.DigitEditDialog;
+import es.uni_freiburg.de.cmotion.ui.OnTextChangedListener;
+import es.uni_freiburg.de.cmotion.ui.SetDurationDialog;
 
 
 public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener, CMotionBroadcastReceiver.OnRecordingStateChangedListener {
@@ -42,10 +43,10 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private SlidingUpPanelLayout mSlidingUpPanelLayout;
 
-    public static DigitEditDialog.OnTextChangedListener mDurationListener = new DigitEditDialog.OnTextChangedListener() {
+    public static OnTextChangedListener mDurationListener = new OnTextChangedListener() {
         @Override
         public void onTextChanged(Object tag, String newText) {
-            SRTHelper.sRecordingDurationSec = Double.parseDouble(newText);
+            SRTHelper.sRecordingDurationSec = Long.parseLong(newText);
         }
     };
 
@@ -94,7 +95,7 @@ public class CMotionActivity extends AppCompatActivity implements SwipeRefreshLa
             startActivity(new Intent(this, SettingsActivity.class));
             return true;
         } else if (id == R.id.action_recordingtime) {
-            DigitEditDialog.build(this, "Enter Recording Duration", SRTHelper.sRecordingDurationSec + "", null, mDurationListener).show();
+            SetDurationDialog.build(this, "Enter Recording Duration", SRTHelper.sRecordingDurationSec + "", null, mDurationListener).show();
             return true;
         }
 

@@ -15,10 +15,10 @@ import es.uni_freiburg.de.cmotion.R;
 /**
  * A dialog for editing numbers.
  */
-public class DigitEditDialog extends AlertDialog {
+public class TextEditDialog extends AlertDialog {
 
 
-    private static final String TAG = DigitEditDialog.class.getSimpleName();
+    private static final String TAG = TextEditDialog.class.getSimpleName();
 
     public static AlertDialog build(final Context context, final String title, String value, final Object tag, final OnTextChangedListener listener) {
 
@@ -27,14 +27,14 @@ public class DigitEditDialog extends AlertDialog {
         final EditText editText = (EditText) dialogView.findViewById(R.id.edit);
         editText.setText(value);
 
-        return new DigitEditDialog.Builder(context)
+        return new Builder(context)
                 .setTitle(title)
                 .setView(dialogView)
-                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                .setPositiveButton(android.R.string.ok, new OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
                         if (listener != null && !TextUtils.isEmpty(editText.getText()))
-                            listener.onTextChanged(tag, "" + Double.parseDouble(editText.getText().toString()));
+                            listener.onTextChanged(tag, editText.getText().toString());
                         else
                             Log.w(TAG, "listener or text empty");
                     }
@@ -43,7 +43,7 @@ public class DigitEditDialog extends AlertDialog {
                 .create();
     }
 
-    public DigitEditDialog(Context context) {
+    public TextEditDialog(Context context) {
         super(context);
 
     }

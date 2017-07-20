@@ -26,7 +26,7 @@ public class SensorWrapper extends Sensor {
     }
 
     @Override
-    public void prepareSensor() {
+    public void prepareSensor(double rate, String format) {
         setPrepared();
     }
 

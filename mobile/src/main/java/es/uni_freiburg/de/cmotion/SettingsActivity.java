@@ -19,6 +19,8 @@ import java.io.File;
 
 import es.uni_freiburg.de.cmotion.shared_ui.SettingsConsts;
 import es.uni_freiburg.de.cmotion.ui.DirectoryChooserDialog;
+import es.uni_freiburg.de.cmotion.ui.OnTextChangedListener;
+import es.uni_freiburg.de.cmotion.ui.TextEditDialog;
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings. On
@@ -64,7 +66,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
      *
      * @see #sBindPreferenceSummaryToValueListener
      */
-    private static void bindPreferenceSummaryToValue(Preference preference, String defaultValue) {
+    private static void bindPreferenceSummaryToValue(Preference preference, Object defaultValue) {
         // Set the listener to watch for value changes.
         preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
 
@@ -75,29 +77,69 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
                     PreferenceManager
                             .getDefaultSharedPreferences(preference.getContext())
-                            .getBoolean(preference.getKey(), true));
+                            .getBoolean(preference.getKey(), (Boolean) defaultValue));
         else {
             String value = PreferenceManager
                     .getDefaultSharedPreferences(preference.getContext())
-                    .getString(preference.getKey(), defaultValue);
+                    .getString(preference.getKey(), (String) defaultValue);
             preference.setSummary(value);
             sBindPreferenceSummaryToValueListener.onPreferenceChange(preference, value);
         }
     }
 
+    /**
+     * TODO this codes needs some serious refactoring
+     * @param savedInstanceState
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setupActionBar();
         addPreferencesFromResource(R.xml.pref_general);
         bindPreferenceSummaryToValue(findPreference(SettingsConsts.PREF_KEY_OUTPUTDIR), Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString());
-        bindPreferenceSummaryToValue(findPreference(SettingsConsts.PREF_KEY_AUTOPLAY), null);
+        bindPreferenceSummaryToValue(findPreference(SettingsConsts.PREF_KEY_RSYNC_OUTPUT), Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString());
+        bindPreferenceSummaryToValue(findPreference(SettingsConsts.PREF_KEY_AUTOPLAY), true);
+        bindPreferenceSummaryToValue(findPreference(SettingsConsts.PREF_KEY_RSYNC), false);
 //        bindPreferenceSummaryToValue(findPreference(PREF_KEY_FILENAME), de.uni_freiburg.es.sensorrecordingtool.RecorderCommands.getDefaultFileName());
 
         findPreference(SettingsConsts.PREF_KEY_OUTPUTDIR).setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
             public boolean onPreferenceClick(final Preference preference) {
                 chooseDirectory(preference);
+                return false;
+            }
+        });
+
+        findPreference(SettingsConsts.PREF_KEY_RSYNC).setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(final Preference preference) {
+                findPreference(SettingsConsts.PREF_KEY_RSYNC_OUTPUT).setEnabled(((SwitchPreference) preference).isChecked());
+                return false;
+            }
+        });
+
+
+        findPreference(SettingsConsts.PREF_KEY_RSYNC_OUTPUT).setEnabled(((SwitchPreference) findPreference(SettingsConsts.PREF_KEY_RSYNC)).isChecked());
+        findPreference(SettingsConsts.PREF_KEY_RSYNC_OUTPUT).setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(final Preference preference) {
+
+                String currentOutput = PreferenceManager.getDefaultSharedPreferences(preference.getContext())
+                        .getString(SettingsConsts.PREF_KEY_RSYNC_OUTPUT,
+                                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString());
+
+                new TextEditDialog(preference.getContext())
+                        .build(preference.getContext(), "Enter Destination", currentOutput, null, new OnTextChangedListener() {
+                            @Override
+                            public void onTextChanged(Object tag, String newText) {
+                                PreferenceManager.getDefaultSharedPreferences(preference.getContext())
+                                        .edit()
+                                        .putString(SettingsConsts.PREF_KEY_RSYNC_OUTPUT, newText)
+                                        .commit();
+                                preference.setSummary(newText);
+                            }
+                        })
+                        .show();
                 return false;
             }
         });

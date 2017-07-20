@@ -82,4 +82,6 @@
     <string name="delete">Delete</string>
     <string name="delete_recordings_text">Are you sure you want to delete all recodings? This action cannot be undone.</string>
     <string name="delete_recordings_head">Delete Recordings</string>
+    <string name="enable_rsync">Enable RSync</string>
+    <string name="rsync_ouput">RSync Destination</string>
 </resources>

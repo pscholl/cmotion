@@ -93,6 +93,7 @@ public class BTDataRetriever extends DataRetriever {
     @Override
     public File getFile() throws InterruptedException {
         latch.await();
+        setProgress(1);
         return getDestinationFile();
     }
 

@@ -18,6 +18,7 @@ import es.uni_freiburg.de.cmotion.R;
 import es.uni_freiburg.de.cmotion.shared_ui.adapter.AbstractDataAdapter;
 import es.uni_freiburg.de.cmotion.shared_ui.model.SensorModel;
 import es.uni_freiburg.de.cmotion.ui.DigitEditDialog;
+import es.uni_freiburg.de.cmotion.ui.OnTextChangedListener;
 
 public class SensorAdapter extends RecyclerView.Adapter implements AbstractDataAdapter<SensorModel> {
 
@@ -25,11 +26,11 @@ public class SensorAdapter extends RecyclerView.Adapter implements AbstractDataA
     private List<SensorModel> mCollection = null;
     private boolean isFrozen = false;
 
-    private DigitEditDialog.OnTextChangedListener mEditTextListener = new DigitEditDialog.OnTextChangedListener() {
+    private OnTextChangedListener mEditTextListener = new OnTextChangedListener() {
         @Override
         public void onTextChanged(Object tag, String newText) {
             int pos = (int) tag;
-            mCollection.get(pos).setSamplingRate(Integer.parseInt(newText));
+            mCollection.get(pos).setSamplingRate((int) Float.parseFloat(newText));
             notifyItemChanged(pos);
         }
     };

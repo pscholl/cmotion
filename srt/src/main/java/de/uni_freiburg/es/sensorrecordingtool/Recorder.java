@@ -18,6 +18,7 @@ import java.security.InvalidParameterException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -217,7 +218,8 @@ public class Recorder extends InfiniteIntentService {
 
             /** create a sensorprocess for each input and wire it to the ffmpeg process */
             for (int j = 0; j < sensors.length; j++)
-                sensorProcesses.add(newSensorProcess(
+                if(SensorProcess.getMatchingSensor(this, sensors[j]) != null)
+                    sensorProcesses.add(newSensorProcess(
                         sensors[j], formats[j], rates[j], duration, ffmpeg, j));
 
             /** notify the system that a new recording was started, and make
@@ -262,7 +264,7 @@ public class Recorder extends InfiniteIntentService {
             if (Thread.currentThread().interrupted())
                 throw new InterruptedIOException();
 
-            readySteady(isMaster, sensors, OFFSET, driftCalculated);
+            readySteady(isMaster, getFoundSensorArray(sensorProcesses), OFFSET, driftCalculated);
 
 //            if (mAutoDiscovery.getConnectedNodes() > 1)
 
@@ -291,6 +293,21 @@ public class Recorder extends InfiniteIntentService {
 
         if (error) /** close down the ffmpeg process and all sensorprocesses */
             stopSelf();
+    }
+
+    /**
+     * Extracts all sensor names from a given sensorprocess collection
+     *
+     * @param sensorProcesses
+     * @return
+     */
+    private String[] getFoundSensorArray(Collection<SensorProcess> sensorProcesses) {
+        String[] sensors = new String[sensorProcesses.size()];
+        int i = 0;
+        for(SensorProcess process : sensorProcesses) {
+            sensors[i++] = process.getSensor().getStringType();
+        }
+        return sensors;
     }
 
     private Handler handler = new Handler();
@@ -339,6 +356,7 @@ public class Recorder extends InfiniteIntentService {
             long correctTime = System.currentTimeMillis() + Recorder.OFFSET;
             status.steady(correctTime + DEFAULT_STEADY_TIME);
             new CountDownLatch(1).await(DEFAULT_STEADY_TIME, TimeUnit.MILLISECONDS);
+            startMergeService();
         }
     }
 
@@ -422,6 +440,9 @@ public class Recorder extends InfiniteIntentService {
         /** create a SensorProcess for each input and wire it to ffmpeg accordingly */
         for (int j = 0; j < sensors.length; j++) {
             Sensor matched = SensorProcess.getMatchingSensor(this, sensors[j]);
+
+            if(matched == null)
+                continue;
 
             if (matched instanceof VideoSensor) {
                 VideoSensor vs = ((VideoSensor) matched);
@@ -552,8 +573,5 @@ public class Recorder extends InfiniteIntentService {
     private void spawnMerging() {
         if (!isMaster) // masters dont have providers
             new MergeProviderSession(Recorder.this, mRecordUUID, new File(output));
-        else
-            startMergeService();
-
     }
 }

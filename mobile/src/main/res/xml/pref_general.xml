@@ -12,6 +12,19 @@
         android:summary="@string/autplay_summary"
         android:title="@string/autoplay" />
 
+    <SwitchPreference
+        android:id="@+id/rsync"
+        android:defaultValue="false"
+        android:key="rsync"
+        android:title="@string/enable_rsync" />
+
+    <Preference
+        android:enabled="false"
+        android:id="@+id/rsync_out"
+        android:key="rsync_out"
+        android:title="@string/rsync_ouput" />
+
+
     <Preference
         android:id="@+id/delete_pref"
         android:key="delete"

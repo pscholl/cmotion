@@ -43,6 +43,12 @@ public class WearDataProvider extends DataProvider implements GoogleApiClient.Co
 
         assert file != null && file.canRead() && file.exists() && !file.isDirectory();
 
+//        try {
+//            Thread.sleep(10000);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+
         try {
             FileInputStream fis = new FileInputStream(file);
             int totalParts = (int) Math.ceil(file.length() / (float) MergeConst.CHUNK_SIZE);

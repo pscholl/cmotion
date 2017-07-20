@@ -14,10 +14,16 @@ import java.io.OutputStream;
 public class IOUtils {
 
     public static void transport(InputStream in, OutputStream out) {
+
+        long count = 0;
+
         try {
             int i = -1;
-            while ((i = in.read()) != -1)
+            while ((i = in.read()) != -1) {
                 out.write(i);
+                if(count ++ % 1000 == 0)
+                    System.out.println(count);
+            }
             out.flush();
         } catch (IOException e) {
             e.printStackTrace();

@@ -29,7 +29,7 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     }
 
     @Override
-    public void prepareSensor() {
+    public void prepareSensor(double rate, String format) {
 
         mGoogleApiClient = new GoogleApiClient.Builder(mContext)
                 .addConnectionCallbacks(LocationSensor.this)

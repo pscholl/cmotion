@@ -15,18 +15,21 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
 import de.uni_freiburg.es.sensorrecordingtool.FFMpegCopyProcess;
+import de.uni_freiburg.es.sensorrecordingtool.RSyncProcess;
 import de.uni_freiburg.es.sensorrecordingtool.RecorderStatus;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.ConnectionTechnology;
 import de.uni_freiburg.es.sensorrecordingtool.autodiscovery.Node;
 import de.uni_freiburg.es.sensorrecordingtool.merger.retriever.BTDataRetriever;
 import de.uni_freiburg.es.sensorrecordingtool.merger.retriever.DataRetriever;
 import de.uni_freiburg.es.sensorrecordingtool.merger.retriever.LocalDataRetriever;
+import de.uni_freiburg.es.sensorrecordingtool.merger.retriever.ProgressChangedListener;
 import de.uni_freiburg.es.sensorrecordingtool.merger.retriever.TCPRetriever;
 import de.uni_freiburg.es.sensorrecordingtool.merger.retriever.WearDataRetriever;
 
 public class MergeSession {
 
-    private final ArrayList<Thread> mThreadPool = new ArrayList<>();
+    private static final boolean CLEANUP = false;
+    private final ArrayList<RetrieverThread> mThreadPool = new ArrayList<>();
     private String mRecordingUUID;
     private ArrayList<File> mFiles = new ArrayList<>();
     private Context mContext;
@@ -42,8 +45,8 @@ public class MergeSession {
         @Override
         public void onReceive(Context context, Intent intent) {
 
-            if (!ACTION_MERGE_CANCEL.equals(intent.getAction()) || !RecorderStatus.ERROR_ACTION.equals(intent.getAction()))
-                return;
+//            if (!ACTION_MERGE_CANCEL.equals(intent.getAction()) || !RecorderStatus.ERROR_ACTION.equals(intent.getAction()))
+//                return;
 
             unregisterReceiver(this);
 
@@ -70,6 +73,15 @@ public class MergeSession {
 
         registerReceiver(mBroadcastReceiver, intentFilter);
 
+        launchRetrievers(nodes);
+
+    }
+
+    /**
+     * Starts RetrieverThreads for every given Node. All threads are cached in {@link #mThreadPool}
+     * @param nodes
+     */
+    private void launchRetrievers(ArrayList<Node> nodes) {
         for (Node node : nodes) {
             final String aid = node.getAid();
             Log.e(TAG, "setting up retriever for " + aid);
@@ -77,7 +89,6 @@ public class MergeSession {
             mThreadPool.add(thread);
             thread.start();
         }
-
     }
 
     private void registerReceiver(BroadcastReceiver receiver, IntentFilter filter) {
@@ -98,6 +109,10 @@ public class MergeSession {
         return mIsFinished;
     }
 
+    /**
+     * Checks whether all Threads in the pool have finished.
+     * @return true if one or more threads are still running.
+     */
     public boolean isThreadPoolFinished() {
         boolean b = true;
         for (Thread t : mThreadPool)
@@ -106,6 +121,11 @@ public class MergeSession {
         return b;
     }
 
+    /**
+     * Merges all device recordings to one big mkv container using FFMPEG.
+     * Deletes all device recordings if {@link #CLEANUP} is set and will RSync if allowed by the user.
+     * This method will block until all recordings were merged.
+     */
     private void mergeAllRecordings() {
         Log.i(TAG, "merging all node recordings");
 
@@ -128,16 +148,40 @@ public class MergeSession {
             if (new File(output).exists()) {
                 Log.i(TAG, "merged to: " + output);
                 mMergeStatus.finished(output);
+
+                rSyncIfNecessary(output);
             } else
                 mMergeStatus.error(new FileNotFoundException("file not written"));
 
-            for (File file : mFiles) // cleanup
-                if (file != null && file.exists())
-                    file.delete();
+            if(CLEANUP) {
+                for (File file : mFiles) // cleanup
+                    if (file != null && file.exists())
+                        file.delete();
+            }
 
             mIsFinished = true;
         } catch (Exception e) {
             mMergeStatus.error(e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Will check whether rSync is activated and kick off the process if it is.
+     * @param file
+     */
+    private void rSyncIfNecessary(String file) {
+        if(!isRSync())
+            return;
+
+        try {
+            new RSyncProcess.Builder()
+                    .setInput(file)
+                    .setOutput(getRSyncOutputPath())
+                    .showProgress()
+                    .showStats()
+                    .build(mContext);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -148,11 +192,26 @@ public class MergeSession {
 
     }
 
+    private boolean isRSync() {
+        return PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean("rsync", false);
+
+    }
+
+    private String getRSyncOutputPath() {
+        return PreferenceManager.getDefaultSharedPreferences(mContext).getString("rsync_out",
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString());
+
+    }
+
 
     class RetrieverThread extends Thread {
 
         private DataRetriever retriever;
         private Node node;
+
+        public DataRetriever getRetriever() {
+            return retriever;
+        }
 
         public RetrieverThread(Node node) {
             super(RetrieverThread.class.getSimpleName());
@@ -186,12 +245,21 @@ public class MergeSession {
         @Override
         public void run() {
             this.retriever = pickRetriever(node);
+
+            this.retriever.setProgressChangedListener(new ProgressChangedListener() {
+                @Override
+                public void progressChanged(DataRetriever retriever) {
+                    System.out.println(retriever+" -> "+retriever.getProgress());
+                    mMergeStatus.setProgress(calculateTotalProgress());
+                }
+            });
+
             File file = null;
             try {
                 file = retriever.getFile();
                 Log.i(TAG, node.toString()+" provided "+file.toString());
                 mFiles.add(file);
-                mMergeStatus.incrementProgress();
+//                mMergeStatus.incrementProgress();
                 mTimeoutHandler.removeCallbacksAndMessages(null); // remove all scheduled runanbles
                 mNodeDataCount--;
                 if (!isInterrupted()) {
@@ -207,6 +275,20 @@ public class MergeSession {
             retriever.destroy();
         }
 
+    }
+
+    /**
+     * Calculates the total progress of all retrievers.
+     * @return a number between 0 to 1, representing a percentage
+     */
+    private float calculateTotalProgress() {
+        float f = 0;
+
+        for(RetrieverThread thread : mThreadPool) {
+            f += thread.getRetriever().getProgress();
+        }
+
+        return f / mThreadPool.size();
     }
 
     private void startTimeoutTimer() {

@@ -9,10 +9,9 @@ import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
 
-import java.nio.ByteBuffer;
-import java.nio.ShortBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import de.uni_freiburg.es.sensorrecordingtool.PermissionDialog;
 
@@ -29,6 +28,7 @@ public class AudioSensor extends Sensor {
     private static int mAudioFormat = AudioFormat.ENCODING_PCM_16BIT;
 
     private RecorderThread mRecorderThread;
+    private boolean mRecord = false;
 
 
     public AudioSensor(Context c, int channelConfig) {
@@ -39,8 +39,13 @@ public class AudioSensor extends Sensor {
     }
 
     @Override
-    public void prepareSensor() {
-        setPrepared();
+    public void prepareSensor(double rate, String format) {
+
+        mSampleRate = (int) rate;
+        if (mRecorderThread == null)
+            mRecorderThread = new RecorderThread();
+        mRecorderThread.startRecording();
+
     }
 
 
@@ -64,10 +69,7 @@ public class AudioSensor extends Sensor {
         Log.d(TAG, String.format("default rate is %d", getAudioSampleRate()));
 
         if (mListeners.size() == 0) {
-            mSampleRate = (int) rate;
-            if (mRecorderThread == null)
-                mRecorderThread = new RecorderThread();
-            mRecorderThread.startRecording();
+            mRecorderThread.readyToRecord();
         }
 
         super.registerListener(l, rate, format, h);
@@ -114,21 +116,21 @@ public class AudioSensor extends Sensor {
         * AudioFormat.CHANNEL_CONFIGURATION_DEFAULT is deprecated and selecting
         * default encoding format.
          */
-        AudioRecord aud  = null;
+        AudioRecord aud = null;
 
         for (int samplingRate : validSampleRates)
-        try {
-            int minBufSize = AudioRecord.getMinBufferSize(samplingRate,
-                    AudioFormat.CHANNEL_IN_MONO, mAudioFormat);
-            aud = new AudioRecord(MediaRecorder.AudioSource.DEFAULT,
-                    samplingRate, AudioFormat.CHANNEL_IN_MONO, mAudioFormat, minBufSize);
-            list.add(samplingRate);
-        } catch (Exception e) {
-        } finally {
-            if (aud != null)
-                aud.release();
-            aud = null;
-        }
+            try {
+                int minBufSize = AudioRecord.getMinBufferSize(samplingRate,
+                        AudioFormat.CHANNEL_IN_MONO, mAudioFormat);
+                aud = new AudioRecord(MediaRecorder.AudioSource.DEFAULT,
+                        samplingRate, AudioFormat.CHANNEL_IN_MONO, mAudioFormat, minBufSize);
+                list.add(samplingRate);
+            } catch (Exception e) {
+            } finally {
+                if (aud != null)
+                    aud.release();
+                aud = null;
+            }
 
 
         return list;
@@ -140,7 +142,13 @@ public class AudioSensor extends Sensor {
 
     class RecorderThread extends Thread {
 
+        private CountDownLatch mRecordLatch = new CountDownLatch(1);
+
         private boolean status = true;
+
+        public void readyToRecord() {
+            mRecordLatch.countDown();
+        }
 
         @Override
         public void run() {
@@ -154,25 +162,37 @@ public class AudioSensor extends Sensor {
                  aud.getState() == AudioRecord.STATE_UNINITIALIZED;
                  aud.startRecording())
                 _sleep(200);
-            for (int err = aud.read(buf,0, minBufSize);
-                 err >= 0 && status;
-                 err = aud.read(buf, 0, minBufSize))
-            {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    aud.getTimestamp(ts, AudioTimestamp.TIMEBASE_MONOTONIC);
-                    mEvent.timestamp = ts.nanoTime;
-                } else
-                    mEvent.timestamp = System.currentTimeMillis() * 1000 * 1000;
 
-                mEvent.rawdata = buf;
-                notifyListeners();
+            aud.read(buf, 0, minBufSize);
 
-                if (err == 0)
-                    Log.d(TAG, "skipped block");
+            setPrepared();
+
+            try {
+                mRecordLatch.await();
+
+                for (int err = aud.read(buf, 0, minBufSize);
+                     err >= 0 && status;
+                     err = aud.read(buf, 0, minBufSize)) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        aud.getTimestamp(ts, AudioTimestamp.TIMEBASE_MONOTONIC);
+                        mEvent.timestamp = ts.nanoTime;
+                    } else
+                        mEvent.timestamp = System.currentTimeMillis() * 1000 * 1000;
+
+                    mEvent.rawdata = buf;
+                    notifyListeners();
+
+                    if (err == 0)
+                        Log.d(TAG, "skipped block");
+                }
+
+                aud.stop();
+                aud.release();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
 
-            aud.stop();
-            aud.release();
+
         }
 
         private void _sleep(int i) {

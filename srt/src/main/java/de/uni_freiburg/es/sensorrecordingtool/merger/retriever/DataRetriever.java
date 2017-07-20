@@ -13,6 +13,9 @@ public abstract class DataRetriever {
     protected final Node mNode;
     protected Context mContext;
     private String fileName;
+    private ProgressChangedListener mProgressChangedListener;
+
+    private float mProgress = 0f;
 
     public DataRetriever(Context context, Node node, String recordingUUID) {
         mContext = context;
@@ -21,7 +24,27 @@ public abstract class DataRetriever {
         fileName = node.getAid() + "_" + mRecordingUUID;
     }
 
+
+    public ProgressChangedListener getProgressChangedListener() {
+        return mProgressChangedListener;
+    }
+
+    public void setProgressChangedListener(ProgressChangedListener progressChangedListener) {
+        this.mProgressChangedListener = progressChangedListener;
+    }
+
     public abstract void destroy();
+
+    public float getProgress() {
+        return mProgress;
+    }
+
+    public void setProgress(float progress) {
+        assert progress >= 0 && progress <= 1;
+        this.mProgress = progress;
+        if(mProgressChangedListener != null)
+            mProgressChangedListener.progressChanged(this);
+    }
 
     public abstract File getFile() throws InterruptedException;
 

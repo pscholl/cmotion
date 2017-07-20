@@ -329,9 +329,6 @@ public class FFMpegProcess {
             cmdline.add("-nostdin");
             cmdline.addAll(outputopts);
 
-            Log.e("FFMPEG", cmdline.toString());
-
-
             ProcessBuilder pb = new ProcessBuilder(cmdline);
 
             pb.directory(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM));

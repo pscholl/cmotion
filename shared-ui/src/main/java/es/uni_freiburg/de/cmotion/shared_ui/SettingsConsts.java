@@ -9,4 +9,6 @@ public class SettingsConsts {
     public static final String PREF_KEY_FILENAME = "file_name";
     public static final String PREF_KEY_AUTOPLAY = "autoplay";
     public static final String PREF_KEY_DELETE = "delete";
+    public static final String PREF_KEY_RSYNC = "rsync";
+    public static final String PREF_KEY_RSYNC_OUTPUT = "rsync_out";
 }

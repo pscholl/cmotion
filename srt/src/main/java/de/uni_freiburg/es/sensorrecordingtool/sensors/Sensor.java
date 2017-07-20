@@ -41,7 +41,7 @@ public abstract class Sensor {
         mEvent = new SensorEvent(4);
     }
 
-    public void prepareSensor() {
+    public void prepareSensor(double rate, String format) {
         if (isPrepared)
             Log.w(TAG, "Sensor is already in prepared state, no need to prepare it again.");
     }

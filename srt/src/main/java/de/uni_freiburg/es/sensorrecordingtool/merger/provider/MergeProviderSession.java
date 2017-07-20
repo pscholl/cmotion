@@ -33,7 +33,8 @@ public class MergeProviderSession extends Thread {
     private DataProvider pickProvider(ConnectionTechnology technology) {
         if (technology.getType().equals(ConnectionTechnology.Type.WEAR))
             return new WearDataProvider(mContext);
-        else if (technology.getType().equals(ConnectionTechnology.Type.BT_CLASSIC))
+        else
+            if (technology.getType().equals(ConnectionTechnology.Type.BT_CLASSIC))
             return new BTDataProvider(mContext);
         else if (technology.getType().equals(ConnectionTechnology.Type.TCP_OVER_WIFI))
             return new TCPProvider(mContext);
