@@ -2,12 +2,12 @@
 
 buildscript {
     repositories { jcenter() }
-    dependencies { classpath 'com.android.tools.build:gradle:2.3.2' }
+    dependencies { classpath 'com.android.tools.build:gradle:3.0.1' }
     ext {
-        BuildToolsVersion = '25.0.3'
+        BuildToolsVersion = '26.0.2'
         TargetSDKNonGlass = '23'
         TargetSDKGlass = '19'
-        CompileSDKVersion = '25'
+        CompileSDKVersion = 25
     }
 }
 

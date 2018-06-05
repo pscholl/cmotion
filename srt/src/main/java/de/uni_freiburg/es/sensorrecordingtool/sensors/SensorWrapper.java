@@ -149,6 +149,14 @@ public class SensorWrapper extends Sensor {
         return mSensor.getFifoReservedEventCount();
     }
 
+    @Override
+    public boolean isWakeupSensor() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            return mSensor.isWakeUpSensor();
+        } else
+            return false;
+    }
+
     /** Determine whethe the code is runnong on Google Glass
      * @return True if and only if Manufacturer is Google and Model begins with Glass
      */

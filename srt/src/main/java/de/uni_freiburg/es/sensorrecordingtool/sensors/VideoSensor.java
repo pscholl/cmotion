@@ -109,6 +109,11 @@ public class VideoSensor extends Sensor implements Camera.ErrorCallback {
         return 0;
     }
 
+    @Override
+    public boolean isWakeupSensor() {
+        return false;
+    }
+
 
     private void oldOpenCamera() {
         try {

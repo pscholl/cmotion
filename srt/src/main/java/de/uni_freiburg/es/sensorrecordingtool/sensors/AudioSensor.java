@@ -89,6 +89,11 @@ public class AudioSensor extends Sensor {
         return 0;
     }
 
+    @Override
+    public boolean isWakeupSensor() {
+        return false;
+    }
+
 
     /*
      * Valid Audio Sample rates

@@ -69,11 +69,7 @@ public abstract class Sensor {
         SensorManager mgr = (SensorManager) c.getSystemService(Context.SENSOR_SERVICE);
 
         for (android.hardware.Sensor s : mgr.getSensorList(android.hardware.Sensor.TYPE_ALL))
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                if (s.isWakeUpSensor());
-                    result.add(new SensorWrapper(c, s));
-            } else
-                result.add(new SensorWrapper(c, s));
+            result.add(new SensorWrapper(c, s));
 
         result.add(new LocationSensor(c));
         result.addAll(getAllVideoSensors(c));
@@ -130,7 +126,7 @@ public abstract class Sensor {
     }
 
     public abstract int getFifoSize();
-
+    public abstract boolean isWakeupSensor();
 
 
     protected class ParameterizedListener {

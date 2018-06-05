@@ -62,6 +62,13 @@ public class RecordingTest extends BroadcastingTest {
         Assert.assertEquals("error msg", "no input supplied", result);
     }
 
+    @Test public void recordingInputNotFound() throws InterruptedException {
+        i.putExtra(Recorder.RECORDER_INPUT, "accmememe");
+        String result = callForError(i);
+        Assert.assertTrue("no answer from Service", result != null);
+        Assert.assertEquals("error msg", "sensor not found: accmememe", result);
+    }
+
     @Test public void doARecordingWithRates() throws Exception {
         i.putExtra("-i", "accelerometer");
         i.putExtra("-r", 100.);

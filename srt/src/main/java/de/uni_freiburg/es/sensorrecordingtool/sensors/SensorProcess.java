@@ -101,7 +101,8 @@ public abstract class SensorProcess implements SensorEventListener {
      * given a String tries to find a matching sensor given these rules:
      * <p>
      * 1. find all sensors which string description (getStringName()) contains the *sensor*
-     * 2. choose the shortest one of that list
+     * 2. select only wakeup sensors, if there are any
+     * 3. choose the shortest one of that list
      * <p>
      * e.g., when "gyro" is given, choose android.sensor.type.gyroscope rather than
      * android.sensor.type.gyroscope_uncalibrated. Matching is case-insensitive.
@@ -130,10 +131,23 @@ public abstract class SensorProcess implements SensorEventListener {
 //                    "Options are: \n" + b.toString());
         }
 
-        int minimum = Integer.MAX_VALUE;
+        boolean thereiswakeup = false;
 
         for (Sensor s : candidates)
+            thereiswakeup |= s.isWakeupSensor();
+
+        if (thereiswakeup) {
+            Iterator<Sensor> it = candidates.iterator();
+            while (it.hasNext())
+                if (!it.next().isWakeupSensor())
+                    it.remove();
+        }
+
+        int minimum = Integer.MAX_VALUE;
+
+        for (Sensor s : candidates) {
             minimum = Math.min(minimum, s.getStringName().length());
+        }
 
         Iterator<Sensor> it = candidates.iterator();
         while (it.hasNext())

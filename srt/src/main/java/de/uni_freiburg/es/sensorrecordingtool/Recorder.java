@@ -211,7 +211,7 @@ public class Recorder extends InfiniteIntentService {
                 mRecordUUID = UUID.randomUUID().toString();
 
             status = new RecorderStatus(getApplicationContext(), sensors.length, duration, mRecordUUID);
-            initSynchronization(isMaster);
+            //initSynchronization(isMaster);
 
             ffmpeg = buildFFMPEG(this, sensors, formats, rates, duration);
             sensorProcesses = new LinkedList<>();
@@ -221,6 +221,7 @@ public class Recorder extends InfiniteIntentService {
                 if(SensorProcess.getMatchingSensor(this, sensors[j]) != null)
                     sensorProcesses.add(newSensorProcess(
                         sensors[j], formats[j], rates[j], duration, ffmpeg, j));
+
 
             /** notify the system that a new recording was started, and make
              * sure that the service does not get called when an activity is
@@ -356,7 +357,7 @@ public class Recorder extends InfiniteIntentService {
             long correctTime = System.currentTimeMillis() + Recorder.OFFSET;
             status.steady(correctTime + DEFAULT_STEADY_TIME);
             new CountDownLatch(1).await(DEFAULT_STEADY_TIME, TimeUnit.MILLISECONDS);
-            startMergeService();
+            // startMergeService();
         }
     }
 
@@ -442,7 +443,7 @@ public class Recorder extends InfiniteIntentService {
             Sensor matched = SensorProcess.getMatchingSensor(this, sensors[j]);
 
             if(matched == null)
-                continue;
+                throw new Exception("sensor not found: " + sensors[j]);
 
             if (matched instanceof VideoSensor) {
                 VideoSensor vs = ((VideoSensor) matched);
@@ -460,12 +461,12 @@ public class Recorder extends InfiniteIntentService {
                                 ((AudioSensor) matched).getChannels()) // native endian!
 //                        .setStreamTag("resolution", sensors[j].getResolution())
 //                        .setStreamTag("unit", sensors[j].getUnit())
-                        .setStreamTag("name", sensors[j])
+                        .setStreamTag("name", matched.getStringName())
                 ;
             } else
                 fp
                         .addAudio("f32be", rates[j], SensorProcess.getSampleSize(this, sensors[j]))
-                        .setStreamTag("name", sensors[j]);
+                        .setStreamTag("name", matched.getStringName());
 
             fp.setStreamTag("platform", platform);
         }

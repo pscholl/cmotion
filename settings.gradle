@@ -1,1 +1,1 @@
-include ':mobile', ':wear', ':glass', ':srt', ':intentforwarder', ':wearforwarder', ':cmotiontheta', ':btclocksync', ':shared-ui'
+include ':mobile', ':wear', ':glass', ':srt', ':intentforwarder', ':wearforwarder', ':cmotiontheta', ':btclocksync', ':shared-ui', ':wear-autorecord'

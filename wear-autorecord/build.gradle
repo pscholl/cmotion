@@ -1,0 +1,32 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion project.properties.CompileSDKVersion
+
+    defaultConfig {
+        applicationId "de.senseable.wear_autorecord"
+        minSdkVersion 22
+        targetSdkVersion project.properties.TargetSDKNonGlass
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation 'com.google.android.support:wearable:2.3.0'
+    implementation 'com.android.support:percent:26.1.0'
+    implementation 'com.android.support:support-v4:26.1.0'
+    implementation 'com.android.support:recyclerview-v7:26.1.0'
+
+    compile project(path: ':srt')
+    compile 'com.google.android.wearable:wearable:2.3.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.0'
+}

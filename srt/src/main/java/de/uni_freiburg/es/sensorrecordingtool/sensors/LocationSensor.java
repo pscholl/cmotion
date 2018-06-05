@@ -98,6 +98,11 @@ public class LocationSensor extends Sensor implements GoogleApiClient.Connection
     }
 
     @Override
+    public boolean isWakeupSensor() {
+        return false;
+    }
+
+    @Override
     public void registerListener(SensorEventListener l, double rate, String format, Handler h) {
         super.registerListener(l, rate, format, h);
 
