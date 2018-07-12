@@ -12,6 +12,7 @@ import android.provider.Settings;
 import android.util.Log;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteOrder;
 import java.security.InvalidParameterException;
@@ -150,6 +151,7 @@ public class Recorder extends InfiniteIntentService {
     public static String mRecordUUID;
 
     public static ArrayList<String> mReadyNodes = new ArrayList<>();
+    private Process mLogging;
 
     public Recorder() {
         super(Recorder.class.getName());
@@ -173,7 +175,6 @@ public class Recorder extends InfiniteIntentService {
             process = new NonBlockSensorProcess(c, sensor, rate, format, dur, p, j,
                     new Handler(h.getLooper()));
 
-        process.setHandlerThread(h);
         return process;
     }
 
@@ -185,6 +186,8 @@ public class Recorder extends InfiniteIntentService {
      */
     @Override
     protected void onHandleIntent(Intent intent) {
+        startLogging();
+
         if (!RECORD_ACTION.equals(intent.getAction())) {
             Log.d(TAG, String.format(
                     "not a %s action, not doing anything", RECORD_ACTION));
@@ -292,8 +295,28 @@ public class Recorder extends InfiniteIntentService {
                 status.error(e);
         }
 
+        stopLogging();
+
         if (error) /** close down the ffmpeg process and all sensorprocesses */
             stopSelf();
+    }
+
+    private void startLogging() {
+        File f = new File(getFilesDir(), "logcat");
+        String cmd = String.format("logcat -f %s *:S SensorProcess:*", f.getPath());
+        try {
+            mLogging = Runtime.getRuntime().exec(cmd);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void stopLogging() {
+        if (mLogging == null)
+            return;
+
+        mLogging.destroy();
+        mLogging = null;
     }
 
     /**
@@ -315,12 +338,17 @@ public class Recorder extends InfiniteIntentService {
 
     private void waitUntilEnd() {
         long ms_elapsed = System.currentTimeMillis() - mRecordingSince,
-                ms_duration = (long) duration * 1000;
+             ms_duration = (long) duration * 1000;
+
+        /**
+         *  check if all sensorprocesses are still recording, if not stop.
+         */
+        for (SensorProcess p : sensorProcesses)
+            mIsRecording &= p.mIsRecording;
 
         // XXX +1000ms to hope that all recordings have recorded enough, actually we should
         //     wait on a clock provided by ffmpeg instead of the wall clock!
         if (mIsRecording && (ms_duration <= 0 || ms_elapsed < ms_duration + 1000)) {
-            Log.d(TAG, "recording status");
             status.recording(ms_elapsed, ms_duration);
 
             if (mWl.isHeld())  // make sure to not hold this forever
@@ -424,7 +452,7 @@ public class Recorder extends InfiniteIntentService {
                 .setTag("fingerprint", Build.FINGERPRINT)
                 .setTag("beginning", getCurrentDataAsIso())
                 .addOutputArgument("-preset", "ultrafast")
-                .setLoglevel("debug");
+                .setLoglevel("quiet");
 
 
 

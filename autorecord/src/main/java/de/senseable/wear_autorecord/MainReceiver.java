@@ -30,14 +30,13 @@ public class MainReceiver extends BroadcastReceiver {
                         mStartIntent = new Intent(Recorder.RECORD_ACTION);
 
     static {
-        /*mStartIntent.putExtra(Recorder.RECORDER_INPUT, new String[]{
-                "accelerometer", "gyroscope", "magnetometer" });
-        mStartIntent.putExtra(Recorder.RECORDER_INPUT, new float[]{
-                25.f, 25.f, 25.f});
-                */
+        mStartIntent.putExtra(Recorder.RECORDER_INPUT, new String[]{
+                "accelerometer", "gyroscope", "mag" });
+        //mStartIntent.putExtra(Recorder.RECORDER_RATE, new float[]{
+        //        25.f, 25.f, 25.f});
 
-        mStartIntent.putExtra(Recorder.RECORDER_INPUT, "accelerometer");
-        mStartIntent.putExtra(Recorder.RECORDER_RATE, 25.f);
+        //mStartIntent.putExtra(Recorder.RECORDER_INPUT, "accelerometer");
+        //mStartIntent.putExtra(Recorder.RECORDER_RATE, 25.f);
     }
 
     @Override
@@ -47,7 +46,7 @@ public class MainReceiver extends BroadcastReceiver {
         if (Intent.ACTION_POWER_CONNECTED == action) {
             // stop an ongoing recording, or a delayed start
 
-            context.sendBroadcast(mStopIntent);
+        //    context.sendBroadcast(mStopIntent);
             Log.e(TAG, "power connected -> stopping");
         }
         else if (Intent.ACTION_POWER_DISCONNECTED == action  ||
@@ -64,7 +63,7 @@ public class MainReceiver extends BroadcastReceiver {
                 }
             };
             
-            mHandler.postDelayed(mStart, DELAY);
+        //    mHandler.postDelayed(mStart, DELAY);
             Log.e(TAG, "power disconnected -> starting");
         }
     }

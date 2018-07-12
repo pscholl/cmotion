@@ -5,7 +5,7 @@ android {
 
     defaultConfig {
         applicationId "de.senseable.wear_autorecord"
-        minSdkVersion 22
+        minSdkVersion project.properties.TargetSDKNonGlass
         targetSdkVersion project.properties.TargetSDKNonGlass
         versionCode 1
         versionName "1.0"

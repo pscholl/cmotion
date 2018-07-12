@@ -145,8 +145,11 @@ public class SensorWrapper extends Sensor {
     }
 
     @Override
+    /* the division by two is a quick hack since some platform use a combined sensor with a
+     * common FIFO buffer...
+     */
     public int getFifoSize() {
-        return mSensor.getFifoReservedEventCount();
+        return mSensor.getFifoMaxEventCount() / 2;
     }
 
     @Override

@@ -1,5 +1,6 @@
 package de.uni_freiburg.es.sensorrecordingtool.sensors;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
@@ -38,21 +39,18 @@ public abstract class SensorProcess implements SensorEventListener {
      * when no duration is set this constant is used for the maximum delay to report
      * on new sensor data. We chose ten minutes for no specific reason.
      */
-    public static final int DEFAULT_LATENCY_US = 10 * 1000 * 1000;
+    private static final long FLUSH_TIMEOUT_MS = 5 * 1000;
     final Sensor mSensor;
     final double mRate;
     OutputStream mOut = null;
     public final double mDur;
-    private final PowerManager.WakeLock mWl = null;
     private final String mFormat;
     private final Handler mHandler;
     ByteBuffer mBuf;
     long mLastTimestamp = -1;
     public double mElapsed = 0;
     double mDiff = 0;
-    private boolean isClosed = false;
-
-    private HandlerThread mHandlerThread;
+    public boolean mIsRecording;
 
     public SensorProcess(Context context, String sensor, double rate, String format, double dur,
                          OutputStream bf, Handler h) throws Exception {
@@ -94,6 +92,7 @@ public abstract class SensorProcess implements SensorEventListener {
     }
 
     public void startRecording() {
+        mIsRecording = true;
         mSensor.registerListener(this, mRate, mFormat, mHandler);
     }
 
@@ -182,11 +181,17 @@ public abstract class SensorProcess implements SensorEventListener {
 
         try {
             /*
-             * the sensorrate might not be constant, which is why we do a simple repetition
-             * interpolation here. I.e. we make sure that at least 1/rate seconds have passed
-             * between samples.
+             * the sensorrate might not be constant, so we fix small jump (<=10 samples)
              */
-            assert (mLastTimestamp < sensorEvent.timestamp);
+            if (sensorEvent.timestamp < mLastTimestamp) {
+                // this is a time travel between sensor samples
+                Log.d("SensorProcess", String.format(
+                    "%s: old sample from %d, should be after %d - IGNORING",
+                    mSensor.getStringName(), sensorEvent.timestamp, mLastTimestamp));
+                terminate();
+                return;
+            }
+
             mDiff += (sensorEvent.timestamp - mLastTimestamp) * 1e-9;
 
             if (mDur > 0 && mElapsed > mDur) {
@@ -204,9 +209,15 @@ public abstract class SensorProcess implements SensorEventListener {
              */
             int tointerpolate = (int) Math.floor( mDiff * mRate ) - 1;
 
-            if (tointerpolate > 1 && !(mSensor instanceof  AudioSensor))
+            if (tointerpolate > 1 && !(mSensor instanceof  AudioSensor)) {
                 Log.d("SensorProcess", String.format("%s interpolating %d frames", mSensor.getStringName(), tointerpolate));
+            }
 
+            if (tointerpolate > 400 && !(mSensor instanceof AudioSensor)) {
+                Log.wtf("SensorProcess", String.format("%s missing %d samples - TERMINATING", mSensor.getStringName(), tointerpolate));
+                terminate();
+                return;
+            }
 
             while (mDiff >= 1. / mRate) {
                 mOut.write(arr);
@@ -225,40 +236,37 @@ public abstract class SensorProcess implements SensorEventListener {
             mLastTimestamp = sensorEvent.timestamp;
         } catch (IOException e) {
             e.printStackTrace();
-            //terminate();
+            terminate();
         }
     }
 
     public abstract byte[] transfer(SensorEvent sensorEvent);
 
     public void terminate() {
-
         if (Thread.currentThread() == Looper.getMainLooper().getThread())
             Log.wtf("SensorProcess", "Terminate called on UI Thread!!!");
 
-        // XXX avoid flushing completly, as on LOLLIPOP no onFlushCompleted() is called?
-        if (mElapsed < mDur || mDur < 0) {
+        if (mElapsed < mDur || mDur < 0)
             mSensor.flush(SensorProcess.this);
-            while (!isClosed) Thread.currentThread().yield();
-        } else
-            onFlushCompleted();
+
+        /* we do not wait until onFlushCompleted is called by the system, as this
+         * is buggy on some systems, but instead just kill the process. */
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                onFlushCompleted();
+            }
+        }, FLUSH_TIMEOUT_MS);
     }
 
     @Override
     public void onFlushCompleted() {
-        if (mWl != null && mWl.isHeld())
-            mWl.release();
-
         mSensor.unregisterListener(this);
+
         try { if (mOut!=null) mOut.close(); }
-        catch (IOException e) {}
+        catch (IOException e) {Log.wtf("SensorProcess", "unable to close output stream");}
 
-        Looper wtf = mHandlerThread.getLooper();
-        if (wtf != null)
-            wtf.quit();
-
-        mHandlerThread.interrupt();
-        isClosed = true;
+        mIsRecording = false;
     }
 
     public static int getSampleSize(Context context, String sensor) throws Exception {
@@ -273,9 +281,5 @@ public abstract class SensorProcess implements SensorEventListener {
             return 4;
 
         throw new Exception("unknown sensor: " + sensor);
-    }
-
-    public void setHandlerThread(HandlerThread handlerThread) {
-        this.mHandlerThread = handlerThread;
     }
 }
