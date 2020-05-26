@@ -40,6 +40,7 @@ public abstract class SensorProcess implements SensorEventListener {
      * on new sensor data. We chose ten minutes for no specific reason.
      */
     private static final long FLUSH_TIMEOUT_MS = 5 * 1000;
+    public static final String TAG = "SensorProcess";
     final Sensor mSensor;
     final double mRate;
     OutputStream mOut = null;
@@ -185,10 +186,9 @@ public abstract class SensorProcess implements SensorEventListener {
              */
             if (sensorEvent.timestamp < mLastTimestamp) {
                 // this is a time travel between sensor samples
-                Log.d("SensorProcess", String.format(
+                Log.d(TAG, String.format(
                     "%s: old sample from %d, should be after %d - IGNORING",
                     mSensor.getStringName(), sensorEvent.timestamp, mLastTimestamp));
-                terminate();
                 return;
             }
 
@@ -210,11 +210,11 @@ public abstract class SensorProcess implements SensorEventListener {
             int tointerpolate = (int) Math.floor( mDiff * mRate ) - 1;
 
             if (tointerpolate > 1 && !(mSensor instanceof  AudioSensor)) {
-                Log.d("SensorProcess", String.format("%s interpolating %d frames", mSensor.getStringName(), tointerpolate));
+                Log.d(TAG, String.format("%s interpolating %d frames", mSensor.getStringName(), tointerpolate));
             }
 
             if (tointerpolate > 400 && !(mSensor instanceof AudioSensor)) {
-                Log.wtf("SensorProcess", String.format("%s missing %d samples - TERMINATING", mSensor.getStringName(), tointerpolate));
+                Log.wtf("TAG", String.format("%s missing %d samples - TERMINATING", mSensor.getStringName(), tointerpolate));
                 terminate();
                 return;
             }
@@ -235,7 +235,7 @@ public abstract class SensorProcess implements SensorEventListener {
 
             mLastTimestamp = sensorEvent.timestamp;
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.wtf(TAG, "exeception: " + e.toString());
             terminate();
         }
     }

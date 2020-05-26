@@ -186,13 +186,13 @@ public class Recorder extends InfiniteIntentService {
      */
     @Override
     protected void onHandleIntent(Intent intent) {
-        startLogging();
-
         if (!RECORD_ACTION.equals(intent.getAction())) {
             Log.d(TAG, String.format(
                     "not a %s action, not doing anything", RECORD_ACTION));
             return;
         }
+
+        startLogging();
 
         mIsRecording = true;
         mReadyNodes.clear(); // remove all old ready-flagged nodes
@@ -303,7 +303,7 @@ public class Recorder extends InfiniteIntentService {
 
     private void startLogging() {
         File f = new File(getFilesDir(), "logcat");
-        String cmd = String.format("logcat -f %s *:S SensorProcess:*", f.getPath());
+        String cmd = String.format("logcat -f %s", f.getPath());
         try {
             mLogging = Runtime.getRuntime().exec(cmd);
         } catch (IOException e) {
@@ -484,7 +484,7 @@ public class Recorder extends InfiniteIntentService {
                 ;
             } else if (matched instanceof AudioSensor) {
                 fp
-                        .addAudio(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "s16le" : "s16be",
+                        .addAudio(,
                                 rates[j],
                                 ((AudioSensor) matched).getChannels()) // native endian!
 //                        .setStreamTag("resolution", sensors[j].getResolution())
